@@ -39,6 +39,14 @@ protected lemma map_zero (F : C ⥤ D) [preserves_zero_morphisms F] (X Y : C) :
   F.map (0 : X ⟶ Y) = 0 :=
 preserves_zero_morphisms.map_zero' _ _
 
+lemma zero_of_map_zero (F : C ⥤ D) [preserves_zero_morphisms F] [faithful F] {X Y : C}
+  (f : X ⟶ Y) (h : F.map f = 0) : f = 0 :=
+F.map_injective $ h.trans $ eq.symm $ F.map_zero _ _
+
+lemma map_eq_zero_iff (F : C ⥤ D) [preserves_zero_morphisms F] [faithful F] {X Y : C} {f : X ⟶ Y} :
+  F.map f = 0 ↔ f = 0 :=
+⟨F.zero_of_map_zero _, by { rintro rfl, exact F.map_zero _ _ }⟩
+
 lemma equivalence_preserves_zero_morphisms (F : C ≌ D) : preserves_zero_morphisms F.functor :=
 begin
   refine ⟨λ X Y, eq.trans _ (@limits.comp_zero _ _ _ _ _ (F.functor.map (0 : X ⟶ Y)) _)⟩,
