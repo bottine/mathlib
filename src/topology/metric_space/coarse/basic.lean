@@ -239,6 +239,12 @@ begin
 end
 
 /--
+Precomposing close maps with any given map preserves closeness.
+-/
+lemma comp_left {K : ℝ≥0} {μ : Type*} {φ : μ → ι} {f g : ι → α} (clw : close_maps_with K f g) :
+  close_maps_with K (f ∘ φ) (g ∘ φ) := λ x, clw (φ x)
+
+/--
 If `f` is `K`-close to `g`, which is `L`-close to `h`, then `f` is `(K+L)`-close to `h`.
 -/
 lemma trans {K L : ℝ≥0} {f g h: ι → α} (c : close_maps_with K f g) (d : close_maps_with L g h) :
