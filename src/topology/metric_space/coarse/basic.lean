@@ -195,3 +195,66 @@ begin
   use [s,s_sub_S,s_sep],
   exact coarsely_dense_with_in.of_max_coarsely_separated_with_in ⟨s_sub_S, s_sep, s_max_sep⟩,
 end
+
+
+/--
+Two maps `f g` from `ι` to a pseudo-emetric space `α` are `K`-close if
+for all `x : ι`, the distance between `f x` and `g x` is at most `K`.
+-/
+def close_maps_with {ι : Type*} (K : ℝ≥0) (f g : ι → α) :=
+∀ x : ι , edist (f x) (g x) ≤ K
+
+namespace close_maps_with
+
+variables {ι : Type w}
+variables {β : Type v} [pseudo_emetric_space β]
+
+/--
+Any map `f` is `0`-close to itself.
+-/
+lemma refl (f : ι → α) : close_maps_with 0 f f := λ x, by simp
+
+/--
+Being `K`-close in symmetric.
+-/
+lemma symm {K : ℝ≥0} {f g : ι → α} :
+  close_maps_with K f g →  close_maps_with K g f :=
+begin
+  intros acw x,
+  rw ←edist_comm,
+  exact acw x,
+end
+
+/--
+If `f` is `K`-close to `g`, which is `L`-close to `h`, then `f` is `(K+L)`-close to `h`.
+-/
+lemma trans {K L : ℝ≥0} {f g h: ι → α} (c : close_maps_with K f g) (d : close_maps_with L g h) :
+  close_maps_with (K + L) f h :=
+λ x, calc edist (f x) (h x) ≤ edist (f x) (g x) + edist (g x) (h x) : edist_triangle _ _ _
+                        ... ≤ ↑K        + ↑L                        : add_le_add (c x) (d x)
+
+/--
+If `s` is `ε`-coarsely dense in `α`, there exists a map `ret: α → s`
+such that the two composites of `ret` with `coe: s → α` are `ε`-close to the identities.
+-/
+lemma of_coarsely_dense_subset_with {ε : ℝ≥0} {s : set α} (cdw : coarsely_dense_with_in ε s univ) :
+∃ retract : α → subtype s,
+  close_maps_with ε (coe ∘ retract) id ∧
+  close_maps_with ε (retract ∘ coe) id :=
+begin
+    -- First we restate `cdw` in terms the axiom of choice likes:
+  have cdw' : ∀ x : α, ∃ y : subtype s, edist x ↑y ≤ ε, by
+  { intro x,
+    rcases cdw (mem_univ x) with ⟨y,ys,yd⟩,
+    exact ⟨⟨y,ys⟩,yd⟩, },
+  rcases classical.axiom_of_choice cdw' with ⟨ret, good⟩,
+  use ret,
+  split ;
+  { intros x,
+    dsimp,
+    specialize good x,
+    rw edist_comm,
+    exact good,},
+end
+
+end close_maps_with
