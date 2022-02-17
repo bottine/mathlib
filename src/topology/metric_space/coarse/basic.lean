@@ -35,6 +35,9 @@ open function set fintype function pseudo_emetric_space
 open_locale nnreal ennreal
 
 variables {α : Type u} [pseudo_emetric_space α]
+          {β : Type v} [pseudo_emetric_space β]
+          {ι : Type w}
+
 
 /--
 Given a pseudo-emetric space `α`, the subset `s` is `ε`-dense in the subset `t`
@@ -49,6 +52,14 @@ if any pair of distinct points of `s` has distance greater than `δ`.
 -/
 def coarsely_separated_with  (δ : ℝ≥0) (s : set α)  :=
 ∀ ⦃x⦄ (hx : x ∈ s) ⦃y⦄ (hy : y ∈ s), x ≠ y → edist x y > δ
+
+/--
+Two maps `f g` from `ι` to a pseudo-emetric space `α` are `K`-close if
+for all `x : ι`, the distance between `f x` and `g x` is at most `K`.
+-/
+def close_maps_with (K : ℝ≥0) (f g : ι → α) :=
+∀ x : ι , edist (f x) (g x) ≤ K
+
 
 namespace coarsely_dense_with_in
 
@@ -126,7 +137,19 @@ begin
   exact s_ne_t (s_max t s_sub_t t_sub_S this),
 end
 
+/--
+If `f g : ι → α` are `K`-close maps, the range of `g` is `K`-dense in the range of `f`
+-/
+lemma of_images_of_close_maps_with {K : ℝ≥0} {f g : ι → α} (clw : close_maps_with K f g) :
+  coarsely_dense_with_in K (range g) (range f) :=
+begin
+  rintros x x_in_rf,
+  rcases x_in_rf with ⟨p,rfl⟩,
+  use [g p,by simp,clw p],
+end
+
 end coarsely_dense_with_in
+
 
 namespace coarsely_separated_with
 
@@ -197,17 +220,7 @@ begin
 end
 
 
-/--
-Two maps `f g` from `ι` to a pseudo-emetric space `α` are `K`-close if
-for all `x : ι`, the distance between `f x` and `g x` is at most `K`.
--/
-def close_maps_with {ι : Type*} (K : ℝ≥0) (f g : ι → α) :=
-∀ x : ι , edist (f x) (g x) ≤ K
-
 namespace close_maps_with
-
-variables {ι : Type w}
-variables {β : Type v} [pseudo_emetric_space β]
 
 /--
 Any map `f` is `0`-close to itself.
