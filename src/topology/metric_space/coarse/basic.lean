@@ -257,6 +257,45 @@ lemma comp_left {K : ℝ≥0} {μ : Type*} {φ : μ → ι} {f g : ι → α} (c
   close_maps_with K (f ∘ φ) (g ∘ φ) := λ x, clw (φ x)
 
 /--
+If `f` is `K`-close to `g` and `K ≤ K'`, then `f` is `K'`-close to `g`.
+-/
+lemma weaken {K K' : ℝ≥0} {f g: ι → α}  (leK : K ≤ K') (c : close_maps_with K f g)  :
+  close_maps_with K' f g := λ x, (c x).trans (ennreal.coe_le_coe.2 leK)
+
+
+/--
+If `s` is `ε`-coarsely dense in `α`, there exists a retraction `ret: α → s`
+such that `coe ∘ ret` is `ε`-close to the identities.
+-/
+lemma of_coarsely_dense_subset_with' {ε : ℝ≥0} {s : set α} (cdw : coarsely_dense_with_in ε s univ) :
+∃ retract : α → subtype s,
+  close_maps_with ε (coe ∘ retract) id ∧
+  (retract ∘ coe) = id :=
+begin
+    -- First we restate `cdw` in terms the axiom of choice likes:
+  have cdw' : ∀ x : α, ∃ y : subtype s, (edist x ↑y ≤ ε) ∧ (x ∈ s → x = ↑y), by
+  { intro x,
+    by_cases h : x ∈ s,
+    { use [x, h],
+      simp,},
+    { rcases cdw (mem_univ x) with ⟨y,ys,yd⟩,
+      use [⟨y,ys⟩,yd],},},
+  rcases classical.axiom_of_choice cdw' with ⟨ret, good⟩,
+  use ret,
+  split,
+  { intros x,
+    dsimp,
+    specialize good x,
+    rw edist_comm,
+    exact good.1,},
+  { apply funext,
+    rintros ⟨x,x_in_s⟩,
+    specialize good x,
+    ext,
+    exact (good.2 x_in_s).symm,},
+end
+
+/--
 If `s` is `ε`-coarsely dense in `α`, there exists a map `ret: α → s`
 such that the two composites of `ret` with `coe: s → α` are `ε`-close to the identities.
 -/
@@ -265,19 +304,8 @@ lemma of_coarsely_dense_subset_with {ε : ℝ≥0} {s : set α} (cdw : coarsely_
   close_maps_with ε (coe ∘ retract) id ∧
   close_maps_with ε (retract ∘ coe) id :=
 begin
-    -- First we restate `cdw` in terms the axiom of choice likes:
-  have cdw' : ∀ x : α, ∃ y : subtype s, edist x ↑y ≤ ε, by
-  { intro x,
-    rcases cdw (mem_univ x) with ⟨y,ys,yd⟩,
-    exact ⟨⟨y,ys⟩,yd⟩, },
-  rcases classical.axiom_of_choice cdw' with ⟨ret, good⟩,
-  use ret,
-  split ;
-  { intros x,
-    dsimp,
-    specialize good x,
-    rw edist_comm,
-    exact good,},
+  rcases of_coarsely_dense_subset_with' cdw with ⟨ret,left,right⟩,
+  exact ⟨ret,left,right.symm ▸ ((close_maps_with.refl id).weaken (zero_le ε))⟩
 end
 
 end close_maps_with
