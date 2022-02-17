@@ -7,12 +7,16 @@ import topology.metric_space.emetric_space
 /-!
 # Basic definitions of coarse geometry on metric space
 
-This file defines the notions of “coarsely dense” and “coarsely separated” subsets
-of a pseudo-emetric space.
+This file defines basic “coarse metric” notions on pseudo-emetric spaces.
 If `α` is a pseudo-emetric space, `s t : set α` and `ε δ : ℝ≥0`:
 
 * `s` is `ε`-dense in `t` if any point of `t` is at distance at most `ε` from some point of `s`;
 * `s` is `δ`-separated if any two distinct points of `s` have distance greater than `δ`.
+
+If `f g : ι → α` and `K : ℝ≥0`:
+
+* `f` and `g` are `K`-close if given any `p : ι`, the distance between `f p` and `g p` is at most
+  `K`.
 
 ## Main result
 
@@ -239,18 +243,18 @@ begin
 end
 
 /--
-Precomposing close maps with any given map preserves closeness.
--/
-lemma comp_left {K : ℝ≥0} {μ : Type*} {φ : μ → ι} {f g : ι → α} (clw : close_maps_with K f g) :
-  close_maps_with K (f ∘ φ) (g ∘ φ) := λ x, clw (φ x)
-
-/--
 If `f` is `K`-close to `g`, which is `L`-close to `h`, then `f` is `(K+L)`-close to `h`.
 -/
 lemma trans {K L : ℝ≥0} {f g h: ι → α} (c : close_maps_with K f g) (d : close_maps_with L g h) :
   close_maps_with (K + L) f h :=
 λ x, calc edist (f x) (h x) ≤ edist (f x) (g x) + edist (g x) (h x) : edist_triangle _ _ _
                         ... ≤ ↑K        + ↑L                        : add_le_add (c x) (d x)
+
+/--
+Precomposing `K`-close maps with any given map preserves `K`-closeness.
+-/
+lemma comp_left {K : ℝ≥0} {μ : Type*} {φ : μ → ι} {f g : ι → α} (clw : close_maps_with K f g) :
+  close_maps_with K (f ∘ φ) (g ∘ φ) := λ x, clw (φ x)
 
 /--
 If `s` is `ε`-coarsely dense in `α`, there exists a map `ret: α → s`
