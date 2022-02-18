@@ -5,6 +5,7 @@ Authors: Rémi Bottinelli
 -/
 import topology.metric_space.basic
 import topology.metric_space.coarse.basic
+import topology.metric_space.coarse.coarse_map
 /-!
 # Coarse Lipschitz maps
 
@@ -33,11 +34,22 @@ variables {α : Type u} [pseudo_metric_space α]
           {δ : Type x} [pseudo_metric_space δ]
 
 
+private def aff (K L : ℝ≥0) := λ (x : ℝ), (L : ℝ) + (K : ℝ) * x
+
+private lemma aff_mono (K L : ℝ≥0) : monotone (aff K L) :=
+begin
+  rintros x y xley,
+  unfold aff,
+  simp,
+  ring_nf,
+  exact  mul_mono_nonneg K.2 xley,
+end
+
 /--
 Given pseudo-metric spaces `α` and `β`, the map `f : α → β` is (coarse) `(K,L)`-(coarse) Lipschitz
 if given any `x y : α`, we have `dist (f x) (f y) ≤ L + K * (dist x y)`.
 -/
-def coarse_lipschitz_with (K L : ℝ≥0) (f : α → β) := ∀ x y, dist (f x) (f y) ≤ L + K * dist x y
+def coarse_lipschitz_with (K L : ℝ≥0) (f : α → β) := controlled_with (aff K L) (aff_mono K L) f
 
 
 namespace coarse_lipschitz_with
