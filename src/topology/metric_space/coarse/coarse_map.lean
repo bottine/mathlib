@@ -33,6 +33,12 @@ variables {α : Type u} [pseudo_metric_space α]
           {δ : Type x} [pseudo_metric_space δ]
 
 
+structure controlled_map
+  (f : α → β)
+  (Φ : ℝ → ℝ)
+  (Φm : monotone Φ)
+  (controlled : ∀ x y, dist (f x) (f y) ≤ Φ (dist x y))
+
 def controlled_with (Φ : ℝ → ℝ) (Φm : monotone Φ) (f : α → β) :=
 ∀ x y, dist (f x) (f y) ≤ Φ (dist x y)
 
@@ -64,7 +70,7 @@ lemma comp
 
 lemma of_close_maps_with {C : ℝ} {Φ : ℝ → ℝ} {Φm : monotone Φ} {f f' : α → β }
   (c : close_maps_with C f f') (clf : controlled_with Φ Φm f) :
-  controlled_with  (λ x, Φ x + 2*C) {!!} f'  :=
+  controlled_with  (λ x, 2*C + Φ x) (monotone.const_add Φm (2*C)) f'  :=
 λ x y, calc dist (f' x)                                       (f' y)
           ≤ dist (f' x) (f x) + dist (f x) (f y) + dist (f y) (f' y) : dist_triangle4 _ _ _ _
       ... ≤ C                 + dist (f x) (f y) + dist (f y) (f' y) : add_le_add (add_le_add (c.symm x) le_rfl) le_rfl
@@ -87,7 +93,7 @@ end controlled_with
 
 namespace coarsely_dense_with_in
 
-lemma of_coarse_images
+lemma of_controlled_images
   {Φ : ℝ → ℝ} {Φm : monotone Φ} {f : α → β} (clf : controlled_with Φ Φm f)
   {ε : ℝ} {s t : set α} (cdwi : coarsely_dense_with_in ε s t) :
   coarsely_dense_with_in (Φ ε) (f '' s) (f '' t) :=
@@ -101,3 +107,27 @@ begin
 end
 
 end coarsely_dense_with_in
+
+
+namespace close_maps_with
+
+  lemma comp {f f' : α → β} {g g' : β → γ}
+    {Φ : ℝ → ℝ} {Φm : monotone Φ} (clg : controlled_with Φ Φm g)
+    {εf εg : ℝ} (cmwf: close_maps_with εf f f') (cmwg : close_maps_with εg g g'):
+  close_maps_with (Φ εf + εg) (g ∘ f) (g' ∘ f') :=
+  λ x,  calc dist ((g∘f) x) ((g'∘f')x)
+          = dist (g $ f x) (g' $ f' x) : by simp
+     ...  ≤ dist (g $ f x) (g $ f' x) + dist (g $ f' x) (g' $ f' x)
+          : pseudo_metric_space.dist_triangle _ _ _
+     ...  ≤ Φ (dist (f x) (f' x)) + dist (g $ f' x) (g' $ f' x)
+          : add_le_add (clg (f x) (f' x)) rfl.le
+     ...  ≤ Φ εf + εg
+          : add_le_add (Φm $ cmwf x) $ cmwg (f' x)
+
+  lemma comp_right {f f' : α → β} {g : β → γ}
+    {Φ : ℝ → ℝ} {Φm : monotone Φ} (clg : controlled_with Φ Φm g)
+    {εf : ℝ} {cmwf: close_maps_with εf f f'} :
+  close_maps_with (Φ εf) (g ∘ f) (g ∘ f') :=
+  (by {simp} : Φ εf + 0 = Φ εf) ▸ close_maps_with.comp clg cmwf (close_maps_with.refl g)
+
+end close_maps_with
