@@ -55,9 +55,7 @@ def coarse_lipschitz_with (K L : ℝ≥0) (f : α → β) := controlled_with (af
 namespace coarse_lipschitz_with
 
 lemma of_dist_le {f : α → β} (h : ∀ x y, dist (f x) (f y) ≤ dist x y) :
-  coarse_lipschitz_with 1 0 f :=
-λ x y, by simp only [nnreal.coe_one, nnreal.coe_zero, zero_add, one_mul, h]
-
+  coarse_lipschitz_with 1 0 f := controlled_with.of_dist_le h
 @[protected]
 lemma const (b : β) : coarse_lipschitz_with 0 0 (λa:α, b) :=
 λ x y, by simp only [dist_self, zero_le]

@@ -131,3 +131,4 @@ namespace close_maps_with
   (by {simp} : Φ εf + 0 = Φ εf) ▸ close_maps_with.comp clg cmwf (close_maps_with.refl g)
 
 end close_maps_with
+

@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémi Bottinelli
 -/
 import topology.metric_space.basic
+import topology.metric_space.isometry
 /-!
 # Basic definitions of coarse geometry on metric space
 
@@ -35,13 +36,95 @@ coarse geometry, metric space
 
 universes u v w
 
-open function set fintype function
+open classical function set fintype function
 open_locale nnreal ennreal
+
+noncomputable theory
+
 
 variables {α : Type u} [pseudo_metric_space α]
           {β : Type v} [pseudo_metric_space β]
           {ι : Type w}
 
+
+@[class] structure finite_balls :=
+(fintype_ball : ∀ x : α, ∀ r : ℕ, fintype (metric.ball x r))
+
+
+attribute [instance] finite_balls.fintype_ball
+local attribute [instance] prop_decidable
+
+def uniformly_finite_balls_with [@finite_balls α _] (k : ℕ → ℕ) :=
+∀ x : α, ∀ r : ℕ,  card (metric.ball x r) ≤ k r
+
+namespace uniformly_finite_balls_with
+
+lemma weaken  [@finite_balls α _] {k k' : ℕ → ℕ} (hk : ∀ r, k r ≤ k' r) :
+  @uniformly_finite_balls_with α _ _ k → @uniformly_finite_balls_with α _ _ k' :=
+λ ufbw x r, (ufbw x r).trans (hk r)
+
+
+/--
+If `k: ℕ → ℕ` bounds the cardinalities of balls in `α`, then so does `monofy k`.
+-/
+noncomputable def monofy (k : ℕ → ℕ) : ℕ → ℕ := λ (r : ℕ), Inf $ k '' {s : ℕ | r ≤ s}
+
+lemma monofy_good (k : ℕ → ℕ) : monotone (monofy k) ∧ (monofy k) ≤ k :=
+begin
+  split,
+  { rintros x y xley,
+    have : {s : ℕ | y ≤ s} ⊆ {s : ℕ | x ≤ s}, from λ s yles, xley.trans yles,
+    have : (k '' {s : ℕ | y ≤ s}) ⊆ (k '' {s : ℕ | x ≤ s}), from image_subset k this,
+    unfold monofy,
+    exact cInf_le_cInf
+      (by {unfold bdd_below,unfold lower_bounds,use 0,simp})
+      (by {use [k y,y],simp})
+      this,},
+  { intro x,
+    unfold monofy,
+    have : k x ∈ k '' {s : ℕ | x ≤ s}, by {use x, simp},
+    exact cInf_le
+      (by {unfold bdd_below,unfold lower_bounds,use 0,simp})
+      this,},
+end
+
+lemma uniformly_finite_balls_with_monofy [@finite_balls α _] (k : ℕ → ℕ) :
+  @uniformly_finite_balls_with α _ _ k → @uniformly_finite_balls_with α _ _ (monofy k) :=
+λ ufbw x r, begin
+  have : ∃ (s : ℕ), r ≤ s ∧ k s = (monofy k) r,
+  { let k_img := k '' {s : ℕ | r ≤ s},
+    let i := Inf k_img,
+    unfold monofy,
+    have : i ∈ k_img, from nat.Inf_mem (by {use k r, use r, simp,}),
+    rcases this with ⟨s,r_le_s,ks_eq_i⟩,
+    use [s,r_le_s],
+    rw ks_eq_i,},
+  rcases this with ⟨s,r_le_s,s_ok⟩,
+  have : metric.ball x r ⊆ metric.ball x s,
+    from metric.ball_subset_ball (nat.cast_le.mpr r_le_s),
+  rw ←s_ok,
+  exact (card_le_of_subset this).trans (ufbw x s),
+end
+
+lemma of_transitive
+  [inhabited α]
+  [fb : @finite_balls α _]
+  (tr : ∀ x y : α, ∃ f : α ≃ᵢ α, (f x = y)) :
+  ∃ k : ℕ → ℕ, @uniformly_finite_balls_with α _ _ k :=
+begin
+  let x := arbitrary α,
+  use λ (r : ℕ), card (metric.ball x r),
+  intros y r,
+  rcases tr x y with ⟨fᵢ,fxy⟩,
+  rw ←fxy,
+  have imgisball := isometric.image_ball fᵢ x r,
+  have imgcard   := card_image_of_injective (metric.ball x r) (isometric.injective fᵢ),
+  simp_rw [imgisball,imgcard] at *,
+end
+
+
+
+end uniformly_finite_balls_with
 
 /--
 Given a pseudo-metric space `α`, the subset `s` is `ε`-dense in the subset `t`
