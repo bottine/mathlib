@@ -50,12 +50,45 @@ variables {α : Type u} [pseudo_metric_space α]
 @[class] structure finite_balls :=
 (fintype_ball : ∀ x : α, ∀ r : ℕ, fintype (metric.ball x r))
 
+-- is this useful?
+instance finite_balls.fintype_ball' [@finite_balls α _] (x : α) (r : ℕ) :
+  fintype (metric.ball x r) := finite_balls.fintype_ball x r
 
 attribute [instance] finite_balls.fintype_ball
 local attribute [instance] prop_decidable
 
 def uniformly_finite_balls_with [@finite_balls α _] (k : ℕ → ℕ) :=
 ∀ x : α, ∀ r : ℕ,  card (metric.ball x r) ≤ k r
+
+
+namespace finite_balls
+
+
+
+
+lemma countable [loc_fin : @finite_balls α _] [inhabited α]  :
+  countable (@univ α) :=
+begin
+  let x := arbitrary α,
+  have eq_uni : @univ α = ⋃ (r : ℕ), metric.ball x r, by
+  { apply set.ext,
+    intro y,
+    split,
+    { rcases exists_nat_gt (dist x y) with ⟨dnat,ltdnat⟩,
+      have : y ∈ metric.ball x dnat, by simp [dist_comm y x,ltdnat],
+      intro,
+      exact mem_Union.mpr ⟨dnat,this⟩,
+    },
+    { simp, },
+  },
+  have ctble_uni : countable (⋃ (r : ℕ), metric.ball x r),
+    from countable_Union (λ (r : ℕ), by {sorry, }),
+  rw eq_uni,
+  exact ctble_uni,
+end
+
+end finite_balls
+
 
 namespace uniformly_finite_balls_with
 
