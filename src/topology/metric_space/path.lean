@@ -36,9 +36,26 @@ has_le.le.antisymm (infi_le (@L a b) pmin) (le_infi Hmin)
 
 lemma edist_min_nat (a b : α)
   (hnat : ∀ p : P a b, ∃ np : ℕ, L p = np)
-  (hnempty : nonempty (P a b)) : ∃ p : P a b, edist a b = L p :=
+  (hnempty : nonempty (P a b)) :
+∃ p : P a b, edist a b = L p :=
 begin
-
+  let Lℕ : set ℕ := {n : ℕ | ∃ (p : P a b), L p = n},
+  have hLℕ : ∃ n, n ∈ Lℕ, by {
+    let p := nonempty.some hnempty,
+    rcases hnat p with ⟨np, pgood⟩,
+    exact ⟨np,p,pgood⟩,},
+  let n := nat.find hLℕ,
+  rcases nat.find_spec hLℕ with ⟨p,pgood⟩,
+  have : ∀ q : P a b, L p ≤ L q, by {
+    intro q,
+    rcases hnat q with ⟨nq,qgood⟩,
+    have : nq ∈ Lℕ, from ⟨q,qgood⟩,
+    have : n ≤ nq, from nat.find_min' hLℕ ‹nq∈Lℕ›,
+    rw [qgood,pgood],
+    exact coe_nat_le_coe_nat.mpr ‹n≤nq›,
+  },
+  use p,
+  exact edist_min a b p this,
 end
 
 lemma edist_refl (a : α) : edist a a = 0 := Lrefl a
