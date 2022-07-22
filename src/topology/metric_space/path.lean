@@ -8,11 +8,18 @@ open_locale classical ennreal
 open emetric ennreal
 
 
-
+structure Paths (α : Type*) :=
+  (P : α → α → Type*)
+  (Psymm : Π {a b : α}, P a b → P b a)
+  (Ptran : Π {a b c : α}, P a b → P b c → P a c)
+  (L : Π {a b : α}, P a b → ennreal)
+  (Lrefl : Π a : α, infi (@L a a) = (0 : ennreal))
+  (Lsymm : Π a b : α, Π p : P a b, L (Psymm p) ≤ L p)
+  (Ltran : Π a b c : α, Π p : P a b, Π q : P b c, L (Ptran p q) ≤ L p + L q)
 
 section Path_Metric
 
-parameters (α : Type*)
+parameter (α : Type*)
 
 parameters (P : α → α → Type*)
            (Psymm : Π {a b : α}, P a b → P b a)
