@@ -73,8 +73,6 @@ unique_of_exists_unique
   (classical.some_spec (exists_of_exists_unique (conn_comp_outside_back_unique G (k.trans h) c)))
 
 
-
-
 -- def ends_system := category_theory.functor.mk (conn_comp_outside G) (conn_comp_outside_back G)
 
 
