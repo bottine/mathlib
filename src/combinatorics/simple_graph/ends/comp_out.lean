@@ -183,6 +183,11 @@ def dis (C : G.comp_out K) := disjoint K (C : set V)
 lemma comp_out.empty : (G.comp_out ∅) = G.connected_component :=
 by {unfold comp_out,rw out.empty,}
 
+lemma comp_out.eq_of_eq_set {C D : G.comp_out K} : (C : set V) = ↑D ↔ C = D :=
+begin
+  sorry,
+end
+
 lemma of_empty_is_singleton (Gpc : G.preconnected) : ∀ C : (G.comp_out ∅),  (C : set V) = univ :=
 begin
   rintro C,
@@ -653,6 +658,8 @@ begin
   exact k ∪ ‹finite_pieces.finite›.to_finset,
 end
 
+lemma extend_with_fin.def : ∀ x, x ∈ ↑(extend_with_fin G Gpc Glf k kn) ↔ (x ∈ k) ∨ (∃ (c : G.comp_out k) (cfin : c.fin), x ∈ c) := sorry
+
 lemma preconnected_of_all_adj {α : Type*} {k : finset V} (kconn : (G.induce ↑k).connected) {S : α → set V} {hS_fin : set.finite (set.Union S)} (hS_conn : ∀ {A : α}, (G.induce (S A)).connected) : (∀ {A : α}, (∃ (ck : V × V), ck.1 ∈ S A ∧ ck.2 ∈ k ∧ G.adj ck.1 ck.2) ∨ (S A ⊆ ↑k)) → (G.induce ↑(k ∪ hS_fin.to_finset)).connected :=
 begin
   intro h,
@@ -686,7 +693,20 @@ begin
   exact subset_union_left k _,
 end
 
-lemma extend_with_fin.dis_iff_comp_inf {C : G.comp_out ↑(extend_with_fin G Gpc Glf k kn)} : C.dis ↔ C.inf := sorry
+lemma extend_with_fin.dis_iff_comp_inf {C : G.comp_out ↑(extend_with_fin G Gpc Glf k kn)} : C.dis ↔ C.inf :=
+begin
+  dsimp only [dis],
+  split,
+  { intros hdis hinf,
+    apply hdis,
+    sorry, -- every component is non-empty, so the point in the component will do
+    sorry
+  }, {
+    rintros Cinf v ⟨hvextend, hvC⟩,
+    show false, apply Cinf, clear Cinf,
+    sorry -- it follows from cases on `hvextend` that `v` is contained in a finite component, and as components are disjoint, that must be `C` itself
+  }
+end
 
 lemma extend_with_fin.inf_of_dis_extend {C : G.comp_out ↑k} : C.inf → disjoint (extend_with_fin G Gpc Glf k kn : set V) (C : set V) := sorry
 
@@ -714,23 +734,25 @@ begin
   split,
   { rintro ⟨D, Dinf, DC⟩,
     use D.lift (connected_component_mk _) (by {
-      intros v w p hp, simp, apply nonempty.intro,
+      intros v w p hp, simp only [connected_component.eq], apply nonempty.intro,
       sorry -- this is just a "coercion" of the path `p`
     }),
+    have Ddis := extend_with_fin.inf_of_dis_extend G Gpc Glf k kn Dinf,
+    -- elaborate procedure to get rid of the `lift`
+    revert D, intro D, refine D.ind _,
+    intros v Dinf DC Ddis, simp only [connected_component.lift_mk],
     split,
-    { -- rw ← extend_with_fin.dis_iff_comp_inf at Dinf,
-      -- elaborate procedure to get rid of the `lift`
-      clear DC, revert D, intro D, refine D.ind _,
-      simp, intros v Dinf,
-      sorry, },
-    { let Ddis := extend_with_fin.inf_of_dis_extend G Gpc Glf k kn Dinf,
-      rw DC, clear DC,
-      revert D, intro D, refine D.ind _,
-      intros v Dinf Ddis,
-      ext, simp,
+    { intros w hw,
+      simp only [set.inf_eq_inter, mem_inter_eq, mem_coe, set_like.mem_coe, mem_supp_iff, connected_component.eq] at hw,
+      cases hw with hwextend hwpath,
+      show false, apply Ddis,
+      simp, split,
+      apply hwextend,
+      sorry, -- a path coercion
+      },
+    { ext, simp only [set_like.mem_coe, mem_supp_iff, connected_component.eq],
       split,
-      {
-        sorry,
+      {  sorry, -- (harder) path coercion
       },
       {sorry} -- "coercion" of the path
      }
@@ -742,11 +764,11 @@ begin
       rw [extend_with_fin.dis_iff_comp_inf] at Ddis,
       exact Ddis, },
     { rw DC,
-      ext,
-      split,
-      {sorry}, -- true in general
-      {sorry,}
-    }}
+      apply eq.symm,
+      show (back _ D : set V) = ↑D,
+      suffices : back _ D = D, from by sorry {rw [comp_out.eq_of_eq_set]},
+      rw eq_back_iff_sub,
+      simp only [coe_subset, finset.subset.refl], }}
 end
 
 lemma extend_connected_with_fin_bundled  :
