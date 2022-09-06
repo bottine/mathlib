@@ -686,7 +686,9 @@ begin
   exact subset_union_left k _,
 end
 
-lemma extend_with_fin.dis_iff_comp_inf {v : V} : disjoint ↑(extend_with_fin G Gpc Glf k kn) (connected_component_mk (G.out  ↑(extend_with_fin G Gpc Glf k kn)) v : set V) ↔ inf (connected_component_mk (G.out k) v) := sorry
+lemma extend_with_fin.dis_iff_comp_inf {C : G.comp_out ↑(extend_with_fin G Gpc Glf k kn)} : C.dis ↔ C.inf := sorry
+
+lemma extend_with_fin.inf_of_dis_extend {C : G.comp_out ↑k} : C.inf → disjoint (extend_with_fin G Gpc Glf k kn : set V) (C : set V) := sorry
 
 lemma extend_with_fin.connected (kconn : (G.induce ↑k).connected) :
   (G.induce ↑(extend_with_fin G Gpc Glf k kn)).connected :=
@@ -716,32 +718,34 @@ begin
       sorry -- this is just a "coercion" of the path `p`
     }),
     split,
-    { revert D, intro D, refine D.ind _,
-      intro v,
-      simp, dsimp [dis],
-      intro Dinf, intro DC,
-      rw [extend_with_fin.dis_iff_comp_inf],
-      sorry -- this uses `Dinf` and should be factored out as a lemma
-    },
-    { rw DC, clear DC,
+    { -- rw ← extend_with_fin.dis_iff_comp_inf at Dinf,
+      -- elaborate procedure to get rid of the `lift`
+      clear DC, revert D, intro D, refine D.ind _,
+      simp, intros v Dinf,
+      sorry, },
+    { let Ddis := extend_with_fin.inf_of_dis_extend G Gpc Glf k kn Dinf,
+      rw DC, clear DC,
       revert D, intro D, refine D.ind _,
-      intro v, simp,
-      intro Dinf,
-      dsimp [extend_with_fin],
+      intros v Dinf Ddis,
       ext, simp,
-      sorry,
+      split,
+      {
+        sorry,
+      },
+      {sorry} -- "coercion" of the path
      }
   },
   { rintro ⟨D, Ddis, DC⟩,
     use D.back (extend_with_fin.sub _ _ _ _ _),
     split,
-    { dsimp [dis] at Ddis,
-      apply back_of_inf,
-      sorry, },
+    { apply back_of_inf,
+      rw [extend_with_fin.dis_iff_comp_inf] at Ddis,
+      exact Ddis, },
     { rw DC,
-      -- ext,
-      -- refine D.ind _, -- ?
-      sorry,
+      ext,
+      split,
+      {sorry}, -- true in general
+      {sorry,}
     }}
 end
 
