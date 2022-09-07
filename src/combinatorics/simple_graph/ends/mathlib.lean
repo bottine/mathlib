@@ -637,3 +637,43 @@ begin
 end
 
 end finset
+
+section functoriality
+
+--mathlib
+def thicken_ (G : simple_graph V) (K : finset V) (m : ℕ) : finset V :=
+begin
+  let K'set := {v : V | ∃ k ∈ K, G.dist v k ≤ m},
+  have : K'set.finite := sorry, -- locally finite TODO: WIP approach in `.mathlib.lean`
+  exact this.to_finset,
+end
+
+--mathlib
+lemma thicken_.sub (G : simple_graph V) (K : finset V) (m : ℕ) :
+  K ⊆ thicken_ G K m :=
+begin
+  rintro k kK,
+  dsimp [thicken_],
+  simp only [finite.mem_to_finset, mem_set_of_eq, exists_prop],
+  use k, split, exact kK,
+  have : G.dist k k = 0 := by sorry {exact dist_self _},
+  rw this,
+  apply zero_le,
+end
+
+--mathlib
+lemma thicken_.eq (G : simple_graph V) (K : finset V) (m : ℕ) :
+  (thicken_ G K m : set V) = {v : V | ∃ k ∈ K, G.dist v k ≤ m} := sorry
+
+--mathlib
+lemma disjoint.preimage' {α β : Type*} {f : α → β} (s : set α) (t : set β) :
+  disjoint s (set.preimage f t) → disjoint (f '' s) t :=
+begin
+  simp only [set.disjoint_iff],
+  rintro dis, rintro y ⟨⟨x,⟨a,rfl⟩⟩,b⟩,
+  apply dis ⟨a,b⟩,
+end
+
+
+
+end functoriality
