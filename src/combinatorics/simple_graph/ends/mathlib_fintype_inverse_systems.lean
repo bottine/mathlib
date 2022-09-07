@@ -29,25 +29,21 @@ begin
   by_cases Snempty : S.nonempty,
   { let s₀ := function.argmin_on (mcard) (nat.lt_wf) S Snempty,
     let hs₀ := function.argmin_on_mem (mcard) (nat.lt_wf) S Snempty,
-    suffices : s₀ = S.sInter, {
-      rw ←this,
-      exact allsnempty s₀ hs₀,
-    },
+    suffices : s₀ = S.sInter,
+    { rw ←this,
+      exact allsnempty s₀ hs₀,},
     apply set.ext,
     rintro x,
     split,
     { rintro xs₀,
-      --rw set.mem_sInter,
       rintro s hs,
       rcases dir s₀ hs₀ s hs with ⟨t,ht,ts₀,ts⟩,
-      suffices : t = s₀,{
-        rw this at ts,
+      suffices : t = s₀,
+      { rw this at ts,
         exact ts xs₀,},
       have : mcard s₀ ≤ mcard t, from function.argmin_on_le (mcard) (nat.lt_wf) S ht,
-      exact set.eq_of_subset_of_card_le ts₀ this,
-    },
-    { rintro xI, exact set.mem_sInter.mp xI s₀ hs₀, },
-  },
+      exact set.eq_of_subset_of_card_le ts₀ this, },
+    { rintro xI, exact set.mem_sInter.mp xI s₀ hs₀, },},
   { rw set.not_nonempty_iff_eq_empty at Snempty,
     simp only [Snempty, set.sInter_empty, set.univ_nonempty],},
 end
@@ -74,15 +70,20 @@ end
 
 
 
-
+/-- `F.is_surjective` means that all `F.map …` are surjective -/
 def is_surjective : Prop := ∀ (i j : J) (h : i ≤ j) (x : F.obj j), x ∈ set.range (F.map (hom_of_le h))
 
+/-- `F.is_surjective_on j` means that all `F.map` with codomain `j` are surjective-/
 def is_surjective_on (j : J) : Prop :=
   ∀ (i : J) (h : i ≤ j), function.surjective (F.map (hom_of_le h))
 
 lemma is_surjective_iff :
   (is_surjective F) ↔ ∀ (i j : J) (h : i ≤ j), function.surjective (F.map (hom_of_le h)) := by refl
 
+/--
+`F.to_surjective` is the “surjective” part of `F`, in the sense that only the elements `x : F.obj j`
+that have preimages through all `F.map` with codomain `F.obj j` are kept.
+  -/
 def to_surjective (F : J ⥤ Type v) : J ⥤ Type v :=
   F.subfunctor
   (λ j, ⋂ (i : {i | i ≤ j}), set.range (F.map  (hom_of_le i.prop)))
@@ -96,54 +97,44 @@ def to_surjective (F : J ⥤ Type v) : J ⥤ Type v :=
     refl, })
 
 
-lemma to_surjective.subfunctor :
-  ∀ (i j : J) (ij : i ⟶ j), subtype.simps.coe ∘ (to_surjective F).map ij = (F.map ij) ∘ subtype.simps.coe :=
-begin
-  rintros, ext, refl,
-end
+lemma to_surjective.subfunctor  (i j : J) (ij : i ⟶ j) :
+  subtype.simps.coe ∘ (to_surjective F).map ij = (F.map ij) ∘ subtype.simps.coe := by
+{ rintros, ext, refl, }
 
-lemma to_surjective.subfunctor_apply :
-  ∀ (i j : J) (ij : i ⟶ j) (x : (to_surjective F).obj i), subtype.simps.coe ((to_surjective F).map ij x) = F.map ij (subtype.simps.coe x) :=
-begin
-  rintros, refl
-end
+lemma to_surjective.subfunctor_apply (i j : J) (ij : i ⟶ j) (x : (to_surjective F).obj i) :
+ subtype.simps.coe ((to_surjective F).map ij x) = F.map ij (subtype.simps.coe x) := by
+{ rintros, refl, }
 
 instance to_surjective.fintype [Π (j : J), fintype (F.obj j)] :
   Π (j : J), fintype  ((to_surjective F).obj j) :=
 begin
   rintro j,
-  unfold to_surjective,
-  simp only [set.mem_set_of_eq, set.Inter_coe_set],
   apply subtype.fintype,
 end
 
 
-instance to_surjective.nonempty [Π (j : J), fintype (F.obj j)] [nempties : Π (j : J), nonempty (F.obj j)] :
+
+instance to_surjective.nonempty
+  [Π (j : J), fintype (F.obj j)] [Π (j : J), nonempty (F.obj j)] :
   Π (j : J), nonempty  ((to_surjective F).obj j) :=
 begin
   rintro j,
-  unfold to_surjective,
-  dsimp only [functor.subfunctor],
+  dsimp only [to_surjective,functor.subfunctor],
   rw nonempty_subtype,
   refine bInter_of_directed_nonempty _ _ _,
   { rintro s ⟨⟨i,ij⟩,rfl⟩,
-    simp only [set.mem_set_of_eq] at ij,
     exact set.range_nonempty _,},
   { -- Probably heavily golfable
     rintro X ⟨⟨i,ij⟩,rfl⟩ Y ⟨⟨k,kj⟩,rfl⟩,
-    rw set.mem_set_of_eq at ij kj,
     obtain ⟨l,lk,li⟩ := directed_of (≥) k i,
     have : hom_of_le lk ≫ hom_of_le kj = hom_of_le li ≫ hom_of_le ij, by reflexivity,
     use [set.range (F.map $ hom_of_le lk ≫ hom_of_le kj),l,lk.le.trans kj],
-    { simp only, refl, },
-    { simp only,
-      split,
+    { refl, },
+    { split,
       { rw [this,functor.map_comp /-F hli hij-/,types_comp],
         apply set.range_comp_subset_range,},
-      {
-        rw [functor.map_comp /-F hlk hkj-/,types_comp],
-        apply set.range_comp_subset_range,},},
-  },
+      { rw [functor.map_comp /-F hlk hkj-/,types_comp],
+        apply set.range_comp_subset_range,},},},
 end
 
 /-
@@ -163,7 +154,7 @@ lemma to_surjective.is_surjective
   [Π (j : J), fintype (F.obj j)] [nempties : Π (j : J), nonempty (F.obj j)] :
   is_surjective (to_surjective F) :=
 begin
-  unfold is_surjective,
+  --unfold is_surjective,
   rintros i j ij ⟨x,xh⟩,
 
 
@@ -219,19 +210,17 @@ end
 lemma sections_in_to_surjective (s : F.sections) (j : J) :
   (s.val j) ∈ set.range (subtype.simps.coe : ((to_surjective F).obj j) → F.obj j) :=
 begin
-  have : ∀ i : {i | i ≤ j}, s.val j ∈ set.range (F.map $ hom_of_le i.prop) :=
-    λ ⟨i,ij⟩, ⟨s.val i, s.prop (hom_of_le ij)⟩,
-
-  rw set.mem_range,
-  simp only [set.mem_set_of_eq, set.Inter_coe_set, subtype.val_eq_coe, subtype.exists],
+  simp only [set.mem_range,set.mem_set_of_eq, set.Inter_coe_set, subtype.val_eq_coe, subtype.exists],
   use s.val j,
   split,
   { refl, },
-  { rintro s ⟨i,rfl⟩, simp only [set.mem_Inter], intro ij, exact this ⟨i,ij⟩, },
+  { rintro s ⟨i,rfl⟩,
+    simp only [set.mem_Inter], intro ij,
+    exact ⟨s.val i, s.prop (hom_of_le ij)⟩, },
 end
 
 lemma sections_in_surjective' (s : F.sections) (j : J) :
-  (s.val j) ∈ ⋂ (i : { i | i ≤ j}), set.range (F.map  (hom_of_le i.prop)) :=
+  (s.val j) ∈ ⋂ (i : { i | i ≤ j}), set.range (F.map (hom_of_le i.prop)) :=
 begin
   rw set.mem_Inter,
   rintro ⟨i,ij⟩,
@@ -241,30 +230,26 @@ end
 
 def to_surjective.sections_equiv : F.sections ≃ (to_surjective F).sections :=
 begin
-  split, rotate 2,
+  fsplit,
   { rintro s,
-    split, rotate,
-    { exact λ j, ⟨s.val j, sections_in_surjective' F s j⟩,},
-    { exact  λ i j ij, subtype.mk_eq_mk.mpr (s.prop ij),}
+    exact ⟨λ j, ⟨s.val j, sections_in_surjective' F s j⟩,λ i j ij, subtype.mk_eq_mk.mpr (s.prop ij)⟩,
   },
   { rintro ⟨s,sec⟩,
-    split, rotate,
-    { exact λ j, (s j).val,},
-    { rintro i j ij, -- not very pretty…
-      have : ((s i).val : F.obj i) = subtype.simps.coe (s i), by reflexivity,
-      rw [this,←to_surjective.subfunctor_apply],
-      simp only [subtype.simps.coe, subtype.val_eq_coe],
-      rw subtype.coe_inj,
-      exact sec ij,},},
+    refine ⟨λ j, (s j).val,_⟩,
+    rintro i j ij,
+    let := sec ij,
+    --dsimp [to_surjective,functor.subfunctor,set.maps_to.restrict,subtype.map] at this,
+    simp only [←subtype.coe_inj, subtype.coe_mk] at this,
+    exact this, },
   { simp only [function.left_inverse, eq_self_iff_true, set_coe.forall, implies_true_iff], },
-  { simp only [function.right_inverse, function.left_inverse, subtype.val_eq_coe, set_coe.forall, subtype.coe_mk, subtype.coe_eta,
-  eq_self_iff_true, implies_true_iff],  },
+  { simp only [function.right_inverse, function.left_inverse, subtype.val_eq_coe, set_coe.forall,
+               subtype.coe_mk, subtype.coe_eta, eq_self_iff_true, implies_true_iff], },
 end
 
 def decomposition (j : J) :
   F.sections ≃ Σ (x : F.obj j), {s : F.sections | s.val j = x} :=
 begin
-  split, rotate 2,
+  fsplit,
   { intro s, use s.val j, use s, simp, },
   { rintro ⟨_, s, _⟩, use s,},
   { simp [function.left_inverse], },
@@ -276,16 +261,13 @@ def sections_injective (j : J)
   (inj : ∀ i : {i | i ≤ j}, function.injective $ F.map (hom_of_le i.prop)) :
   function.injective (λ (s :F.sections), s.val j) :=
 begin
-  dsimp [function.injective],
   rintros ⟨e₁, h₁⟩ ⟨e₂, h₂⟩ hyp,
-  dsimp [functor.sections] at *,
   rw subtype.mk_eq_mk,
   suffices : ∀ i : {i | i ≤ j}, e₁ i.val = e₂ i.val,
   { apply funext,
     rintro k,
     obtain ⟨m,mk,mj⟩ := directed_of (≥) k j,
     rw  [←h₁ (hom_of_le mk), ←h₂ (hom_of_le mk), this ⟨m,mj⟩],},
-
     rintro ⟨i,ij⟩,
     apply inj ⟨i,ij⟩,
     dsimp,
@@ -298,28 +280,25 @@ def sections_bijective (j : J)
   function.bijective (λ (s :F.sections), s.val j) :=
 begin
   let inj  := λ ii : {i | i ≤ j}, (bij ii).1,
-  let surj := λ ii : {i | i ≤ j}, (bij ii).2,
+  --let surj := λ ii : {i | i ≤ j}, (bij ii).2,
   let eqv  := λ ii : {i | i ≤ j}, equiv.of_bijective (F.map (hom_of_le ii.prop)) (bij ii),
-  split,
-  exact sections_injective F j inj,
+  refine ⟨sections_injective F j inj,_⟩,
 
   rintro x,
 
-  let s :  Π (i : J), {y : F.obj i | ∃ (k : J) (ik : k ≤ i) (jk : k ≤ j), F.map (hom_of_le ik) ((eqv ⟨k,jk⟩).inv_fun x) = y}, by {
-    rintro i,
+  let s :  Π (i : J), {y : F.obj i | ∃ (k : J) (ik : k ≤ i) (jk : k ≤ j),
+                                       F.map (hom_of_le ik) ((eqv ⟨k,jk⟩).inv_fun x) = y}, by
+  { rintro i,
     let m := (directed_of (≥) i j).some,
-    obtain ⟨mi,mj⟩ := (directed_of (≥) i j).some_spec,
+    obtain ⟨mi,mj⟩ := (directed_of (≥) i j).some_spec, -- can't `obtain ⟨m,mi,mj⟩` ??
     use F.map (hom_of_le mi) ((eqv ⟨m,mj⟩).inv_fun x),
-    exact ⟨m,mi,mj,rfl⟩,
-  },
+    exact ⟨m,mi,mj,rfl⟩,},
   use (λ i, (s i).val),
-  {
-    rintro i k ik',
+  { rintro i k ik',
     let ik := le_of_hom ik',
     obtain ⟨m,mi,mj,meq⟩ := (s i).prop,
     obtain ⟨n,nk,nj,neq⟩ := (s k).prop,
-    let l := (directed_of (≥) m n).some,
-    obtain ⟨lm,ln⟩ := (directed_of (≥) m n).some_spec,
+    obtain ⟨l,lm,ln⟩ := (directed_of (≥) m n),
 
     have lmbij : function.bijective (F.map $ hom_of_le lm), by
     { refine (function.bijective.of_comp_iff' (bij ⟨m,mj⟩) (F.map $ hom_of_le lm)).mp _,
@@ -331,24 +310,12 @@ begin
       exact bij ⟨l,ln.le.trans nj⟩, },
 
     simp only [subtype.val_eq_coe],
-    rw [←meq,←neq],
-
-    rw ←functor_to_types.map_comp_apply,
-    --have : ∀ y, y = (F.map $ hom_of_le lm) ((equiv.of_bijective _ lmbij).inv_fun y),
-    --{ rintro y, exact ((equiv.of_bijective _ lmbij).right_inv y).symm, },
-    --rw this ((eqv ⟨m,mj⟩).inv_fun x),
-    rw ←(equiv.right_inv (equiv.of_bijective _ lmbij) ((eqv ⟨m,mj⟩).inv_fun x)),
-    --have : ∀ y, y = (F.map $ hom_of_le ln) ((equiv.of_bijective _ lnbij).inv_fun y), by
-    --{ rintro y, exact ((equiv.of_bijective _ lnbij).right_inv y).symm,},
-    --rw this ((eqv ⟨n,nj⟩).inv_fun x),
-    rw ←(equiv.right_inv (equiv.of_bijective _ lnbij) ((eqv ⟨n,nj⟩).inv_fun x)),
+    rw [←meq,←neq,
+        ←functor_to_types.map_comp_apply,
+        ←(equiv.right_inv (equiv.of_bijective _ lmbij) ((eqv ⟨m,mj⟩).inv_fun x)),
+        ←(equiv.right_inv (equiv.of_bijective _ lnbij) ((eqv ⟨n,nj⟩).inv_fun x))],
     simp only [equiv.inv_fun_as_coe, equiv.to_fun_as_coe, equiv.of_bijective_apply, functor_to_types.map_comp_apply],
-    rw ←functor_to_types.map_comp_apply,
-    rw ←functor_to_types.map_comp_apply,
-    rw ←functor_to_types.map_comp_apply,
-
-    simp only [eqv],
-    --simp only [equiv.inv_fun_as_coe],
+    simp only [←functor_to_types.map_comp_apply],
     rw [←equiv.symm_trans_apply,←equiv.symm_trans_apply],
     rw [equiv.of_bijective_trans,equiv.of_bijective_trans],
     rw [←equiv.inv_fun_as_coe,←equiv.inv_fun_as_coe],
@@ -356,10 +323,7 @@ begin
     simp_rw ←functor.map_comp',
     reflexivity, },
   { obtain ⟨m,mj,mj',meq⟩ := (s j).prop,
-    simp only [subtype.val_eq_coe],
-    simp only [equiv.inv_fun_as_coe] at meq,
-    rw ←meq,
-    dsimp [eqv],
+    simp only [subtype.val_eq_coe,←equiv.inv_fun_as_coe,←meq],
     apply equiv.of_bijective_apply_symm_apply,},
 end
 
@@ -387,24 +351,19 @@ begin
 end
 
 
-def above_point
- (j : J) (x : F.obj j) : {i : J | i ≤ j} ⥤ Type v :=
+def above_point (j : J) (x : F.obj j) : {i : J | i ≤ j} ⥤ Type v :=
 begin
   let Fobj : Π (ii : {i : J | i ≤ j}), set (F.obj $  (ii).val) :=
     λ ii, set.preimage (F.map $ hom_of_le ii.prop) {x},
 
   have subfunctor : Π (ii kk : {i : J | i ≤ j}) (ik : ii ≤ kk),
-    set.maps_to (F.map $ hom_of_le ik) (Fobj ii) (Fobj kk), by {
-    rintro ii kk ik,
-    dsimp only [Fobj],
-    unfold set.maps_to,
-    unfold set.preimage,
+                    set.maps_to (F.map $ hom_of_le ik) (Fobj ii) (Fobj kk), by
+  { rintro ii kk ik,
     rintro y hy,
-    simp only [set.mem_singleton_iff] at hy,
+    simp only [Fobj,set.mem_singleton_iff] at hy ⊢,
     dsimp at hy,
     rcases hy with rfl,
-    simp only [set.mem_singleton_iff, set.mem_set_of_eq],
-    dsimp,
+    simp only [set.mem_preimage, set.mem_singleton_iff],
     rw ←functor_to_types.map_comp_apply,
     reflexivity,},
 
@@ -424,7 +383,6 @@ begin
     reflexivity, },
 end
 
-
 instance above_point.nonempty [Π (j : J), fintype (F.obj j)] [∀ (j : J), nonempty (F.obj j)]
   (j : J)
   (Fsurj : is_surjective_on F j)
@@ -432,29 +390,17 @@ instance above_point.nonempty [Π (j : J), fintype (F.obj j)] [∀ (j : J), none
   Π (i : {i : J | i ≤ j}), nonempty ((above_point F j x).obj i)  :=
 begin
   rintro ii,
-  dsimp [above_point],
-  unfold is_surjective_on at Fsurj,
-  specialize Fsurj ( (ii.val)) ii.prop x,
-  unfold set.preimage,
-  simp,
-  obtain ⟨y,rfl⟩ := Fsurj,
-  apply Exists.intro,
-  rotate,
-  { rw ←subtype.val_eq_coe, use y, },
-  { dsimp only [subtype.val_eq_coe] at *, fsplit,  /-thanks tidy I don't know what I'm doing here-/},
+  obtain ⟨y,rfl⟩ := Fsurj ( (ii.val)) ii.prop x,
+  fapply nonempty.intro,
+  use y,
+  fsplit,  /-thanks tidy I don't know what I'm doing here-/
 end
 
-instance above_point.fintype
-
-  [Π (j : J), fintype (F.obj j)] [∀ (j : J), nonempty (F.obj j)]
-  (j : J)
-  (x : F.obj j) :
+instance above_point.fintype [Π (j : J), fintype (F.obj j)] [∀ (j : J), nonempty (F.obj j)]
+  (j : J) (x : F.obj j) :
   Π (i : {i : J | i ≤ j}), fintype ((above_point F j x).obj i)  :=
 begin
   rintros ii,
-  obtain ⟨i,ij⟩ := ii,
-  unfold above_point,
-  simp,
   apply subtype.fintype,
 end
 
@@ -463,7 +409,8 @@ lemma above_point.sections_nonempty (j : J) (Fsurj : is_surjective_on F j)
   (x : F.obj j) : nonempty (above_point F j x).sections :=
 begin
   apply set.nonempty_coe_sort.mpr,
-  exact @nonempty_sections_of_fintype_inverse_system' _ _ _ (above_point F j x) (above_point.fintype F j x)  (above_point.nonempty F j Fsurj x),
+  exact @nonempty_sections_of_fintype_inverse_system' _ _ _ (above_point F j x)
+    (above_point.fintype F j x)  (above_point.nonempty F j Fsurj x),
 end
 
 private def sections_at_point_fwd  (j : J) (x : F.obj j) :
@@ -669,4 +616,3 @@ end
 
 
 end inverse_system
-
