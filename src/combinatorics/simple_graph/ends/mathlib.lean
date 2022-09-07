@@ -282,6 +282,120 @@ def neighborhood_finite {V : Type*} (G : simple_graph V) [lc : locally_finite G]
 }
 
 
+
+--mathlib
+@[reducible, simp] def connected_component.supp {G : simple_graph V} (C : G.connected_component) :=
+  {v : V | connected_component_mk G v = C}
+
+--mathlib
+@[ext] lemma connected_component.eq_of_eq_supp (C D : G.connected_component) : C = D ↔ C.supp = D.supp :=
+begin
+  split,
+  { intro h, subst h, },
+  { refine connected_component.ind₂ _ C D,
+    intros v w h,
+    simp_rw [set.ext_iff] at h,
+    apply (h v).mp, dsimp [connected_component.supp],
+    refl,}
+end
+
+--mathlib
+instance : set_like G.connected_component V := {
+  coe := connected_component.supp,
+  coe_injective' := by {intros C D, apply (connected_component.eq_of_eq_supp _ _ _).mpr, } }
+
+-- Some variation of this should surely be included in mathlib ?!
+--mathlib
+lemma connected_component.connected (C : G.connected_component) :
+(G.induce C.supp).connected :=
+begin
+  revert C,
+  refine connected_component.ind _,
+  rintro v,
+  let comp := (G.connected_component_mk v).supp,
+  rw connected_iff,
+  fsplit,
+  { suffices : ∀ u : comp, (G.induce comp).reachable u ⟨v, by {dsimp [comp], refl,}⟩,
+    { exact λ u w, (this u).trans (this w).symm, },
+
+    rintro ⟨u,uv⟩,
+    simp only [mem_set_of_eq, connected_component.eq] at uv,
+    obtain ⟨uv'⟩ := uv,
+    induction uv' with a b c d e f g,
+    { refl, },
+    { --have : c ∈ C, by {simp at uv ⊢, constructor, exact f,},
+      simp only [mem_set_of_eq, connected_component.eq] at *,
+      constructor,
+      apply walk.cons, rotate,
+      exact (g ⟨f⟩).some,
+      simp only [comap_adj, embedding.coe_subtype, subtype.coe_mk],
+      exact e,}},
+  { simp [connected_component.supp], use v, }
+end
+
+--mathlib
+lemma connected_component.of_preconnected (Gpc : G.preconnected) (C : G.connected_component)
+: (C : set V) = univ :=
+begin
+  sorry
+end
+
+-- mathlib
+def connected_component.equiv_of_iso {V V' : Type*} {G : simple_graph V} {G' : simple_graph V'}
+  (φ : G ≃g G') : G.connected_component ≃ G'.connected_component :=
+begin
+  fsplit,
+  { fapply connected_component.lift,
+    { rintro v, exact connected_component_mk G' (φ v),},
+    { rintro v w p pp, simp only [connected_component.eq], constructor, exact p.map φ.to_hom,}},
+
+  { fapply connected_component.lift,
+    { rintro v, exact connected_component_mk G (φ.symm v),},
+    { rintro v w p pp, simp only [connected_component.eq], constructor, exact p.map φ.symm.to_hom,}},
+  { dsimp only [function.right_inverse,function.left_inverse],
+    apply connected_component.ind,
+    simp only [connected_component.eq, connected_component.lift_mk, rel_iso.symm_apply_apply],
+    rintro v, refl},
+  { dsimp only [function.right_inverse,function.left_inverse],
+    apply connected_component.ind,
+    simp only [connected_component.eq, connected_component.lift_mk, rel_iso.symm_apply_apply],
+    rintro v, simp only [rel_iso.apply_symm_apply], }
+end
+
+
+--mathlib (it seems mathlib only has this for subgraph with subset of vertices ?)
+def is_subgraph.hom {G G' : simple_graph V} (h : G ≤ G') : G →g G' := ⟨id, h⟩
+
+
+lemma preconnected_of_all_adj {α : Type*} {k : finset V} (kconn : (G.induce ↑k).connected)
+  {S : α → set V} {hS_fin : set.finite (set.Union S)} (hS_conn : ∀ {A : α},
+  (G.induce (S A)).connected) : (∀ {A : α}, (∃ (ck : V × V), ck.1 ∈ S A ∧ ck.2 ∈ k ∧ G.adj ck.1 ck.2) ∨ (S A ⊆ ↑k)) →
+    (G.induce ↑(k ∪ hS_fin.to_finset)).connected :=
+begin
+  intro h,
+  rw connected_iff,
+  split, {
+    rintros vv ww,
+    have hv := vv.prop, have hw := ww.prop,
+    simp at hv hw,
+    cases hv, cases hw,
+    {
+      sorry,
+    }, {
+      sorry,
+    }, cases hw, {
+      sorry,
+    }, {
+      sorry
+    },
+  },  {
+    apply set.nonempty_coe_sort.mpr,
+    apply set.nonempty.mono, rotate,
+    rw [← set.nonempty_coe_sort],
+    exact ((connected_iff _).mp kconn).2,
+    simp, }
+end
+
 --mathlib
 lemma iso.induce_restrict {V V' : Type*} {G : simple_graph V} {G' : simple_graph V'} (φ : G ≃g G')
   (s : set V) : (G.induce s) ≃g (G'.induce (φ '' s)) := sorry
