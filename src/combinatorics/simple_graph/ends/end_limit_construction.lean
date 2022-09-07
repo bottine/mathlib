@@ -14,6 +14,34 @@ open simple_graph.comp_out
 /- Implementing Kyle Miller's suggestion:
 https://leanprover.zulipchat.com/#narrow/stream/116395-maths/topic/Geometric.20group.20theory/near/290624806 -/
 
+/--!
+
+## Ends of a graph
+
+One way to define ends in a graph is via [havens](https://en.wikipedia.org/wiki/End_(graph_theory)#Definition_and_characterization).
+An `end` is defined as a function that takes in a finite set and returns a connected component in its complement. The constraint on
+this function is that it chooses the connected components consistently, i.e., if `K` and `L` are finite sets with `K` contained in `L`, then
+the component chosen for `L` must be contained in the component chosen for `K`.
+
+## An inverse system of sets
+
+The ends also lend themselves to a more categorical description, detailed in the message by Kyle Miller above.
+One can consider the poset of finite subsets of the vertex set `V` under inclusion as a category, and a functor to **Type** that
+assigns to each finite set the set of connected components in its complement and to each morphism the "backward map" of
+connected components (i.e., the map `back` taking each component outside a set to the unique component outside a given subset that contains it).
+
+When the graph is infinite and locally finite, the set of connected components outside a finite set of vertices is always non-empty and finite.
+It follows from general category theory that the limit of an inverse system of non-empty and finite sets exists and is a non-empty set.
+
+## Defining ends as the sections of a functor
+
+Each element in the limit corresponds to a section of the functor, and vice versa.
+
+It turns out that every element in the limit set also determines an end - the component outside a given finite set is given by
+the value of the element under the corresponding projection, and the assignment of connected components is consistent by the definition of a limit.
+
+-/
+
 noncomputable theory
 local attribute [instance] prop_decidable
 
@@ -31,13 +59,13 @@ instance finset_preorder : preorder (finset V) := {
   lt_iff_le_not_le := by {dsimp only [superset,ssuperset],obviously,}
   }
 
-/- The category of finite subsets of `V` with the morphisms being inclusions -/
+/-- The category of finite subsets of `V` with the morphisms being inclusions -/
 instance FinIncl : category (finset V) := infer_instance
 
 instance finset_directed : is_directed (finset V) (≥) := {
   directed := λ A B, ⟨A ∪ B, ⟨finset.subset_union_left A B, finset.subset_union_right A B⟩⟩ }
 
-/-The functor assigning a finite set in `V` to the set of connected components in its complement-/
+/-- The functor assigning a finite set in `V` to the set of connected components in its complement-/
 def ComplComp : finset V ⥤ Type u := {
   obj := λ A, dis_comp_out G A,
   map := λ _ _ f, dis_comp_out.back (le_of_hom f),
@@ -45,21 +73,25 @@ def ComplComp : finset V ⥤ Type u := {
   map_comp' := by {intros, funext, simp only [types_comp_apply], symmetry, apply dis_comp_out.back_trans_apply, },
 }
 
+/-- The ends of a graph, defined as the sections of the functor. -/
 def Ends := (ComplComp G).sections
 
-
+/-- A modified definition assigning each set to the *infinite* connected components outside it.
+    The two notions of ends coincide, as shown below.
+ -/
 def ComplInfComp : finset V ⥤ Type u :=
   (ComplComp G).subfunctor
     (λ K, {C : G.dis_comp_out K | C.val.inf})
     (by {intros _ _ _, apply dis_comp_out.back_of_inf,})
 
+-- The slightly modified notion of ends
 def Endsinfty := (ComplInfComp G).sections
 
 lemma ComplInfComp.obj : ∀ K : finset V, (ComplInfComp G).obj K = G.inf_comp_out K := by {intro, refl,}
 
 lemma ComplInfComp.map : ∀ {K L : finset V}, ∀ f : K ⟶ L, (ComplInfComp G).map f = inf_comp_out.back (le_of_hom f) := by {intros, ext ⟨_, _⟩, refl,}
 
-
+-- (see `to_surjective`)
 lemma ComplInfComp_eq_ComplComp_to_surjective : ComplInfComp G = inverse_system.to_surjective (ComplComp G) :=
 begin
   apply functor.subfunctor.ext,
