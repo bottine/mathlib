@@ -423,19 +423,6 @@ private def sections_at_point_fwd  (j : J) (x : F.obj j) :
         simp only [←subtype.coe_inj, set.maps_to.coe_restrict_apply, subtype.coe_mk],
         apply sec,})⟩
 
-private def sections_at_point_fwd'  (j : J) (x : F.obj j) :
-  {s : F.sections | s.val j = x} → (above_point F j x).sections :=
-begin
-  rintro ⟨⟨s,sec⟩,sjx⟩,
-  rw set.mem_set_of_eq at sjx,
-  rw ←sjx,
-  fsplit,
-  { rintro ⟨i,ij⟩, exact ⟨s i,sec $ hom_of_le ij⟩, },
-  { rintro ⟨i,ij⟩ ⟨k,kj⟩ ik,
-    simp only [←subtype.coe_inj, set.maps_to.coe_restrict_apply, subtype.coe_mk],
-    apply sec, },
-end
-
 private def sections_at_point_bwd_aux (j : J) (x : F.obj j) :
   Π (s : (above_point F j x).sections) (i : J),
                  {y : F.obj i | ∃ (k : J) (ik : k ≤ i) (jk : k ≤ j),
@@ -456,8 +443,7 @@ private def sections_at_point_bwd  (j : J) (x : F.obj j) :
     { rintro i k ik',
       obtain ⟨m,mi,mj,meq⟩ := (sections_at_point_bwd_aux F j x ss i).prop,
       obtain ⟨n,nk,nj,neq⟩ := (sections_at_point_bwd_aux F j x ss k).prop,
-      let l := (directed_of (≥) m n).some,
-      obtain ⟨lm,ln⟩ := (directed_of (≥) m n).some_spec,
+      obtain ⟨l,lm,ln⟩ := (directed_of (≥) m n),
       obtain ⟨s,sec⟩ := ss,
       simp only [subtype.val_eq_coe,meq,neq],
       rw ←(@sec  ⟨l, lm.le.trans mj⟩ ⟨m, mj⟩ (hom_of_le $ lm)),
@@ -476,38 +462,6 @@ private def sections_at_point_bwd  (j : J) (x : F.obj j) :
     exact yh,}⟩
 
 
-private def sections_at_point_bwd'  (j : J) (x : F.obj j) :
-  (above_point F j x).sections → {s : F.sections | s.val j = x} :=
-begin
-  rintro ss,
-  dsimp only [functor.sections],
-  split, rotate,
-  { split, rotate,
-    { exact (λ i, (sections_at_point_bwd_aux F j x ss i).val) },
-    { rintro i k ik',
-      obtain ⟨m,mi,mj,meq⟩ := (sections_at_point_bwd_aux F j x ss i).prop,
-      obtain ⟨n,nk,nj,neq⟩ := (sections_at_point_bwd_aux F j x ss k).prop,
-      let l := (directed_of (≥) m n).some,
-      obtain ⟨lm,ln⟩ := (directed_of (≥) m n).some_spec,
-      obtain ⟨s,sec⟩ := ss,
-      simp only [subtype.val_eq_coe,meq,neq],
-      rw ←(@sec  ⟨l, lm.le.trans mj⟩ ⟨m, mj⟩ (hom_of_le $ lm)),
-      rw ←(@sec  ⟨l, ln.le.trans nj⟩ ⟨n, nj⟩ (hom_of_le $ ln)),
-      dsimp [above_point],
-      simp only [←functor_to_types.map_comp_apply],
-      reflexivity, },},
-  { simp only [subtype.val_eq_coe, set.mem_set_of_eq, subtype.coe_mk],
-    obtain ⟨y,k,jk,jk',rfl⟩ := sections_at_point_bwd_aux F j x ss j,
-    simp only [subtype.val_eq_coe, subtype.coe_mk],
-    dsimp [above_point,functor.sections] at ss,
-    obtain ⟨s,sec⟩ := ss,
-    simp only [subtype.coe_mk],
-    obtain ⟨y,yh⟩ := s ⟨k,jk⟩,
-    exact yh,}
-end
-
-
--- This should maybe be split into more basic components…
 def sections_at_point (j : J) (x : F.obj j) :
   {s : F.sections | s.val j = x} ≃ (above_point F j x).sections :=
 begin
@@ -517,19 +471,16 @@ begin
     simp only [set.mem_set_of_eq] at sjx, rcases sjx with rfl,
     apply subtype.mk_eq_mk.mpr,
     apply subtype.mk_eq_mk.mpr,
-    apply funext,
-    rintro i,
+    funext i,
     obtain ⟨a,k,ki,kj,e⟩ := sections_at_point_bwd_aux F j (s j) (sections_at_point_fwd F j (s j) ⟨⟨s, λ _ _, sec⟩,rfl⟩) i,
     rw ←sec (hom_of_le ki),
     dsimp only [sections_at_point_fwd] at e,
-    simp only [e],
-   },
+    simp only [e],},
   { dsimp only [function.right_inverse,function.left_inverse,
-                sections_at_point_fwd,sections_at_point_bwd],
+               sections_at_point_fwd,sections_at_point_bwd],
     rintro ⟨s,sec⟩,
     simp only [subtype.val_eq_coe, subtype.mk_eq_mk],
-    apply funext,
-    intro i,
+    funext i,
     obtain ⟨k,ki,kj,e⟩ := (sections_at_point_bwd_aux F j x (⟨s, @sec⟩ : (above_point F j x).sections) i).prop,
     rw ←sec (hom_of_le (by { exact ki} : (⟨k,kj⟩ : {i | i ≤ j}) ≤ i)),
     simp only [subtype.val_eq_coe] at e ⊢,
@@ -537,17 +488,14 @@ begin
     dsimp only [above_point],
     rcases s ⟨k,kj⟩ with ⟨y,y'⟩,-- magic going on here: deconstructing `s ⟨k,kj⟩` reverts `e`, which is actually nice for us
     simp only [←subtype.coe_inj,set.maps_to.coe_restrict_apply],
-    rintro e, exact e,
- },
+    rintro e, exact e,},
 end
 
 
 lemma decomposition' [Π (j : J), fintype (F.obj j)] [∀ (j : J), nonempty (F.obj j)] (j : J) :
   F.sections ≃ Σ (x : F.obj j), (above_point F j x).sections :=
 begin
-  apply equiv.trans,
-  rotate 2,
-  {exact Σ (x : F.obj j), {s : F.sections | s.val j = x},},
+  transitivity Σ (x : F.obj j), {s : F.sections | s.val j = x},
   {exact decomposition F j,},
   {apply equiv.sigma_congr_right, exact sections_at_point F j,},
 end
@@ -583,20 +531,20 @@ lemma sections_fintype_to_injective
   (Fsur : is_surjective F) :
   ∃ j : J, ∀ ii : {i | i ≤ j}, function.injective (F.map $ hom_of_le ii.prop) :=
 begin
-  have : Π (j : J), fintype.card (F.obj j) ≤ fintype.card F.sections,
-  from λ j, fintype.card_le_of_surjective _ (sections_surjective' F j Fsur),
+  have : Π (j : J), fintype.card (F.obj j) ≤ fintype.card F.sections, from
+    λ j, fintype.card_le_of_surjective _ (sections_surjective' F j Fsur),
   let cards := set.range (λ j, fintype.card $ F.obj j),
   haveI cardsnem : cards.nonempty := set.range_nonempty (λ (j : J), fintype.card (F.obj j)),
   haveI cardsfin : cards.finite := by
   { apply set.finite.subset,
-    rotate 2,
-    exact {n : ℕ | n ≤ fintype.card F.sections},
     exact {n : ℕ | n ≤ fintype.card ↥(functor.sections F)}.to_finite,
-    rintro jm ⟨j,rfl⟩,simp, exact this j,},
+    rintro jm ⟨j,rfl⟩,
+    exact this j,},
   let cards' := cardsfin.to_finset,
   have cards'nem : cards'.nonempty, by {finish,},
   let m := cards'.max' cards'nem,
-  obtain mmem := cards'.max'_mem cards'nem, simp at mmem,
+  obtain mmem := cards'.max'_mem cards'nem,
+  simp only [set.finite.mem_to_finset, set.mem_range] at mmem,
   obtain ⟨j,jm⟩ := mmem,
 
   use j,
