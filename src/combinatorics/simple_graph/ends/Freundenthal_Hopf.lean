@@ -1,9 +1,8 @@
 import data.set.finite
-import data.sym.sym2
 import combinatorics.simple_graph.basic
 import combinatorics.simple_graph.connectivity
-import topology.metric_space.basic
 import data.setoid.partition
+
 import .mathlib
 import .comp_out
 import .mathlib_fintype_inverse_systems
@@ -106,7 +105,6 @@ begin
   exact Edist (inj this),
 end
 
-
 lemma nicely_arranged_bwd_map_not_inj (H K : finset V) (Hnempty : H.nonempty) (Knempty : K.nonempty)
   (E : G.inf_comp_out H) (inf_comp_H_large : fin 3 ↪ (G.inf_comp_out H))
   (F : G.inf_comp_out K)
@@ -134,10 +132,6 @@ end
 
 end inf_comp_out
 
-
-
-
-
 namespace comp_out
 
 lemma of_connected_disjoint.eq {K K' : set V} (KeK' : K = K') (S : set V)
@@ -148,7 +142,7 @@ begin
   refl,
 end
 
-
+end comp_out
 
 /-
   This is the key part of Hopf-Freudenthal
@@ -176,7 +170,7 @@ begin
   obtain ⟨KKp,Kpc⟩ := (finset.extend_to_connected G Gpc K Kn).prop,
 
   haveI Kpn := set.nonempty.mono KKp Kn,
-  obtain ⟨K',KK',Kc',inf⟩ := @comp_out.extend_connected_with_fin_bundled V G Gpc Glf Kp,
+  obtain ⟨K',KK',Kc',inf⟩ := @comp_out.extend_connected_with_fin_bundled V G Kp,
   rcases auts K' with ⟨φ,φgood⟩,
 
   let φK' := finset.image φ K',
@@ -219,13 +213,13 @@ begin
     apply comp_out.of_connected_disjoint_dis, },
 
 
-  apply inf_comp_out.nicely_arranged_bwd_map_not_inj G Gpc φK' K' (φK'n) (K'n) ⟨⟨F,Fdis⟩,Finf⟩ _ ⟨⟨E,Edis⟩,Einf⟩ Esub Fsub,
+  apply inf_comp_out.nicely_arranged_bwd_map_not_inj G Glf Gpc φK' K' (φK'n) (K'n) ⟨⟨F,Fdis⟩,Finf⟩ _ ⟨⟨E,Edis⟩,Einf⟩ Esub Fsub,
   have e := (inf_comp_out.equiv_of_iso φ K'),
   apply inf_comp_H_large.trans,
   rw φK'eq at e,
   refine function.embedding.trans _ e.to_embedding,
   apply function.embedding.of_surjective,
-  exact inf_comp_out.back_surjective (KKp.trans KK'),
+  exact inf_comp_out.back_surjective G Glf Gpc (KKp.trans KK'),
 end
 
 
@@ -261,6 +255,5 @@ begin
   exact eq',
 end
 
-end comp_out
 
 end simple_graph
