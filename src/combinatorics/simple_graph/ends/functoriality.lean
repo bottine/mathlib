@@ -389,30 +389,6 @@ lemma coarse_Lipschitz.comp (K L : ℕ) (f : V → V') (g : V' → V'') :
 lemma coarse_Lipschitz.mono (f : V → V') (K L : ℕ) (h : K ≤ L) :
   coarse_Lipschitz G G' f K → coarse_Lipschitz G G' f L := sorry
 
---mathlib
-private def thicken_ (G : simple_graph V) (K : finset V) (m : ℕ) : finset V :=
-begin
-  let K'set := {v : V | ∃ k ∈ K, G.dist v k ≤ m},
-  have : K'set.finite := sorry, -- locally finite TODO: WIP approach in `.mathlib.lean`
-  exact this.to_finset,
-end
-
---mathlib
-private lemma thicken_.sub (G : simple_graph V) (K : finset V) (m : ℕ) :
-  K ⊆ thicken_ G K m :=
-begin
-  rintro k kK,
-  dsimp [thicken_],
-  simp only [finite.mem_to_finset, mem_set_of_eq, exists_prop],
-  use k, split, exact kK,
-  rw (dist_self : G.dist k k = 0),
-  apply zero_le,
-end
-
---mathlib
-private lemma thicken_.eq (G : simple_graph V) (K : finset V) (m : ℕ) :
-  (thicken_ G K m : set V) = {v : V | ∃ k ∈ K, G.dist v k ≤ m} := sorry
-
 private lemma well_separated (G : simple_graph V) (Gpc : G.preconnected) (K : finset V) (m : ℕ)
   (C : G.comp_out K)
   (c : V) (cC : c ∈ C) (c' : V) :
@@ -446,17 +422,6 @@ begin
   apply comp_out.of_connected_disjoint_sub,
   simp only [mem_coe, list.mem_to_finset, end_mem_support],
 end
-
---mathlib
-lemma disjoint.preimage' {α β : Type*} {f : α → β} (s : set α) (t : set β) :
-  disjoint s (set.preimage f t) → disjoint (f '' s) t :=
-begin
-  simp only [set.disjoint_iff],
-  rintro dis, rintro y ⟨⟨x,⟨a,rfl⟩⟩,b⟩,
-  apply dis ⟨a,b⟩,
-end
-
-
 
 include Gpc'
 def coarse.of_coarse_Lipschitz_of_cofinite (f : V → V') (m : ℕ)
