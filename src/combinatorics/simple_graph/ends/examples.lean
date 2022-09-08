@@ -1,9 +1,6 @@
 import data.set.finite
-import data.sym.sym2
 import combinatorics.simple_graph.basic
 import combinatorics.simple_graph.connectivity
-import topology.metric_space.basic
-import data.setoid.partition
 import combinatorics.simple_graph.prod
 import .mathlib
 import .comp_out
@@ -40,8 +37,11 @@ variables  {V : Type u}
 
 section finite
 
+/--
+An finite graph has no ends.
 
--- Locally_finite follows from finiteness
+Note that local finiteness follows from `finite V`
+-/
 lemma no_end_of_finite_graph [finite V] : (Ends G) ≃ empty :=
 begin
   have Vfin : (@set.univ V).finite := set.finite_univ,
@@ -60,6 +60,9 @@ end finite
 section infinite
 
 include G Gpc Glf
+/--
+An infinite graph has at least one end.
+-/
 lemma end_of_infinite_graph [infinite V] : (Ends G).nonempty :=
 begin
   haveI := ComplComp_fintype G Glf Gpc,
@@ -74,30 +77,77 @@ section nat
 
 def gℕ : simple_graph ℕ := simple_graph.from_rel (λ n m, m = n.succ)
 
-lemma gℕadjz : ∀n, gℕ.adj 0 n ↔ n = 1 := sorry
-lemma gℕadjs : ∀m n, gℕ.adj m n ↔ (n = m+1 ∨ n = m-1) := sorry
+lemma gℕadjs : ∀m n, gℕ.adj m n ↔ (n = m+1 ∨ m = n+1) := by
+{ rintro m n, split,
+ { rintro ⟨ne,rfl|rfl⟩,
+   { left,refl, },
+   { right,refl, },},
+   rintro (rfl|rfl),
+   { split, exact (nat.succ_ne_self m).symm, left, dsimp only, refl, },
+   { split, exact (nat.succ_ne_self n), right, dsimp only, refl, },}
 
-lemma gℕlf : locally_finite gℕ := by
-{ dsimp [locally_finite,neighbor_set,adj],
+
+lemma gℕlf : locally_finite gℕ :=
+begin
+  dsimp [locally_finite,neighbor_set,adj],
+  rintro n,
+  refine (set.finite.subset {m | m ≤ n+1}.to_finite _).fintype,
+  rintro m ⟨ne,rfl|rfl⟩,
+  simp only [mem_set_of_eq],
+  simp only [mem_set_of_eq],
+  exact le_trans (nat.le_succ m) (nat.le_succ m.succ),
+end
+
+lemma gℕpc : gℕ.preconnected :=
+begin
+  suffices : ∀ n : ℕ, gℕ.reachable n 0,
+  { rintro m n, transitivity 0, exact this m, symmetry, exact this n, },
   rintro n, induction n,
-  { fconstructor, exact {⟨1,by {}⟩} },
-  { sorry,} }
-lemma gℕpc : gℕ.preconnected := sorry
-lemma gℕc : gℕ.connected := sorry
+  { reflexivity, },
+  transitivity n_n, rotate, exact n_ih,
+  constructor, refine walk.cons _ nil,
+  rw gℕadjs, right, refl,
+end
+lemma gℕc : gℕ.connected := by {rw connected_iff, use gℕpc, use nonempty_of_inhabited,}
 
 
 lemma gt_iso (m : ℕ) : gℕ ≃g (gℕ.induce {n : ℕ | n > m}) :=
 begin
-  use (λ n, ⟨n+m+1,sorry⟩),
-  use (λ ⟨n,nm⟩, n-m-1),
-  sorry, sorry,
-  rintro a b, simp,
-  sorry,
+  use (λ n, ⟨n+m+1, by {simp only [gt_iff_lt, mem_set_of_eq],rw [add_comm n m,add_assoc],
+  apply nat.lt_add_of_zero_lt_left, simp only [nat.succ_pos'],} ⟩),
+  use (λ ⟨n,nm⟩, n-m-1) ,
+  { rintro x, simp only,
+    rw nat.succ_sub,
+    simp only [add_tsub_cancel_right, nat.succ_sub_succ_eq_sub, tsub_zero],
+    simp only [le_add_iff_nonneg_left, zero_le'], },
+  { rintro ⟨x,xm⟩,
+    simp only [subtype.mk_eq_mk],
+    rw nat.sub_sub,
+    rw add_assoc,
+    rw nat.sub_add_cancel,
+    rw nat.succ_le_iff, exact xm, },
+  { rintro u v,
+    simp only [equiv.coe_fn_mk, comap_adj, embedding.coe_subtype, subtype.coe_mk],
+    split,
+    { rintro ⟨ne,l|r⟩,
+      split, simpa only [_root_.ne.def, add_left_inj] using ne,
+      left, rw [←nat.succ_add,←nat.succ_add] at l,
+      simpa only [add_left_inj] using l,
+      split, simpa only [_root_.ne.def, add_left_inj] using ne,
+      right, rw [←nat.succ_add,←nat.succ_add] at r,
+      simpa only [add_left_inj] using r,},
+    { rintro ⟨ne,rfl|rfl⟩,
+      split, simpa only [_root_.ne.def, add_left_inj] using ne,
+      left, rw [nat.succ_add,nat.succ_add],
+      split, simpa only [_root_.ne.def, add_left_inj] using ne,
+      right, rw [nat.succ_add,nat.succ_add],},}
 end
 
 lemma gt_connected (m : ℕ) : (gℕ.induce {n : ℕ | n > m}).connected := (iso.connected (gt_iso m)).mp gℕc
 
-
+/--
+The Cayley graph of the natural numbers wrt generator set `1` is one-ended.
+-/
 lemma ends_nat : (Ends gℕ) ≃ unit :=
 begin
 
@@ -122,16 +172,27 @@ begin
       rcases finset.max_of_nonempty h with ⟨a,e⟩,
       use a,
       rintro k kK,
-      simp,
+      simp only [ge_iff_le],
       exact le_max_of_mem kK e,},
-    {use 0,rintro k kK,exfalso, simp at h, rw h at kK,simp at kK, exact kK,},},
+    { use 0, rintro k kK, exfalso,
+      simp only [finset.not_nonempty_iff_eq_empty] at h,
+      rw h at kK,
+      simp only [finset.not_mem_empty] at kK,
+      exact kK,},},
 
   rcases this with ⟨m,mtop⟩,
   let L := {n : ℕ | n > m },
-  have Ldis : disjoint L K, by { rw set.disjoint_iff, rintro x ⟨xL,xK⟩, simp at xL, simp, specialize mtop x xK, simp at mtop, exact (not_le_of_lt xL) mtop, },
-  have Lcof : (L ᶜ).finite, by {dsimp [compl,boolean_algebra.compl],simp, apply set.finite_le_nat},
+  have Ldis : disjoint L K, by
+  { rintro x ⟨xL,xK⟩,
+    simp only [mem_set_of_eq, gt_iff_lt] at xL,
+    specialize mtop x xK,
+    exact (not_le_of_lt xL) mtop, },
+  have Lcof : (L ᶜ).finite, by
+  { dsimp only [compl,boolean_algebra.compl],
+    simp only [not_lt, mem_set_of_eq],
+    apply set.finite_le_nat },
   -- There is no set.infinite_gt_nat ??
-  have Linf : L.infinite, by {apply set.infinite_of_finite_compl,exact Lcof, },
+  have Linf : L.infinite, by {apply set.infinite_of_finite_compl Lcof,},
   have Lconn := gt_connected m,
 
   use [L,Ldis.symm,Lconn,Linf,Lcof],
@@ -148,13 +209,16 @@ variables  {V' : Type v}
            (Glf' : locally_finite G')
 
 
-
+/--
+If both `G` and `G'` are infinite connected graphs, then removing a finite box
+from their product leaves the rest connected.
+-/
 private lemma finprod_compl_connected
   [infinite V] [infinite V']
   (K : finset V) (K' : finset V') :
   ((G □ G').induce (finset.product K K' : set (V × V') )ᶜ).connected :=
 begin
-  /-
+
   let VV := V × V',
   let GG := G □ G',
   let L := finset.product K K',
@@ -173,9 +237,18 @@ begin
   let k' : V', by sorry,
   let kK' : k' ∉ K', by sorry,
 
-  rintros ⟨x,x'⟩ xinD ⟨y,y'⟩ yinD,
+  rw connected_iff, split, rotate,
+  -- nonempty below
+  { constructor, fconstructor,
+    exact ⟨k,k'⟩,
+    simp only [coe_product, mem_compl_eq, prod_mk_mem_set_prod_eq,
+               mem_coe, not_and],
+    rintro, use kK',},
 
-  have :(∃ (z z': VV)
+  -- now connected
+  rintros ⟨⟨x,x'⟩,xinD⟩ ⟨⟨y,y'⟩,yinD⟩,
+
+  have : (∃ (z z': VV)
           (u : GG.walk ⟨x,x'⟩ z)
           (v : GG.walk z z')
           (w : GG.walk z' ⟨y,y'⟩),
@@ -185,10 +258,9 @@ begin
   { have : ∀ x ∉ K,
             ∀ {y y' : V'} (w : G'.walk y y'), ((walk.box_prod_right G x w).support.to_finset : set VV) ⊆ D, by {
       rintros x xnotin y y' w,
-      rw simple_graph.walk.support_box_prod_right,
-      rw list.map_to_finset,
+      rw [simple_graph.walk.support_box_prod_right,list.map_to_finset],
       rintro p q,
-      simp at q,
+      simp only [coe_image, set.mem_image, mem_coe, list.mem_to_finset] at q,
       rcases q with ⟨v,⟨vin,rfl⟩⟩,
       apply (memD_iff ⟨x,v⟩).mpr,
       left, exact xnotin,},
@@ -196,10 +268,9 @@ begin
     have : ∀ x ∉ K',
             ∀ {y y' : V} (w : G.walk y y'), ((walk.box_prod_left G' x w).support.to_finset : set VV) ⊆ D, by
     { rintros x xnotin y y' w,
-      rw simple_graph.walk.support_box_prod_left,
-      rw list.map_to_finset,
+      rw [simple_graph.walk.support_box_prod_left,list.map_to_finset],
       rintro p q,
-      simp at q,
+      simp only [coe_image, set.mem_image, mem_coe, list.mem_to_finset] at q,
       rcases q with ⟨v,⟨vin,rfl⟩⟩,
       apply (memD_iff ⟨v,x⟩).mpr,
       right, exact xnotin,},
@@ -221,18 +292,41 @@ begin
   },
 
   rcases this with ⟨z,z',u,v,w,uD,vD,wD⟩,
-  use (u.append v).append w,
-  rw [walk.support_append,list.to_finset_append,walk.support_append,list.to_finset_append],
-  rw [finset.coe_union,finset.coe_union],
-
-  have vD' := set.subset.trans (list.to_finset_tail v.support) vD,
-  have wD' := set.subset.trans (list.to_finset_tail w.support) wD,
-  exact set.union_subset (set.union_subset uD vD') wD',
-  -/
-  sorry
+  let uvw := (u.append v).append w,
+  have uvwD : (uvw.support.to_finset : set VV) ⊆ D, by
+  { simp only [walk.support_append, uD, list.to_finset_append, coe_union, set.union_subset_iff,
+               true_and],
+    split,
+    apply subset.trans _ vD, simp only [coe_subset, list.to_finset_tail],
+    apply subset.trans _ wD, simp only [coe_subset, list.to_finset_tail], },
+  constructor,
+  fapply walk.to_induced, exact uvw,
+  rintro a as,
+  have : a ∈ (uvw.support.to_finset : set VV), by
+  { rw finset.mem_coe, rw list.mem_to_finset, exact as, },
+  apply mem_of_mem_of_subset this uvwD,
 end
 
-instance GGlf : locally_finite (G □ G') := by sorry
+include Glf Glf'
+lemma GGlf : locally_finite (G □ G') := by
+{
+  rintro ⟨g,g'⟩,
+  have : (G □ G').neighbor_set ⟨g,g'⟩ =
+    ((λ x, (⟨x,g'⟩ : V × V')) '' (G.neighbor_set g)) ∪
+    ((λ x', (⟨g,x'⟩ : V × V')) '' (G'.neighbor_set g')), by
+  { ext ⟨x,x'⟩,
+    simp only [mem_neighbor_set, box_prod_adj, mem_union_eq, set.mem_image, prod.mk.inj_iff,
+               exists_eq_right_right],
+    simp_rw and_comm _ (g' = x'),
+    simp only [exists_eq_right_right],tauto,},
+  rw this,
+  apply set.finite.fintype,
+  apply set.finite.union;
+  apply set.finite.image;
+  apply set.finite.intro,
+  exact Glf g,
+  exact Glf' g',
+}
 
 include Gpc Gpc'
 lemma ends_product [infinite V] [infinite V'] : Ends  (G □ G') ≃ unit :=
@@ -241,20 +335,20 @@ begin
   let VV := V × V',
   let GG := G □ G',
   let GGpc := simple_graph.preconnected.box_prod Gpc Gpc',
-  let GGlf : locally_finite (G □ G') := sorry,
+  let GGlf' := (GGlf G Glf G' Glf'),
 
   suffices H : ∀ K : finset VV, ∃ D : set VV, disjoint (K : set VV) D ∧ (GG.induce D).connected ∧ D.infinite ∧ (D ᶜ).finite,
   { obtain ⟨dis,conn,inf,cof⟩ := (H ∅).some_spec,
     have : (ComplInfComp GG).obj ∅ ≃ unit, from
-    inf_comp_out.cofinite_to_equiv_unit GGlf GGpc ∅ _ dis conn inf cof,
+    inf_comp_out.cofinite_to_equiv_unit GGlf' GGpc ∅ _ dis conn inf cof,
     transitivity, exact (Ends_equiv_Endsinfty GG),
     transitivity, rotate, exact this,
 
-    apply Endsinfty_eventually_constant GG GGlf GGpc ∅,
+    apply Endsinfty_eventually_constant GG GGlf' GGpc ∅,
     rintro L LL,
     transitivity, rotate, exact this.symm,
     obtain ⟨dis,conn,inf,cof⟩ := (H L).some_spec,
-    exact inf_comp_out.cofinite_to_equiv_unit GGlf GGpc L _ dis conn inf cof, },
+    exact inf_comp_out.cofinite_to_equiv_unit GGlf' GGpc L _ dis conn inf cof, },
 
 
   rintros K,

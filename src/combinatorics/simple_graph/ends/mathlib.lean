@@ -412,6 +412,7 @@ end simple_graph
 namespace list
 
 -- And this for lists:
+@[simp]
 lemma to_finset_tail {α : Type u} [decidable_eq α] (l : list α) : l.tail.to_finset ⊆ l.to_finset :=
 match l with
 | list.nil := by {simp only [list.tail_nil, list.to_finset_nil, finset.empty_subset],}
