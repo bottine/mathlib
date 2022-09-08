@@ -405,6 +405,47 @@ lemma iso.connected {V V' : Type*} {G : simple_graph V} {G' : simple_graph V'} (
   G.connected ↔ G'.connected := sorry
 
 
+
+
+def ball (v : V) (m : ℕ) := {u : V | G.dist v u ≤ m}
+
+lemma balls_zero (Gc : G.connected) (v : V) :
+  G.ball v 0 = {v} := by
+{ unfold ball,
+  simp only [le_zero_iff, connected.dist_eq_zero_iff Gc,set_of_eq_eq_singleton'], }
+
+-- Not the right approach it feels
+lemma balls_succ (Gc : G.connected) (v : V) (m : ℕ) :
+  G.ball v (m+1) = G.ball v m ∪ (⋃ w ∈ G.ball v m, G.neighbor_set w) := by
+{ unfold ball,
+  ext u, split,
+  { rintro xms,
+    simp at xms,
+    obtain ⟨p,plen⟩ := connected.exists_walk_of_dist Gc v u,
+    cases p,
+    {simp at plen, left, simp, sorry,},
+    {rw walk.length_cons at plen,sorry,},},
+  { rintro xU,sorry},
+}
+
+lemma finite_balls (Gpc : G.preconnected) (Glf : G.locally_finite) (v : V) (m : ℕ) :
+  set.finite (G.ball v m) :=
+begin
+  have : G.connected, by {rw connected_iff, use Gpc, use ⟨v⟩,},
+  induction m,
+  { rw simple_graph.balls_zero G this v, simp only [finite_singleton],  },
+  {
+    rw simple_graph.balls_succ G this v m_n,
+    apply set.finite.union,
+    apply m_ih,
+    apply set.finite.bUnion,
+    apply m_ih,
+    rintro w hw,
+    exact (neighbor_set G w).to_finite,
+  }
+end
+
+
 end simple_graph
 
 

@@ -23,9 +23,6 @@ local attribute [instance] prop_decidable
 
 namespace simple_graph
 
-
-namespace ends
-
 open simple_graph
 
 variables  {V : Type u}
@@ -377,44 +374,7 @@ variables  {V' : Type v}
            (Glf' : locally_finite G')
 
 
-def _root_.simple_graph.ball (v : V) (m : ℕ) := {u : V | G.dist v u ≤ m}
-
-lemma _root_.simple_graph.balls_zero (Gc : G.connected) (v : V) :
-  G.ball v 0 = {v} := by
-{ unfold ball,
-  simp only [le_zero_iff, connected.dist_eq_zero_iff Gc,set_of_eq_eq_singleton'], }
-
--- Not the right approach it feels
-lemma _root_.simple_graph.balls_succ (Gc : G.connected) (v : V) (m : ℕ) :
-  G.ball v (m+1) = G.ball v m ∪ (⋃ w ∈ G.ball v m, G.neighbor_set w) := by
-{ unfold ball,
-  ext u, split,
-  { rintro xms,
-    simp at xms,
-    obtain ⟨p,plen⟩ := connected.exists_walk_of_dist Gc v u,
-    cases p,
-    {simp at plen, left, simp, sorry,},
-    {rw walk.length_cons at plen,sorry,},},
-  { rintro xU,sorry},
-}
-
-include Gpc Glf
-lemma simple_graph.finite_balls (v : V) (m : ℕ) : set.finite (G.ball v m) :=
-begin
-  have : G.connected, by {rw connected_iff, use Gpc, use ⟨v⟩,},
-  induction m,
-  { rw simple_graph.balls_zero G this v, simp only [finite_singleton],  },
-  {
-    rw simple_graph.balls_succ G this v m_n,
-    apply set.finite.union,
-    apply m_ih,
-    apply set.finite.bUnion,
-    apply m_ih,
-    rintro w hw,
-    exact (neighbor_set G w).to_finite,
-  }
-end
-
+include Glf Gpc
 lemma cofinite_of_coarse_Lipschitz_inv (φ : V → V') (ψ : V' → V) (m : ℕ) (mge : m ≥ 1)
   (φψ : ∀ (v : V), G.dist (ψ $ φ v) v ≤ m)
   (φl : coarse_Lipschitz G G' φ m) (ψl : coarse_Lipschitz G' G ψ m) : cofinite φ :=
@@ -471,9 +431,6 @@ end
 
 
 end quasi_isometry
-
-
-end ends
 
 
 end simple_graph
