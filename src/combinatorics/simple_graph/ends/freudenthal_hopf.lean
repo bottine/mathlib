@@ -28,8 +28,6 @@ namespace simple_graph
 
 open simple_graph
 
-namespace ends
-
 variables  {V : Type u}
            (G : simple_graph V)
            (Glf : locally_finite G)
@@ -257,6 +255,4 @@ begin
   exact eq',
 end
 
-
-end ends
 end simple_graph

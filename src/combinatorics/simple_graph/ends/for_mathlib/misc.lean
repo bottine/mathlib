@@ -84,45 +84,6 @@ end
 end
 
 
-namespace finset
-
-def bInter {α : Type*} (S : set (finset α)) (Snempty : S.nonempty) : finset α :=
-{x ∈ Snempty.some | ∀ s ∈ S, x ∈ s}
-
-lemma mem_bInter_iff {α : Type*} (S : set (finset α)) (Snempty : S.nonempty) (x : α) :
-x ∈ (bInter S Snempty) ↔ (∀ s ∈ S, x ∈ s) :=
-begin
-  split,
-  {rintro xI s sS, unfold bInter at xI, simp at xI, exact xI.2 s sS,},
-  {rintro good, unfold bInter, simp only [sep_def, mem_filter], use good Snempty.some Snempty.some_spec, exact good,}
-end
-
-lemma bInter_of_directed_nonempty {α : Type*} (S : set (finset α)) (Snempty : S.nonempty)
-  (allsnempty : ∀ s ∈ S, finset.nonempty s) (dir : directed_on (⊇) S) : finset.nonempty (bInter S Snempty) :=
-begin
-  let s₀ := function.argmin_on (finset.card) (nat.lt_wf) S Snempty,
-  let hs₀ := argmin_on_mem (finset.card) (nat.lt_wf) S Snempty,
-  suffices : s₀ = (bInter S Snempty), {
-    rw ←this,
-    exact allsnempty s₀ hs₀,},
-  apply finset.ext,
-  rintro x,
-  split,
-  { rintro xs₀,
-    apply (mem_bInter_iff S Snempty x).mpr,
-    rintro s hs,
-    rcases dir s₀ hs₀ s hs with ⟨t,ht,ts₀,ts⟩,
-    suffices : t = s₀,{
-      rw this at ts,
-      exact ts xs₀,},
-    have : finset.card s₀ ≤ finset.card t, from function.argmin_on_le (finset.card) (nat.lt_wf) S ht,
-    exact finset.eq_of_subset_of_card_le ts₀ this,
-  },
-  { rintro xI, exact (mem_bInter_iff S Snempty x).mp xI s₀ hs₀, },
-end
-
-end finset
-
 
 namespace simple_graph
 
@@ -263,6 +224,7 @@ def is_prefix.eq_nil_of_nil  {V : Type*} {G : simple_graph V} :
 | _ _ (nil' u) pfx := ⟨rfl,rfl⟩
 | _ _ (cons' u v w a r) pfx := pfx.elim
 
+-- Don't kill my darlings :'(
 noncomputable def longest_prefix_all {V : Type*} {G : simple_graph V} :
 Π {u v: V} (p : G.walk u v) (pred : ∀ (z : V) (q : G.walk u z), q ≤w p → Prop) ,
 psum
@@ -378,82 +340,6 @@ def neighborhood_finite {V : Type*} (G : simple_graph V) [lc : locally_finite G]
 }
 
 
-namespace connected_component
-
-@[reducible, simp] def supp {G : simple_graph V} (C : G.connected_component) :=
-  {v : V | connected_component_mk G v = C}
-
-@[ext] lemma eq_of_eq_supp (C D : G.connected_component) : C = D ↔ C.supp = D.supp :=
-begin
-  split,
-  { intro h, subst h, },
-  { refine connected_component.ind₂ _ C D,
-    intros v w h,
-    simp_rw [set.ext_iff] at h,
-    apply (h v).mp, dsimp [connected_component.supp],
-    refl,}
-end
-
-instance : set_like G.connected_component V := {
-  coe := connected_component.supp,
-  coe_injective' := by {intros C D, apply (connected_component.eq_of_eq_supp _ _ _).mpr, } }
-
--- Some variation of this should surely be included in mathlib ?!
-lemma connected (C : G.connected_component) :
-(G.induce C.supp).connected :=
-begin
-  revert C,
-  refine connected_component.ind _,
-  rintro v,
-  let comp := (G.connected_component_mk v).supp,
-  rw connected_iff,
-  fsplit,
-  { suffices : ∀ u : comp, (G.induce comp).reachable u ⟨v, by {dsimp [comp], refl,}⟩,
-    { exact λ u w, (this u).trans (this w).symm, },
-
-    rintro ⟨u,uv⟩,
-    simp only [mem_set_of_eq, connected_component.eq] at uv,
-    obtain ⟨uv'⟩ := uv,
-    induction uv' with a b c d e f g,
-    { refl, },
-    { --have : c ∈ C, by {simp at uv ⊢, constructor, exact f,},
-      simp only [mem_set_of_eq, connected_component.eq] at *,
-      constructor,
-      apply walk.cons, rotate,
-      exact (g ⟨f⟩).some,
-      simp only [comap_adj, embedding.coe_subtype, subtype.coe_mk],
-      exact e,}},
-  { simp [connected_component.supp], use v, }
-end
-
-lemma of_preconnected (Gpc : G.preconnected) (C : G.connected_component)
-: (C : set V) = univ :=
-begin
-  sorry
-end
-
-def equiv_of_iso {V V' : Type*} {G : simple_graph V} {G' : simple_graph V'}
-  (φ : G ≃g G') : G.connected_component ≃ G'.connected_component :=
-begin
-  fsplit,
-  { fapply connected_component.lift,
-    { rintro v, exact connected_component_mk G' (φ v),},
-    { rintro v w p pp, simp only [connected_component.eq], constructor, exact p.map φ.to_hom,}},
-
-  { fapply connected_component.lift,
-    { rintro v, exact connected_component_mk G (φ.symm v),},
-    { rintro v w p pp, simp only [connected_component.eq], constructor, exact p.map φ.symm.to_hom,}},
-  { dsimp only [function.right_inverse,function.left_inverse],
-    apply connected_component.ind,
-    simp only [connected_component.eq, connected_component.lift_mk, rel_iso.symm_apply_apply],
-    rintro v, refl},
-  { dsimp only [function.right_inverse,function.left_inverse],
-    apply connected_component.ind,
-    simp only [connected_component.eq, connected_component.lift_mk, rel_iso.symm_apply_apply],
-    rintro v, simp only [rel_iso.apply_symm_apply], }
-end
-
-end connected_component
 
 
 --mathlib (it seems mathlib only has this for subgraph with subset of vertices ?)

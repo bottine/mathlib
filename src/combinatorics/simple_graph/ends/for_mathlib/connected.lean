@@ -343,8 +343,6 @@ begin
 end
 
 
-
-
 def iso.induce_restrict {V V' : Type*} {G : simple_graph V} {G' : simple_graph V'} (φ : G ≃g G')
   (s : set V) : (G.induce s) ≃g (G'.induce (φ '' s)) := sorry
 
@@ -353,5 +351,84 @@ lemma iso.connected {V V' : Type*} {G : simple_graph V} {G' : simple_graph V'} (
 
 
 
+namespace connected_component
+variables  {V} (G)
+
+/-- The connected components are themselves connected graphs, and related facts -/
+
+@[reducible, simp] def supp {G : simple_graph V} (C : G.connected_component) :=
+  {v : V | connected_component_mk G v = C}
+
+@[ext] lemma eq_of_eq_supp (C D : G.connected_component) : C = D ↔ C.supp = D.supp :=
+begin
+  split,
+  { intro h, subst h, },
+  { refine connected_component.ind₂ _ C D,
+    intros v w h,
+    simp_rw [set.ext_iff] at h,
+    apply (h v).mp, dsimp [connected_component.supp],
+    refl,}
+end
+
+instance : set_like G.connected_component V := {
+  coe := connected_component.supp,
+  coe_injective' := by {intros C D, apply (eq_of_eq_supp _ _ _).mpr, } }
+
+-- Some variation of this should surely be included in mathlib ?!
+lemma connected (C : G.connected_component) :
+(G.induce C.supp).connected :=
+begin
+  revert C,
+  refine connected_component.ind _,
+  rintro v,
+  let comp := (G.connected_component_mk v).supp,
+  rw connected_iff,
+  fsplit,
+  { suffices : ∀ u : comp, (G.induce comp).reachable u ⟨v, by {dsimp [comp], refl,}⟩,
+    { exact λ u w, (this u).trans (this w).symm, },
+
+    rintro ⟨u,uv⟩,
+    simp only [set.mem_set_of_eq, connected_component.eq] at uv,
+    obtain ⟨uv'⟩ := uv,
+    induction uv' with a b c d e f g,
+    { refl, },
+    { --have : c ∈ C, by {simp at uv ⊢, constructor, exact f,},
+      simp only [set.mem_set_of_eq, connected_component.eq] at *,
+      constructor,
+      apply walk.cons, rotate,
+      exact (g ⟨f⟩).some,
+      simp only [comap_adj, function.embedding.coe_subtype, subtype.coe_mk],
+      exact e,}},
+  { simp [connected_component.supp], use v, }
+end
+
+lemma of_preconnected (Gpc : G.preconnected) (C : G.connected_component)
+: (C : set V) = set.univ :=
+begin
+  sorry
+end
+
+def equiv_of_iso {V V' : Type*} {G : simple_graph V} {G' : simple_graph V'}
+  (φ : G ≃g G') : G.connected_component ≃ G'.connected_component :=
+begin
+  fsplit,
+  { fapply connected_component.lift,
+    { rintro v, exact connected_component_mk G' (φ v),},
+    { rintro v w p pp, simp only [connected_component.eq], constructor, exact p.map φ.to_hom,}},
+
+  { fapply connected_component.lift,
+    { rintro v, exact connected_component_mk G (φ.symm v),},
+    { rintro v w p pp, simp only [connected_component.eq], constructor, exact p.map φ.symm.to_hom,}},
+  { dsimp only [function.right_inverse,function.left_inverse],
+    apply connected_component.ind,
+    simp only [connected_component.eq, connected_component.lift_mk, rel_iso.symm_apply_apply],
+    rintro v, refl},
+  { dsimp only [function.right_inverse,function.left_inverse],
+    apply connected_component.ind,
+    simp only [connected_component.eq, connected_component.lift_mk, rel_iso.symm_apply_apply],
+    rintro v, simp only [rel_iso.apply_symm_apply], }
+end
+
+end connected_component
 
 end simple_graph
