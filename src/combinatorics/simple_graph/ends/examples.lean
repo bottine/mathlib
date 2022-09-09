@@ -2,9 +2,9 @@ import data.set.finite
 import combinatorics.simple_graph.basic
 import combinatorics.simple_graph.connectivity
 import combinatorics.simple_graph.prod
-import .mathlib
+import .for_mathlib.misc
 import .comp_out
-import .end_limit_construction
+import .ends
 import .functoriality
 
 open function

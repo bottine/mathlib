@@ -3,7 +3,7 @@ import topology.category.Top.limits
 import data.finset.basic
 
 import .comp_out
-import .mathlib_fintype_inverse_systems
+import .for_mathlib.fintype_inverse_systems
 
 open category_theory
 open opposite

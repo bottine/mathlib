@@ -1,7 +1,7 @@
 import combinatorics.simple_graph.basic
 import combinatorics.simple_graph.connectivity
 import combinatorics.simple_graph.subgraph
-import .mathlib
+import .misc
 
 
 -- All this file is in great part thanks to Kyle Miller -- bad parts are mine.
