@@ -22,13 +22,111 @@ noncomputable theory
 local attribute [instance] prop_decidable
 -- to make every proposition decidable
 
-variables  {V : Type u}
-           (G : simple_graph V)
-           --[preconnected G]
-           --[locally_finite G]
+namespace list
+
+-- And this for lists:
+@[simp]
+lemma to_finset_tail {α : Type u} [decidable_eq α] (l : list α) : l.tail.to_finset ⊆ l.to_finset :=
+match l with
+| list.nil := by {simp only [list.tail_nil, list.to_finset_nil, finset.empty_subset],}
+| list.cons h l := by {simp only [list.tail_cons, list.to_finset_cons], exact finset.subset_insert _ _}
+end
+
+lemma to_finset_subset_to_finset {α : Type u} [decidable_eq α] (l₁ l₂ : list α) (h : l₁ ⊆ l₂) : l₁.to_finset ⊆ l₂.to_finset :=
+begin
+  revert l₂,
+  induction l₁,
+  { intros l₂ h, simp only [list.to_finset_nil, finset.empty_subset], },
+  { intros l₂ h,
+    simp at h, cases h,
+    simp only [list.to_finset_cons, finset.insert_subset],
+    split,
+    {
+      revert h_left, generalizes [l₁_hd = a, l₂ = l],
+      intro h, cases l,
+      {simp at h, contradiction,},
+      {simp at h ⊢, assumption, }
+    },
+    {apply l₁_ih, assumption, } }
+end
+
+lemma map_to_finset {α β : Type*}  [decidable_eq α]  [decidable_eq β] (f : α → β) (l : list α) :
+  (l.map f).to_finset = finset.image f l.to_finset :=
+list.rec_on l (by {simp}) (λ h t hyp, by {simp,rw hyp,})
+
+end list
+
+
+section
+
+lemma  equiv.of_bijective_trans {α β γ : Type*} {f : α → β} {g : β → γ}
+  (hf : function.bijective f) (hg : function.bijective g) :
+(equiv.of_bijective f hf).trans (equiv.of_bijective g hg) = equiv.of_bijective (g ∘ f) (function.bijective.comp hg hf) :=
+begin
+  ext, simp,
+end
+
+lemma  equiv.of_bijective_inj {α β γ : Type*} {f : α → β}
+  (h₁ h₂ : function.bijective f) :
+(equiv.of_bijective f h₁) = (equiv.of_bijective f h₂) :=
+begin
+  ext, simp,
+end
+
+lemma disjoint.preimage' {α β : Type*} {f : α → β} (s : set α) (t : set β) :
+  disjoint s (set.preimage f t) → disjoint (f '' s) t :=
+begin
+  simp only [set.disjoint_iff],
+  rintro dis, rintro y ⟨⟨x,⟨a,rfl⟩⟩,b⟩,
+  apply dis ⟨a,b⟩,
+end
+
+end
+
+
+namespace finset
+
+def bInter {α : Type*} (S : set (finset α)) (Snempty : S.nonempty) : finset α :=
+{x ∈ Snempty.some | ∀ s ∈ S, x ∈ s}
+
+lemma mem_bInter_iff {α : Type*} (S : set (finset α)) (Snempty : S.nonempty) (x : α) :
+x ∈ (bInter S Snempty) ↔ (∀ s ∈ S, x ∈ s) :=
+begin
+  split,
+  {rintro xI s sS, unfold bInter at xI, simp at xI, exact xI.2 s sS,},
+  {rintro good, unfold bInter, simp only [sep_def, mem_filter], use good Snempty.some Snempty.some_spec, exact good,}
+end
+
+lemma bInter_of_directed_nonempty {α : Type*} (S : set (finset α)) (Snempty : S.nonempty)
+  (allsnempty : ∀ s ∈ S, finset.nonempty s) (dir : directed_on (⊇) S) : finset.nonempty (bInter S Snempty) :=
+begin
+  let s₀ := function.argmin_on (finset.card) (nat.lt_wf) S Snempty,
+  let hs₀ := argmin_on_mem (finset.card) (nat.lt_wf) S Snempty,
+  suffices : s₀ = (bInter S Snempty), {
+    rw ←this,
+    exact allsnempty s₀ hs₀,},
+  apply finset.ext,
+  rintro x,
+  split,
+  { rintro xs₀,
+    apply (mem_bInter_iff S Snempty x).mpr,
+    rintro s hs,
+    rcases dir s₀ hs₀ s hs with ⟨t,ht,ts₀,ts⟩,
+    suffices : t = s₀,{
+      rw this at ts,
+      exact ts xs₀,},
+    have : finset.card s₀ ≤ finset.card t, from function.argmin_on_le (finset.card) (nat.lt_wf) S ht,
+    exact finset.eq_of_subset_of_card_le ts₀ this,
+  },
+  { rintro xI, exact (mem_bInter_iff S Snempty x).mp xI s₀ hs₀, },
+end
+
+end finset
+
 
 namespace simple_graph
 
+variables  {V : Type u} (G : simple_graph V)
 
 lemma walk.split_along_set {V : Type u} {G : simple_graph V} :
 ∀ {u v : V} (p : G.walk u v) (S : set V) (uS : u ∈ S) (vS : v ∉ S),
@@ -246,8 +344,6 @@ begin
     {cases h, cases h_h, dsimp at *, simp at *, fsplit, work_on_goal 2 { fsplit, work_on_goal 1 { assumption }, solve_by_elim }}}
 end
 
-#check nonempty.elim
-
 lemma thicken.of_connected {V : Type*} (G : simple_graph V) (K : set V) (Kconn : (G.induce K).connected) : thicken G K = {v : V | ∃ k ∈ K, G.adj v k} :=
 begin
   refine thicken.of_all_adj G K _,
@@ -282,13 +378,12 @@ def neighborhood_finite {V : Type*} (G : simple_graph V) [lc : locally_finite G]
 }
 
 
+namespace connected_component
 
---mathlib
-@[reducible, simp] def connected_component.supp {G : simple_graph V} (C : G.connected_component) :=
+@[reducible, simp] def supp {G : simple_graph V} (C : G.connected_component) :=
   {v : V | connected_component_mk G v = C}
 
---mathlib
-@[ext] lemma connected_component.eq_of_eq_supp (C D : G.connected_component) : C = D ↔ C.supp = D.supp :=
+@[ext] lemma eq_of_eq_supp (C D : G.connected_component) : C = D ↔ C.supp = D.supp :=
 begin
   split,
   { intro h, subst h, },
@@ -299,14 +394,12 @@ begin
     refl,}
 end
 
---mathlib
 instance : set_like G.connected_component V := {
   coe := connected_component.supp,
   coe_injective' := by {intros C D, apply (connected_component.eq_of_eq_supp _ _ _).mpr, } }
 
 -- Some variation of this should surely be included in mathlib ?!
---mathlib
-lemma connected_component.connected (C : G.connected_component) :
+lemma connected (C : G.connected_component) :
 (G.induce C.supp).connected :=
 begin
   revert C,
@@ -333,15 +426,13 @@ begin
   { simp [connected_component.supp], use v, }
 end
 
---mathlib
-lemma connected_component.of_preconnected (Gpc : G.preconnected) (C : G.connected_component)
+lemma of_preconnected (Gpc : G.preconnected) (C : G.connected_component)
 : (C : set V) = univ :=
 begin
   sorry
 end
 
--- mathlib
-def connected_component.equiv_of_iso {V V' : Type*} {G : simple_graph V} {G' : simple_graph V'}
+def equiv_of_iso {V V' : Type*} {G : simple_graph V} {G' : simple_graph V'}
   (φ : G ≃g G') : G.connected_component ≃ G'.connected_component :=
 begin
   fsplit,
@@ -361,6 +452,8 @@ begin
     simp only [connected_component.eq, connected_component.lift_mk, rel_iso.symm_apply_apply],
     rintro v, simp only [rel_iso.apply_symm_apply], }
 end
+
+end connected_component
 
 
 --mathlib (it seems mathlib only has this for subgraph with subset of vertices ?)
@@ -396,11 +489,9 @@ begin
     simp, }
 end
 
---mathlib
 lemma iso.induce_restrict {V V' : Type*} {G : simple_graph V} {G' : simple_graph V'} (φ : G ≃g G')
   (s : set V) : (G.induce s) ≃g (G'.induce (φ '' s)) := sorry
 
---mathlib
 lemma iso.connected {V V' : Type*} {G : simple_graph V} {G' : simple_graph V'} (φ : G ≃g G') :
   G.connected ↔ G'.connected := sorry
 
@@ -444,49 +535,6 @@ begin
     exact (neighbor_set G w).to_finite,
   }
 end
-
-
-end simple_graph
-
-
-
-namespace list
-
--- And this for lists:
-@[simp]
-lemma to_finset_tail {α : Type u} [decidable_eq α] (l : list α) : l.tail.to_finset ⊆ l.to_finset :=
-match l with
-| list.nil := by {simp only [list.tail_nil, list.to_finset_nil, finset.empty_subset],}
-| list.cons h l := by {simp only [list.tail_cons, list.to_finset_cons], exact finset.subset_insert _ _}
-end
-
-lemma to_finset_subset_to_finset {α : Type u} [decidable_eq α] (l₁ l₂ : list α) (h : l₁ ⊆ l₂) : l₁.to_finset ⊆ l₂.to_finset :=
-begin
-  revert l₂,
-  induction l₁,
-  { intros l₂ h, simp only [list.to_finset_nil, finset.empty_subset], },
-  { intros l₂ h,
-    simp at h, cases h,
-    simp only [list.to_finset_cons, finset.insert_subset],
-    split,
-    {
-      revert h_left, generalizes [l₁_hd = a, l₂ = l],
-      intro h, cases l,
-      {simp at h, contradiction,},
-      {simp at h ⊢, assumption, }
-    },
-    {apply l₁_ih, assumption, } }
-end
-
-lemma map_to_finset {α β : Type*}  [decidable_eq α]  [decidable_eq β] (f : α → β) (l : list α) :
-  (l.map f).to_finset = finset.image f l.to_finset :=
-list.rec_on l (by {simp}) (λ h t hyp, by {simp,rw hyp,})
-
-end list
-
-
-namespace simple_graph
-
 
 lemma transitive_to_good_automs [locally_finite G] [G.preconnected]
   (trans : ∀ u v : V, ∃ φ : G ≃g G, φ u = v)
@@ -619,78 +667,16 @@ begin
   exact wgood.trans this,
 end
 
-end simple_graph
 
+section functoriality_thicken_
 
-lemma  equiv.of_bijective_trans {α β γ : Type*} {f : α → β} {g : β → γ}
-  (hf : function.bijective f) (hg : function.bijective g) :
-(equiv.of_bijective f hf).trans (equiv.of_bijective g hg) = equiv.of_bijective (g ∘ f) (function.bijective.comp hg hf) :=
-begin
-  ext, simp,
-end
-
-lemma  equiv.of_bijective_inj {α β γ : Type*} {f : α → β}
-  (h₁ h₂ : function.bijective f) :
-(equiv.of_bijective f h₁) = (equiv.of_bijective f h₂) :=
-begin
-  ext, simp,
-end
-
-
-namespace finset
-
-def bInter {α : Type*} (S : set (finset α)) (Snempty : S.nonempty) : finset α :=
-{x ∈ Snempty.some | ∀ s ∈ S, x ∈ s}
-
-lemma mem_bInter_iff {α : Type*} (S : set (finset α)) (Snempty : S.nonempty) (x : α) :
-x ∈ (bInter S Snempty) ↔ (∀ s ∈ S, x ∈ s) :=
-begin
-  split,
-  {rintro xI s sS, unfold bInter at xI, simp at xI, exact xI.2 s sS,},
-  {rintro good, unfold bInter, simp only [sep_def, mem_filter], use good Snempty.some Snempty.some_spec, exact good,}
-end
-
-
-
-
-
-lemma bInter_of_directed_nonempty {α : Type*} (S : set (finset α)) (Snempty : S.nonempty)
-  (allsnempty : ∀ s ∈ S, finset.nonempty s) (dir : directed_on (⊇) S) : finset.nonempty (bInter S Snempty) :=
-begin
-  let s₀ := function.argmin_on (finset.card) (nat.lt_wf) S Snempty,
-  let hs₀ := argmin_on_mem (finset.card) (nat.lt_wf) S Snempty,
-  suffices : s₀ = (bInter S Snempty), {
-    rw ←this,
-    exact allsnempty s₀ hs₀,},
-  apply finset.ext,
-  rintro x,
-  split,
-  { rintro xs₀,
-    apply (mem_bInter_iff S Snempty x).mpr,
-    rintro s hs,
-    rcases dir s₀ hs₀ s hs with ⟨t,ht,ts₀,ts⟩,
-    suffices : t = s₀,{
-      rw this at ts,
-      exact ts xs₀,},
-    have : finset.card s₀ ≤ finset.card t, from function.argmin_on_le (finset.card) (nat.lt_wf) S ht,
-    exact finset.eq_of_subset_of_card_le ts₀ this,
-  },
-  { rintro xI, exact (mem_bInter_iff S Snempty x).mp xI s₀ hs₀, },
-end
-
-end finset
-
-section functoriality
-
---mathlib
 def thicken_ (G : simple_graph V) (K : finset V) (m : ℕ) : finset V :=
 begin
   let K'set := {v : V | ∃ k ∈ K, G.dist v k ≤ m},
-  have : K'set.finite := sorry, -- locally finite TODO: WIP approach in `.mathlib.lean`
+  have : K'set.finite := sorry, -- locally finite TODO: WIP approach above
   exact this.to_finset,
 end
 
---mathlib
 lemma thicken_.sub (G : simple_graph V) (K : finset V) (m : ℕ) :
   K ⊆ thicken_ G K m :=
 begin
@@ -703,19 +689,9 @@ begin
   apply zero_le,
 end
 
---mathlib
 lemma thicken_.eq (G : simple_graph V) (K : finset V) (m : ℕ) :
   (thicken_ G K m : set V) = {v : V | ∃ k ∈ K, G.dist v k ≤ m} := sorry
 
---mathlib
-lemma disjoint.preimage' {α β : Type*} {f : α → β} (s : set α) (t : set β) :
-  disjoint s (set.preimage f t) → disjoint (f '' s) t :=
-begin
-  simp only [set.disjoint_iff],
-  rintro dis, rintro y ⟨⟨x,⟨a,rfl⟩⟩,b⟩,
-  apply dis ⟨a,b⟩,
-end
+end functoriality_thicken_
 
-
-
-end functoriality
+end simple_graph
