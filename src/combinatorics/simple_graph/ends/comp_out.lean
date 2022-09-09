@@ -629,18 +629,20 @@ lemma extend_with_fin.inf_of_dis_extend {C : G.comp_out ↑k} : C.inf → disjoi
 lemma extend_with_fin.connected (kconn : (G.induce ↑k).connected) :
   (G.induce ↑(extend_with_fin G Gpc Glf k kn)).connected :=
 begin
-  dsimp [extend_with_fin],
-  apply preconnected_of_all_adj _ kconn,
-  { rintro ⟨C, Cfin⟩, dsimp, exact connected C,},
-  { rintro ⟨C, Cfin⟩,
-    by_cases disjoint (k : set V) (C : set V),
-    {left, apply @adj _ _ _ _ _,
-      dsimp [coe_b, has_coe.coe],
-      all_goals {assumption},},
-    { right, dsimp,
-      simp at h,
-      rcases h with ⟨k_, hk_k, hk_C⟩,
-      rw ← hk_C, simp, assumption, } },
+  rw [simple_graph.induce_eq_coe_induce_top],
+  fapply connected.patches,
+
+  exact ⟨kn.some, extend_with_fin.sub G Gpc Glf k kn (nonempty.some_mem kn)⟩,
+
+  rintro ⟨v, hv⟩,
+  simp [extend_with_fin] at hv,
+  cases hv,
+
+  { use (⊤ : subgraph G).induce ↑k,
+    sorry, },
+  {
+    sorry,
+  }
 end
 
 lemma extend_with_fin.components_spec :

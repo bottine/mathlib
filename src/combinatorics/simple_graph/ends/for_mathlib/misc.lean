@@ -346,37 +346,6 @@ def neighborhood_finite {V : Type*} (G : simple_graph V) [lc : locally_finite G]
 def is_subgraph.hom {G G' : simple_graph V} (h : G ≤ G') : G →g G' := ⟨id, h⟩
 
 
-lemma preconnected_of_all_adj {α : Type*} {k : finset V} (kconn : (G.induce ↑k).connected)
-  {S : α → set V} {hS_fin : set.finite (set.Union S)} (hS_conn : ∀ {A : α},
-  (G.induce (S A)).connected) : (∀ {A : α}, (∃ (ck : V × V), ck.1 ∈ S A ∧ ck.2 ∈ k ∧ G.adj ck.1 ck.2) ∨ (S A ⊆ ↑k)) →
-    (G.induce ↑(k ∪ hS_fin.to_finset)).connected :=
-begin
-  intro h,
-  rw connected_iff,
-  split, {
-    rintros vv ww,
-    have hv := vv.prop, have hw := ww.prop,
-    simp at hv hw,
-    cases hv, cases hw,
-    {
-      sorry,
-    }, {
-      sorry,
-    }, cases hw, {
-      sorry,
-    }, {
-      sorry
-    },
-  },  {
-    apply set.nonempty_coe_sort.mpr,
-    apply set.nonempty.mono, rotate,
-    rw [← set.nonempty_coe_sort],
-    exact ((connected_iff _).mp kconn).2,
-    simp, }
-end
-
-
-
 
 def ball (v : V) (m : ℕ) := {u : V | G.dist v u ≤ m}
 
