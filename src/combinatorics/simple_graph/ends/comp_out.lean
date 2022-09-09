@@ -626,23 +626,52 @@ end
 
 lemma extend_with_fin.inf_of_dis_extend {C : G.comp_out ↑k} : C.inf → disjoint (extend_with_fin G Gpc Glf k kn : set V) (C : set V) := sorry
 
+
+lemma connected_of_all_adj {α : Type*} {k : finset V} (kconn : (G.induce ↑k).connected)
+  {S : α → set V} {hS_fin : set.finite (set.Union S)} (hS_conn : ∀ {A : α},
+  (G.induce (S A)).connected) : (∀ {A : α}, (∃ (ck : V × V), ck.1 ∈ S A ∧ ck.2 ∈ k ∧ G.adj ck.1 ck.2) ∨ (S A ⊆ ↑k)) →
+    (G.induce ↑(k ∪ hS_fin.to_finset)).connected :=
+begin
+  intro h,
+  rw connected_iff,
+  split, {
+    rintros vv ww,
+    have hv := vv.prop, have hw := ww.prop,
+    simp at hv hw,
+    cases hv, cases hw,
+    {
+      sorry,
+    }, {
+      sorry,
+    }, cases hw, {
+      sorry,
+    }, {
+      sorry
+    },
+  },  {
+    apply set.nonempty_coe_sort.mpr,
+    apply set.nonempty.mono, rotate,
+    rw [← set.nonempty_coe_sort],
+    exact ((connected_iff _).mp kconn).2,
+    simp, }
+end
+
+
 lemma extend_with_fin.connected (kconn : (G.induce ↑k).connected) :
   (G.induce ↑(extend_with_fin G Gpc Glf k kn)).connected :=
 begin
-  rw [simple_graph.induce_eq_coe_induce_top],
-  fapply connected.patches,
-
-  exact ⟨kn.some, extend_with_fin.sub G Gpc Glf k kn (nonempty.some_mem kn)⟩,
-
-  rintro ⟨v, hv⟩,
-  simp [extend_with_fin] at hv,
-  cases hv,
-
-  { use (⊤ : subgraph G).induce ↑k,
-    sorry, },
-  {
-    sorry,
-  }
+  dsimp [extend_with_fin],
+  apply connected_of_all_adj _ kconn,
+  { rintro ⟨C, Cfin⟩, dsimp, exact connected C,},
+  { rintro ⟨C, Cfin⟩,
+    by_cases disjoint (k : set V) (C : set V),
+    {left, apply @adj _ _ _ _ _,
+      dsimp [coe_b, has_coe.coe],
+      all_goals {assumption},},
+    { right, dsimp,
+      simp at h,
+      rcases h with ⟨k_, hk_k, hk_C⟩,
+      rw ← hk_C, simp, assumption, } },
 end
 
 lemma extend_with_fin.components_spec :
