@@ -57,6 +57,33 @@ list.rec_on l (by {simp}) (λ h t hyp, by {simp,rw hyp,})
 end list
 
 
+section
+
+lemma  equiv.of_bijective_trans {α β γ : Type*} {f : α → β} {g : β → γ}
+  (hf : function.bijective f) (hg : function.bijective g) :
+(equiv.of_bijective f hf).trans (equiv.of_bijective g hg) = equiv.of_bijective (g ∘ f) (function.bijective.comp hg hf) :=
+begin
+  ext, simp,
+end
+
+lemma  equiv.of_bijective_inj {α β γ : Type*} {f : α → β}
+  (h₁ h₂ : function.bijective f) :
+(equiv.of_bijective f h₁) = (equiv.of_bijective f h₂) :=
+begin
+  ext, simp,
+end
+
+lemma disjoint.preimage' {α β : Type*} {f : α → β} (s : set α) (t : set β) :
+  disjoint s (set.preimage f t) → disjoint (f '' s) t :=
+begin
+  simp only [set.disjoint_iff],
+  rintro dis, rintro y ⟨⟨x,⟨a,rfl⟩⟩,b⟩,
+  apply dis ⟨a,b⟩,
+end
+
+end
+
+
 namespace finset
 
 def bInter {α : Type*} (S : set (finset α)) (Snempty : S.nonempty) : finset α :=
@@ -668,30 +695,3 @@ lemma thicken_.eq (G : simple_graph V) (K : finset V) (m : ℕ) :
 end functoriality_thicken_
 
 end simple_graph
-
-
-section
-
-lemma  equiv.of_bijective_trans {α β γ : Type*} {f : α → β} {g : β → γ}
-  (hf : function.bijective f) (hg : function.bijective g) :
-(equiv.of_bijective f hf).trans (equiv.of_bijective g hg) = equiv.of_bijective (g ∘ f) (function.bijective.comp hg hf) :=
-begin
-  ext, simp,
-end
-
-lemma  equiv.of_bijective_inj {α β γ : Type*} {f : α → β}
-  (h₁ h₂ : function.bijective f) :
-(equiv.of_bijective f h₁) = (equiv.of_bijective f h₂) :=
-begin
-  ext, simp,
-end
-
-lemma disjoint.preimage' {α β : Type*} {f : α → β} (s : set α) (t : set β) :
-  disjoint s (set.preimage f t) → disjoint (f '' s) t :=
-begin
-  simp only [set.disjoint_iff],
-  rintro dis, rintro y ⟨⟨x,⟨a,rfl⟩⟩,b⟩,
-  apply dis ⟨a,b⟩,
-end
-
-end
