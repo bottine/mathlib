@@ -14,8 +14,8 @@ import combinatorics.simple_graph.metric
 
 
 import .comp_out
-import .mathlib
-import .end_limit_construction
+import .for_mathlib.misc
+import .ends
 
 
 open function

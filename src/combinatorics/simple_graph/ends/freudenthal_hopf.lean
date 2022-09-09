@@ -3,11 +3,11 @@ import combinatorics.simple_graph.basic
 import combinatorics.simple_graph.connectivity
 import data.setoid.partition
 
-import .mathlib
+import .for_mathlib.misc
 import .comp_out
-import .mathlib_fintype_inverse_systems
-import .end_limit_construction
-import .connected
+import .for_mathlib.fintype_inverse_systems
+import .ends
+import .for_mathlib.connected
 
 
 open function

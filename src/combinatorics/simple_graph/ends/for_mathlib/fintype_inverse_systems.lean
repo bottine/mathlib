@@ -6,7 +6,7 @@ import category_theory.full_subcategory
 import data.set.finite
 import data.fintype.basic
 
-import .mathlib
+import .misc
 import .subfunctors
 
 universes u v w

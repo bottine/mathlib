@@ -5,8 +5,8 @@ import combinatorics.simple_graph.connectivity
 import topology.metric_space.basic
 import data.setoid.partition
 import category_theory.functor.basic
-import .mathlib
-import .connected
+import .for_mathlib.misc
+import .for_mathlib.connected
 
 open function finset set classical simple_graph.walk relation
 
