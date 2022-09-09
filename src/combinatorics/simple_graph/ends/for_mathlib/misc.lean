@@ -489,12 +489,6 @@ begin
     simp, }
 end
 
-lemma iso.induce_restrict {V V' : Type*} {G : simple_graph V} {G' : simple_graph V'} (φ : G ≃g G')
-  (s : set V) : (G.induce s) ≃g (G'.induce (φ '' s)) := sorry
-
-lemma iso.connected {V V' : Type*} {G : simple_graph V} {G' : simple_graph V'} (φ : G ≃g G') :
-  G.connected ↔ G'.connected := sorry
-
 
 
 
@@ -536,135 +530,13 @@ begin
   }
 end
 
+-- not really needed, but anyway
 lemma transitive_to_good_automs [locally_finite G] [G.preconnected]
   (trans : ∀ u v : V, ∃ φ : G ≃g G, φ u = v)
   (Vinf : (@set.univ V).infinite) :
    ∀ K :finset V, ∃ φ : G ≃g G, disjoint K (finset.image φ K) :=
 begin
   sorry
-end
-
--- This should be made compatible with the `simple_graph` API but for now we leave it aside
-def subconnected (X : set V) := ∀ x y ∈ X, ∃ w : G.walk x y, ↑w.support.to_finset ⊆ X
-
-lemma subconnected.of_adj_pair (x y : V) (e : G.adj x y) : subconnected G {x,y} :=
-begin
-  rintros a ain b bin,
-  rcases ain with ⟨x,rfl⟩|⟨y,rfl⟩,
-  { rcases bin with ⟨x,rfl⟩|⟨y,rfl⟩,
-    { use walk.nil,simp,},
-    { use walk.cons e (walk.nil), simp,},
-  },
-  { rcases bin with ⟨x,rfl⟩|⟨y,rfl⟩,
-    { use walk.cons e.symm (walk.nil), rw [←list.to_finset_reverse,←walk.support_reverse],simp,},
-    { use walk.nil,simp,},
-  }
-end
-
-lemma subconnected.of_intersecting_subconnected {X Y : set V}
-  (hX : subconnected G X )
-  (hY : subconnected G Y )
-  (hXY : ¬ disjoint X Y) : subconnected G (X∪Y) :=
-begin
-  rcases set.not_disjoint_iff.mp hXY with ⟨p,pX,pY⟩,
-  rintros a aZ b bZ,
-  rcases aZ with aX|aY,
-  { rcases bZ with bX|bY,
-    { rcases hX a aX b bX with ⟨w,wX⟩,
-      exact ⟨w,wX.trans (set.subset_union_left X Y)⟩,},
-    { rcases hX a aX p pX with ⟨w,wX⟩,
-      rcases hY p pY b bY with ⟨u,uY⟩,
-      use w.append u,
-      rw [walk.support_append, list.to_finset_append,finset.coe_union],
-      apply set.union_subset_union wX (set.subset.trans _ uY),
-      apply list.to_finset_tail,
-    },
-  },
-  { rcases bZ with bX|bY,
-    { rcases hY a aY p pY with ⟨u,uY⟩,
-      rcases hX p pX b bX with ⟨w,wX⟩,
-      use u.append w,
-      rw [walk.support_append, list.to_finset_append,finset.coe_union,set.union_comm],
-      apply set.union_subset_union (set.subset.trans _ wX) uY,
-      apply list.to_finset_tail,
-    },
-    { rcases hY a aY b bY with ⟨w,wY⟩,
-      exact ⟨w,wY.trans (set.subset_union_right X Y)⟩,},
-  },
-end
-
-lemma subconnected.of_adj_subconnected {X Y : set V}
-  (hX : subconnected G X )
-  (hY : subconnected G Y )
-  (XYadj : ∃ (x ∈ X) (y ∈ Y), G.adj x y) : subconnected G (X∪Y) :=
-begin
-  rcases XYadj with ⟨x,xX,y,yY,e⟩,
-  have : X∪Y = ({x, y} ∪ X) ∪ Y, by {ext, simp, tauto {closer := tactic.tidy.core >> tactic.skip},},
-  rw this,
-  apply subconnected.of_intersecting_subconnected,
-  { apply subconnected.of_intersecting_subconnected,
-    { exact subconnected.of_adj_pair G x y e, },
-    { exact hX, },
-    { exact set.not_disjoint_iff.mpr ⟨x,by simp,xX⟩},
-  },
-  { exact hY,},
-  { exact set.not_disjoint_iff.mpr ⟨y,by simp,yY⟩}
-
-end
-
-lemma subconnected.image {U : Type*} (H : simple_graph U) (φ : G →g H)
-  {X : finset V} (hX : subconnected G X) : (subconnected H (finset.image φ X)) :=
-begin
-    rintros φx xφ φy yφ,
-    simp at xφ,
-    simp at yφ,
-    rcases xφ with ⟨x,⟨xK,rfl⟩⟩,
-    rcases yφ with ⟨y,⟨yK,rfl⟩⟩,
-    rcases hX x xK y yK with ⟨w,wgood⟩,
-    rw finset.coe_subset at wgood,
-    let φw := w.map φ,
-    use φw,
-    rw [walk.support_map,list.map_to_finset,finset.coe_subset],
-    apply finset.image_subset_image wgood,
-end
-
-lemma subconnected.of_walk {x y : V} (w : G.walk x y) : subconnected G w.support.to_finset :=
-begin
-  rintros a ah b bh,
-  simp at ah,
-  simp at bh,
-  rcases walk.mem_support_iff_exists_append.mp ah with ⟨wa,wa',eqa⟩,
-  rcases walk.mem_support_iff_exists_append.mp bh with ⟨wb,wb',eqb⟩,
-  use wa.reverse.append wb,
-  simp,
-  rw walk.support_append,
-  rw list.to_finset_append,
-  rw walk.support_reverse,
-  rw list.to_finset_reverse,
-  apply finset.union_subset,
-  { rw eqa, apply list.to_finset_subset_to_finset, apply walk.support_append_subset_left,},
-  { rw eqb,
-    apply (list.to_finset_tail wb.support).trans _,
-    apply list.to_finset_subset_to_finset,
-    exact walk.support_append_subset_left wb wb',},
-end
-
-lemma subconnected.of_common_mem_sUnion (v : V) {F : set (set V)}
-  (mem : ∀ S ∈ F, v ∈ S) (subconn : ∀ S ∈ F, subconnected G S) : subconnected G (⋃₀ F) :=
-begin
-  rintros x xh y yh,
-  rcases xh with ⟨S,SF,xS⟩,
-  rcases yh with ⟨T,TF,yT⟩,
-  rcases subconnected.of_intersecting_subconnected G
-         (subconn S SF)
-         (subconn T TF)
-         (set.not_disjoint_iff.mpr ⟨v,⟨mem S SF,mem T TF⟩⟩)
-         x (by {simp *,})
-         y (by {simp *,})
-  with ⟨w,wgood⟩,
-  use w,
-  have : S ∪ T ⊆ ⋃₀ F, by {simp,exact ⟨subset_sUnion_of_mem SF,subset_sUnion_of_mem TF⟩},
-  exact wgood.trans this,
 end
 
 

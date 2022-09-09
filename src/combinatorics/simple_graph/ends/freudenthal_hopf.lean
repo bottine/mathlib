@@ -26,7 +26,9 @@ local attribute [instance] prop_decidable
 
 namespace simple_graph
 
+open simple_graph
 
+namespace ends
 
 variables  {V : Type u}
            (G : simple_graph V)
@@ -256,4 +258,5 @@ begin
 end
 
 
+end ends
 end simple_graph
