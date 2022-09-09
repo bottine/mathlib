@@ -317,66 +317,25 @@ begin
   sorry,
 end
 
-@[reducible]
-def neighborhood  {V : Type*} (G : simple_graph V) [locally_finite G] [preconnected G]
-  (S : set V) (n : ℕ) := {v : V | ∃ s ∈ S, G.dist s v ≤ n}
-
-lemma neighborhood.zero  {V : Type*} {G : simple_graph V} [lc : locally_finite G] [pc : preconnected G]  (S : set V) :
-  @neighborhood V G lc pc S 0 = S := sorry
-
-lemma neighborhood.succ {V : Type*} (G : simple_graph V) [lc : locally_finite G] [pc : preconnected G]  (S : set V) (n : ℕ) :
-  @neighborhood V G lc pc S (n+1) = ⋃ v ∈ @neighborhood V G lc pc S n, G.neighbor_set v := sorry
-
-
-def neighborhood_finite {V : Type*} (G : simple_graph V) [lc : locally_finite G] [pc : preconnected G]
-  (S: set V) (Sfin : S.finite) : Π (n : ℕ), (@neighborhood V G lc pc S n).finite
-| 0 := by {convert Sfin, apply neighborhood.zero,}
-| (n+1) := by
-{ rw neighborhood.succ,
-  apply set.finite.bUnion,
-  exact @neighborhood_finite n,
-  rintro i iS,
-  exact (neighbor_set G i).to_finite,
-}
-
-
-
-
 --mathlib (it seems mathlib only has this for subgraph with subset of vertices ?)
 def is_subgraph.hom {G G' : simple_graph V} (h : G ≤ G') : G →g G' := ⟨id, h⟩
 
-
-lemma preconnected_of_all_adj {α : Type*} {k : finset V} (kconn : (G.induce ↑k).connected)
-  {S : α → set V} {hS_fin : set.finite (set.Union S)} (hS_conn : ∀ {A : α},
-  (G.induce (S A)).connected) : (∀ {A : α}, (∃ (ck : V × V), ck.1 ∈ S A ∧ ck.2 ∈ k ∧ G.adj ck.1 ck.2) ∨ (S A ⊆ ↑k)) →
-    (G.induce ↑(k ∪ hS_fin.to_finset)).connected :=
+-- not really needed, but anyway
+lemma transitive_to_good_automs [locally_finite G] [G.preconnected]
+  (trans : ∀ u v : V, ∃ φ : G ≃g G, φ u = v)
+  (Vinf : (@set.univ V).infinite) :
+   ∀ K :finset V, ∃ φ : G ≃g G, disjoint K (finset.image φ K) :=
 begin
-  intro h,
-  rw connected_iff,
-  split, {
-    rintros vv ww,
-    have hv := vv.prop, have hw := ww.prop,
-    simp at hv hw,
-    cases hv, cases hw,
-    {
-      sorry,
-    }, {
-      sorry,
-    }, cases hw, {
-      sorry,
-    }, {
-      sorry
-    },
-  },  {
-    apply set.nonempty_coe_sort.mpr,
-    apply set.nonempty.mono, rotate,
-    rw [← set.nonempty_coe_sort],
-    exact ((connected_iff _).mp kconn).2,
-    simp, }
+  sorry
 end
 
 
 
+
+
+-- This should all be srteamlined: balls are the same thing as `thicken_` which is a generalization
+-- of `thicken`, but it would be better to use definitions from `metric_space` instead of rolling
+-- our own
 
 def ball (v : V) (m : ℕ) := {u : V | G.dist v u ≤ m}
 
@@ -405,8 +364,7 @@ begin
   have : G.connected, by {rw connected_iff, use Gpc, use ⟨v⟩,},
   induction m,
   { rw simple_graph.balls_zero G this v, simp only [finite_singleton],  },
-  {
-    rw simple_graph.balls_succ G this v m_n,
+  { rw simple_graph.balls_succ G this v m_n,
     apply set.finite.union,
     apply m_ih,
     apply set.finite.bUnion,
@@ -415,18 +373,6 @@ begin
     exact (neighbor_set G w).to_finite,
   }
 end
-
--- not really needed, but anyway
-lemma transitive_to_good_automs [locally_finite G] [G.preconnected]
-  (trans : ∀ u v : V, ∃ φ : G ≃g G, φ u = v)
-  (Vinf : (@set.univ V).infinite) :
-   ∀ K :finset V, ∃ φ : G ≃g G, disjoint K (finset.image φ K) :=
-begin
-  sorry
-end
-
-
-section functoriality_thicken_
 
 def thicken_ (G : simple_graph V) (K : finset V) (m : ℕ) : finset V :=
 begin
@@ -450,6 +396,36 @@ end
 lemma thicken_.eq (G : simple_graph V) (K : finset V) (m : ℕ) :
   (thicken_ G K m : set V) = {v : V | ∃ k ∈ K, G.dist v k ≤ m} := sorry
 
-end functoriality_thicken_
 
 end simple_graph
+
+
+-- necessary lemma
+--mathlib
+lemma sInter_of_directed_nonempty {α : Type*} [fintype α] [nonempty α] (S : set (set α))
+  (allsnempty : ∀ s ∈ S, set.nonempty s) (dir : directed_on (⊇) S) : set.nonempty (S.sInter) :=
+begin
+
+  let mcard : set α → ℕ := λs,  fintype.card s,
+
+  by_cases Snempty : S.nonempty,
+  { let s₀ := function.argmin_on (mcard) (nat.lt_wf) S Snempty,
+    let hs₀ := function.argmin_on_mem (mcard) (nat.lt_wf) S Snempty,
+    suffices : s₀ = S.sInter,
+    { rw ←this,
+      exact allsnempty s₀ hs₀,},
+    apply set.ext,
+    rintro x,
+    split,
+    { rintro xs₀,
+      rintro s hs,
+      rcases dir s₀ hs₀ s hs with ⟨t,ht,ts₀,ts⟩,
+      suffices : t = s₀,
+      { rw this at ts,
+        exact ts xs₀,},
+      have : mcard s₀ ≤ mcard t, from function.argmin_on_le (mcard) (nat.lt_wf) S ht,
+      exact set.eq_of_subset_of_card_le ts₀ this, },
+    { rintro xI, exact set.mem_sInter.mp xI s₀ hs₀, },},
+  { rw set.not_nonempty_iff_eq_empty at Snempty,
+    simp only [Snempty, set.sInter_empty, set.univ_nonempty],},
+end

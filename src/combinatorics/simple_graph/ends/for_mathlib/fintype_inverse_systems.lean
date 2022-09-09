@@ -18,35 +18,7 @@ noncomputable theory
 local attribute [instance] prop_decidable
 
 
--- necessary lemma
---mathlib
-lemma bInter_of_directed_nonempty {α : Type*} [fintype α] [nonempty α] (S : set (set α))
-  (allsnempty : ∀ s ∈ S, set.nonempty s) (dir : directed_on (⊇) S) : set.nonempty (S.sInter) :=
-begin
 
-  let mcard : set α → ℕ := λs,  fintype.card s,
-
-  by_cases Snempty : S.nonempty,
-  { let s₀ := function.argmin_on (mcard) (nat.lt_wf) S Snempty,
-    let hs₀ := function.argmin_on_mem (mcard) (nat.lt_wf) S Snempty,
-    suffices : s₀ = S.sInter,
-    { rw ←this,
-      exact allsnempty s₀ hs₀,},
-    apply set.ext,
-    rintro x,
-    split,
-    { rintro xs₀,
-      rintro s hs,
-      rcases dir s₀ hs₀ s hs with ⟨t,ht,ts₀,ts⟩,
-      suffices : t = s₀,
-      { rw this at ts,
-        exact ts xs₀,},
-      have : mcard s₀ ≤ mcard t, from function.argmin_on_le (mcard) (nat.lt_wf) S ht,
-      exact set.eq_of_subset_of_card_le ts₀ this, },
-    { rintro xI, exact set.mem_sInter.mp xI s₀ hs₀, },},
-  { rw set.not_nonempty_iff_eq_empty at Snempty,
-    simp only [Snempty, set.sInter_empty, set.univ_nonempty],},
-end
 
 
 
@@ -121,7 +93,7 @@ begin
   rintro j,
   dsimp only [to_surjective,functor.subfunctor],
   rw nonempty_subtype,
-  refine bInter_of_directed_nonempty _ _ _,
+  refine sInter_of_directed_nonempty _ _ _,
   { rintro s ⟨⟨i,ij⟩,rfl⟩,
     exact set.range_nonempty _,},
   { -- Probably heavily golfable
@@ -177,7 +149,7 @@ begin
     reflexivity,},
 
   have : (⋂₀ S).nonempty, by {
-    refine bInter_of_directed_nonempty S Ssnempty _,
+    refine sInter_of_directed_nonempty S Ssnempty _,
     unfold directed_on,
     -- only needs to show that S is directed
     rintros X ⟨⟨l,li⟩,rfl⟩ Y ⟨⟨k,ki⟩,rfl⟩,
