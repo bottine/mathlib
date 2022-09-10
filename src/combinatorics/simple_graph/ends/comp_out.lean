@@ -660,18 +660,33 @@ end
 lemma extend_with_fin.connected (kconn : (G.induce ↑k).connected) :
   (G.induce ↑(extend_with_fin G Gpc Glf k kn)).connected :=
 begin
-  dsimp [extend_with_fin],
-  apply connected_of_all_adj _ kconn,
-  { rintro ⟨C, Cfin⟩, dsimp, exact connected C,},
-  { rintro ⟨C, Cfin⟩,
-    by_cases disjoint (k : set V) (C : set V),
-    {left, apply @adj _ _ _ _ _,
-      dsimp [coe_b, has_coe.coe],
-      all_goals {assumption},},
-    { right, dsimp,
-      simp at h,
-      rcases h with ⟨k_, hk_k, hk_C⟩,
-      rw ← hk_C, simp, assumption, } },
+  rw [simple_graph.induce_eq_coe_induce_top],
+  fapply connected.patches,
+
+  exact ⟨kn.some, by {apply extend_with_fin.sub, apply set.nonempty.some_mem kn}⟩,
+
+  rintro ⟨v, hv⟩,
+  simp at hv, rw extend_with_fin.def at hv,
+  cases hv,
+  { use ((⊤ : subgraph G).induce ↑k),
+    split,
+    {sorry,}, -- this is just because one is a subset of the other
+    simp,
+    use set.nonempty.some_mem kn, use hv_1,
+    rw [simple_graph.induce_eq_coe_induce_top] at kconn,
+    rw connected_iff at kconn,
+    apply kconn.1,
+  },
+  { rcases hv_1 with ⟨c, cfin, hvc⟩,
+    use ((⊤ : subgraph G).induce (↑k ∪ ↑c)),
+    split,
+    {sorry,}, -- one is a subset of the other
+    simp only [subtype.coe_mk, subgraph.induce_verts, mem_union_eq, mem_coe, set_like.mem_coe, mem_supp_iff],
+    refine ⟨or.inl _, or.inr _, _⟩,
+    exact set.nonempty.some_mem kn,
+    exact hvc,
+    sorry, -- needs a lemma
+ }
 end
 
 lemma extend_with_fin.components_spec :
