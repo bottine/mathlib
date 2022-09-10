@@ -598,29 +598,18 @@ end
 
 lemma extend_with_fin.def : ∀ x, x ∈ (extend_with_fin G Gpc Glf k kn) ↔ (x ∈ k) ∨ (∃ (c : G.comp_out k) (cfin : c.fin), x ∈ c) :=
 begin
-  sorry
+  rintro x,
+  dsimp only [extend_with_fin],
+  simp only [finset.mem_union, finite.mem_to_finset, mem_Union,
+             exists_prop, exists_eq_right'],
+  apply or_congr, refl,
+  split,
+  { rintro ⟨⟨C,Cfin⟩,h⟩, use [C,Cfin,h],},
+  { rintro ⟨C,Cfin,h⟩, use [C,Cfin,h],}
 end
 
 lemma extend_with_fin.sub : k ⊆ extend_with_fin G Gpc Glf k kn :=
 by { exact subset_union_left k _, }
-
-lemma extend_with_fin.dis_iff_comp_inf {C : G.comp_out ↑(extend_with_fin G Gpc Glf k kn)} : C.dis ↔ C.inf :=
-begin
-  dsimp only [dis],
-  split,
-  { intros hdis hinf,
-    apply hdis,
-    sorry, -- every component is non-empty, so the point in the component will do
-    sorry
-  }, {
-    rintros Cinf v ⟨hvextend, hvC⟩,
-    show false, apply Cinf, clear Cinf,
-    sorry -- it follows from cases on `hvextend` that `v` is contained in a finite component, and as components are disjoint, that must be `C` itself
-  }
-end
-
-lemma extend_with_fin.inf_of_dis_extend {C : G.comp_out ↑k} : C.inf → disjoint (extend_with_fin G Gpc Glf k kn : set V) (C : set V) := sorry
-
 
 lemma connected_of_all_adj {α : Type*} {k : finset V} (kconn : (G.induce ↑k).connected)
   {S : α → set V} {hS_fin : set.finite (set.Union S)} (hS_conn : ∀ {A : α},
@@ -672,61 +661,32 @@ end
 lemma extend_with_fin.components_spec :
   ∀ (C : set V), (∃ D : (G.comp_out k), D.inf ∧  C = D) ↔ (∃ (D : G.comp_out (extend_with_fin G Gpc Glf k kn)), D.dis ∧ C = D) :=
 begin
-  intro C,
+  intro,
   split,
-  { rintro ⟨D, Dinf, DC⟩,
-    use D.lift (connected_component_mk _) (by {
-      intros v w p hp, simp only [connected_component.eq], apply nonempty.intro,
-      sorry -- this is just a "coercion" of the path `p`
-    }),
-    have Ddis := extend_with_fin.inf_of_dis_extend G Gpc Glf k kn Dinf,
-    -- elaborate procedure to get rid of the `lift`
-    revert D, intro D, refine D.ind _,
-    intros v Dinf DC Ddis, simp only [connected_component.lift_mk],
-    split,
-    { intros w hw,
-      simp only [set.inf_eq_inter, mem_inter_eq, mem_coe, set_like.mem_coe, mem_supp_iff, connected_component.eq] at hw,
-      cases hw with hwextend hwpath,
-      show false, apply Ddis,
-      simp, split,
-      apply hwextend,
-      sorry, -- a path coercion
-      },
-    { ext, simp only [set_like.mem_coe, mem_supp_iff, connected_component.eq],
-      split,
-      {  sorry, -- (harder) path coercion
-      },
-      {sorry} -- "coercion" of the path
-     }
+  { rintro ⟨D,Dinf,rfl⟩,
   },
-  { rintro ⟨D, Ddis, DC⟩,
-    use D.back (extend_with_fin.sub _ _ _ _ _),
-    split,
-    { apply back_of_inf,
-      rw [extend_with_fin.dis_iff_comp_inf] at Ddis,
-      exact Ddis, },
-    { rw DC,
-      apply eq.symm,
-      show (back _ D : set V) = ↑D,
-      suffices : back _ D = D, from by sorry {rw [comp_out.eq_of_eq_set]},
-      rw eq_back_iff_sub,
-      simp only [coe_subset, finset.subset.refl], }}
+  {sorry,},
 end
 
-lemma extend_connected_with_fin_bundled  :
+
+lemma extend_connected_with_fin_bundled (Gpc : G.preconnected) (Glf : G.locally_finite)
+  (kconn : (G.induce ↑k).connected)  :
   {k' : finset V | k ⊆ k'
                  ∧ (G.induce (k' : set V)).connected
                  ∧ ∀ C : (G.comp_out k'), C.dis → C.inf} :=
 begin
   /- This lemma is a combination of previously stated facts bundled together -/
-  have kn : k.nonempty, by {sorry {rw ←set.nonempty_coe_sort, rw connected_iff at Kc, exact Kc.2,}},
-  sorry {use extend_with_fin G K,
-  use extend_with_fin.sub G K,
-  use extend_with_fin.finite Gpc Glf Kf Kn,
-  use extend_with_fin.connected G K Kc,
+  have kn : k.nonempty, by
+  { rw connected_iff at kconn,
+    convert kconn.2,
+    simp only [coe_sort_coe,
+    finset.nonempty_coe_sort],},
+  use extend_with_fin G Gpc Glf k kn,
+  use extend_with_fin.sub G Gpc Glf k kn,
+  use extend_with_fin.connected G Gpc Glf k kn kconn,
   rintro C Cdis,
-  obtain ⟨D,Dinf,e⟩ := (extend_with_fin.components_spec G K C).mpr ⟨C,Cdis,rfl⟩,
-  unfold inf, rw e, exact Dinf,}
+  obtain ⟨D,Dinf,e⟩ := (extend_with_fin.components_spec G Gpc Glf k kn C).mpr ⟨C,Cdis,rfl⟩,
+  unfold inf, rw e, exact Dinf,
 end
 
 end extend
