@@ -177,7 +177,7 @@ begin
     let jempty := all_empty  G j,
     rw ComplInfComp_eq_ComplComp_to_surjective at jempty,
     exact jempty.elim x, },
-  { haveI : infinite V := infinite.of_not_finite hfin,
+  { haveI : infinite V := ⟨hfin⟩,
     haveI := ComplComp_fintype G Glf Gpc,
     haveI := ComplComp_nonempty G Glf Gpc,
     exact inverse_system.to_surjective.is_surjective (ComplComp G), },
@@ -215,7 +215,7 @@ lemma Endsinfty_eventually_constant
 begin
 
   by_cases hfin : finite V, rotate,
-  { haveI : infinite V := infinite.of_not_finite hfin,
+  { haveI : infinite V := ⟨hfin⟩,
     haveI := ComplComp_nonempty G Glf Gpc,
     haveI := ComplComp_fintype G Glf Gpc,
     haveI := ComplInfComp_fintype G Glf Gpc,
@@ -229,7 +229,7 @@ begin
     },
     split, rotate,
     { exact sur },
-    { exact (fintype.injective_iff_surjective_of_equiv (top L KL)).mpr sur },},
+    { exact (finite.injective_iff_surjective_of_equiv (top L KL)).mpr sur },},
   { -- degenerate case: If V is finite, then everything is empty,
     haveI := hfin,
     have :  Π (j : (finset V)), is_empty ((ComplInfComp G).obj j), from all_empty G,

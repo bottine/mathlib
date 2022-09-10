@@ -1,5 +1,6 @@
 import data.set.finite
 import data.sym.sym2
+import data.fintype.basic
 import combinatorics.simple_graph.basic
 import combinatorics.simple_graph.connectivity
 import topology.metric_space.basic
@@ -126,11 +127,6 @@ def dis (C : G.comp_out K) := disjoint K (C : set V)
 lemma comp_out.empty : (G.comp_out ∅) = G.connected_component :=
 by {unfold comp_out,rw out.empty,}
 
-lemma comp_out.eq_of_eq_set {C D : G.comp_out K} : (C : set V) = ↑D ↔ C = D :=
-begin
-  sorry,
-end
-
 lemma of_empty_is_singleton (Gpc : G.preconnected) : ∀ C : (G.comp_out ∅),  (C : set V) = univ :=
 begin
   apply connected_component.of_preconnected,
@@ -147,8 +143,7 @@ begin
     apply of_empty_is_singleton Gpc,
     symmetry,
     apply of_empty_is_singleton Gpc, },
-  haveI : fintype (G.comp_out ∅), by {apply fintype.of_subsingleton'},
-  apply finite.of_fintype,
+  apply_instance,
 end
 
 
@@ -601,13 +596,13 @@ begin
   exact k ∪ ‹finite_pieces.finite›.to_finset,
 end
 
-lemma extend_with_fin.def : ∀ x, x ∈ (extend_with_fin G Gpc Glf k kn) ↔ (x ∈ k) ∨ (∃ (c : G.comp_out k) (cfin : c.fin), x ∈ c) := sorry
+lemma extend_with_fin.def : ∀ x, x ∈ (extend_with_fin G Gpc Glf k kn) ↔ (x ∈ k) ∨ (∃ (c : G.comp_out k) (cfin : c.fin), x ∈ c) :=
+begin
+  sorry
+end
 
 lemma extend_with_fin.sub : k ⊆ extend_with_fin G Gpc Glf k kn :=
-begin
-  dsimp [extend_with_fin],
-  exact subset_union_left k _,
-end
+by { exact subset_union_left k _, }
 
 lemma extend_with_fin.dis_iff_comp_inf {C : G.comp_out ↑(extend_with_fin G Gpc Glf k kn)} : C.dis ↔ C.inf :=
 begin

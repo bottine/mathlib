@@ -141,4 +141,5 @@ variables (g : G)
 
 lemma dist_cayley (g h : G) : ((cayley m).dist g h : ℝ) = dist (to_marked g : marked m) h := sorry
 
+
 end geometric_group_theory
