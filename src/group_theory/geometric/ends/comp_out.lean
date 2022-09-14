@@ -22,6 +22,9 @@ namespace simple_graph
 variables  {V : Type u}
 variables (G : simple_graph V)  (K : set V)
 
+
+set_option profiler true
+
 /--!
 
 ## Connected components outside a given set of vertices
@@ -641,7 +644,7 @@ lemma connected_of_all_adj {α : Type*} {k : finset V} (kconn : (G.induce ↑k).
   (G.induce (S A)).connected) : (∀ {A : α}, (∃ (ck : V × V), ck.1 ∈ S A ∧ ck.2 ∈ k ∧ G.adj ck.1 ck.2) ∨ (S A ⊆ ↑k)) →
     (G.induce ↑(k ∪ hS_fin.to_finset)).connected :=
 begin
-  intro h,
+  sorry, /-intro h,
   rw connected_iff,
   split, {
     rintros vv ww,
@@ -662,7 +665,7 @@ begin
     apply set.nonempty.mono, rotate,
     rw [← set.nonempty_coe_sort],
     exact ((connected_iff _).mp kconn).2,
-    simp, }
+    simp, }-/
 end
 
 
@@ -708,46 +711,20 @@ begin
     { use [D,Dinf], apply eq_of_subset_of_subset CD DC, },
     obtain ⟨c,cC⟩ := C.nempty,
     rintro d dD,
-    simp only [set_like.mem_coe, mem_supp_iff, connected_component.eq],
+    simp only [set_like.mem_coe, mem_supp_iff, connected_component.eq] at cC ⊢,
     obtain ⟨w'⟩ := D.connected ⟨d,dD⟩ ⟨c,CD cC⟩,
     let w := w'.from_induced,
     let wD := w'.from_induced_contained,
-    have wdisK : disjoint (w.support.to_finset : set V) k :=  sorry,
-    have wdisF : ∀ D' : G.comp_out k, D'.fin → disjoint (w.support.to_finset : set V) D', by sorry,
-    have wdisL : disjoint (w.support.to_finset : set V) L, by sorry,
-    simp only [set_like.mem_coe, mem_supp_iff] at cC, rw ←cC,
-    simp only [connected_component.eq],
-    constructor,
-    refine out.walk_conv' w _,
-    rintro x xw xL,
-    refine wdisL ⟨_,xL⟩,
-    simp only [mem_coe, list.mem_to_finset],
-    exact xw
-  },
-  {sorry,},
-end
-
-/-
-
-
-lemma extend_to_fin_ro_components.ro  [locally_finite G] (Gpc : G.preconnected) (K : finset V):
-  ro_components G (extend_to_fin_ro_components G Gpc K ) = inf_ro_components G K :=
-begin
-  let L := extend_to_fin_ro_components G Gpc K,
-  let KsubL := extend_to_fin_ro_components.sub G Gpc K,
-  apply set.eq_of_subset_of_subset,
-  { rintro C CL,
-
-
-    obtain ⟨w,wD⟩ := to_subconnected G K D DcompK c (CsubD cC) d dD,
-    have wdisK : disjoint (w.support.to_finset : set V) K := disjoint.mono_left wD (to_disjoint G K D DcompK),
-    have wdisF : ∀ D' ∈ fin_ro_components G K, disjoint (w.support.to_finset : set V) D', by
-    { rintro D' ⟨D'comp,D'fin⟩,
-      have : D' ≠ D, by {rintro eq, induction eq, exact Dinf D'fin,},
-      exact disjoint.mono_left  wD (disjoint_of_neq G K D D' DcompK D'comp this.symm),},
+    have wdisK : disjoint (w.support.to_finset : set V) k, by
+    { exact disjoint.mono_left wD (comp_out.dis_of_inf D Dinf).symm, },
+    have wdisF : ∀ D' : G.comp_out k, D'.fin → disjoint (w.support.to_finset : set V) D', by
+    { rintro D' D'fin,
+      have : D ≠ D', by { rintro he, rw he at Dinf, exact Dinf D'fin, },
+      exact disjoint.mono_left  wD (comp_out.disjoint D D' this), },
     have wdisL : disjoint (w.support.to_finset : set V) L, by
-    { --rw set.disjoint_iff,
-      simp *,
+    { sorry, /-confusion-/
+      -- Original proof below
+      /-simp *,
       unfold extend_to_fin_ro_components,
       simp only [finset.disjoint_union_right],
       split,
@@ -756,31 +733,52 @@ begin
       { rw  ←finset.disjoint_coe,
         simp only [finite.coe_to_finset, disjoint_sUnion_right],
         exact wdisF,},},
-    unfold reachable_outside,
-    simp only [mem_set_of_eq],
-    use w,
-    simp only [disjoint_coe] at wdisL,
-    exact wdisL.symm,
-    /-
-    Assumption : C_L : C ∈ ro_components L.
-    Goal: show C ∈ inf_ro_components K
-    By assumption, C is connected (since it's a ro_component) and does not intersect L, hence does not intersect K.
-    Therefore, C is contained in a unique D ∈ ro_components K.
-    Since C does not intersect L, it does not intersect any D' ∈ fin_ro_components K, hence cannot be contained in one.
-    In particular, since C is contained in D, D must be infinite, and thus `D ∈ inf_ro_components K`.
-    Let us show C = D. We already know C ⊆ D, remains the other inclusion.
-    Fix some c ∈ C and any d ∈ D.
-    There is a path w from c to d entirely contained in D, hence not intersecting any D' ∈ ro_components K, and not intersecting K either.
-    w is therefore outside of K', which by definition means that `co_o c d`, and thus d lies in C.
-    -/
-  },
-  { rintro C ⟨CK,Cinf⟩,
-    have Cconn : subconnected G C, from to_subconnected G K C CK,
-    have CdisK : disjoint C K, from to_disjoint G K C CK,
-    have Cdisall: ∀ C' ∈ ro_components G K, C' ≠ C → disjoint C C', by {
-      rintros C' C'comp C'neC,
-      exact disjoint_of_neq G K C C' CK C'comp C'neC.symm,
+      -/
     },
+    rw [←cC,connected_component.eq],
+    constructor,
+    apply out.walk_conv' w,
+    rintro x xw xL,
+    apply wdisL, split,
+    simp only [mem_coe, list.mem_to_finset],
+    exact xw,
+    exact xL,
+  },
+  { rintro ⟨C,Cinf,rfl⟩,
+    have Cconn := C.connected,
+    have CdisK := C.dis,
+    have Cdisall: ∀ C' : G.comp_out k, C' ≠ C → disjoint (C : set V) (C' : set V), by {
+      rintros C' ne,
+      exact comp_out.disjoint C C' ne.symm,},
+    have CdisL : disjoint (C : set V) L, by {
+      sorry,
+    },
+    let D := comp_out.of_connected_disjoint (C : set V) Cconn CdisL.symm,
+    let CD := comp_out.of_connected_disjoint_sub (C : set V) Cconn CdisL.symm,
+    suffices : (D : set V) ⊆ C,
+    { rw set.eq_of_subset_of_subset CD this,
+      use D, split,
+      { sorry; apply disjoint.mono_left this CdisL,},
+      { refl, }},
+    obtain ⟨c,cC⟩ := C.nempty,
+    rintro d dD,
+    simp only [set_like.mem_coe, mem_supp_iff, connected_component.eq],
+    simp only [set_like.mem_coe, mem_supp_iff] at cC, rw ←cC,
+    simp only [connected_component.eq],
+    obtain ⟨w'⟩ := D.connected ⟨d,dD⟩ ⟨c,CD cC⟩,
+    constructor,
+    let w := w'.from_induced,
+    let wD := w'.from_induced_contained,
+    have : disjoint (k : set V) w.support.to_finset, by
+    { sorry,},
+    sorry,
+    },
+end
+
+/-
+
+  { rintro C ⟨CK,Cinf⟩,
+
     have CdisL : disjoint C L, by {
       simp only [*],
       unfold extend_to_fin_ro_components,
