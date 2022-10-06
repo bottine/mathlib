@@ -208,6 +208,28 @@ begin
   apply lift_unique, refl,
 end
 
+lemma free_groupoid_functor_inj_on_objects (φ : prefunctor V V') (hφ : function.injective φ.obj) :
+  function.injective (free_groupoid_functor φ).obj :=
+begin
+  dsimp only [free_groupoid_functor, of, lift, quotient.lift, paths.lift, quiver.symmetrify.lift],
+  rintros ⟨X⟩ ⟨Y⟩ he,
+  simp only [prefunctor.comp_obj] at he,
+  cases hφ (quotient.mk.inj he), refl,
+end
+
+lemma free_groupoid_functor_faithful (φ : prefunctor V V') (hφ : function.injective φ.obj)
+  (hφ' : ∀ (X Y : V), function.injective (λ (f : X ⟶ Y), φ.map f)) :
+  ∀ (X Y : free_groupoid V), function.injective (λ (f : X ⟶ Y), (free_groupoid_functor φ).map f) :=
+begin
+  dsimp only [free_groupoid_functor, of, lift],
+  have : ∀ (X Y : quiver.symmetrify V) (f : X ⟶ Y),
+    red_step (𝟙 X) (f.to_path ≫ (quiver.reverse f).to_path) →
+    red_step (𝟙 $ φ.obj X) ((φ.map f).to_path ≫ (quiver.reverse (φ.map f)).to_path), by sorry,
+    -- need functoriality of `symmetrify` too…
+  rintros ⟨X⟩ ⟨Y⟩ p q he,
+end
+
+
 end functoriality
 
 end free
