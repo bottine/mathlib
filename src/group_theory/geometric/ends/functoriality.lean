@@ -40,10 +40,13 @@ variables {I : Type u} [preorder I] [is_directed I ge] (G : I ⥤ Type v)
 
 -- Tried finding a suitable "general" notion, but it's probably misguided for now
 def sections_map
-  (φ : I → J)
-  (ψ : Π i, F.obj (φ i) → G.obj i)
+  (φ : J ⥤ I)
+  -- (ψ : Π i, F.obj (φ i) → G.obj i)
   --(∀ i : I, ∃ j ≤ φ i, )
-  : F.sections → G.sections := sorry
+  : F.sections → G.sections :=
+begin
+  sorry
+end
 
 end inverse_system
 
@@ -51,16 +54,77 @@ end inverse_system
 open simple_graph
 
 variables  {V : Type u}
-           (G : simple_graph V)
-           (Gpc : preconnected G)
-
            {V' : Type v}
-           (G' : simple_graph V')
-           (Gpc' : preconnected G')
-
            {V'' : Type w}
+
+           (G : simple_graph V)
+           (G' : simple_graph V')
            (G'' : simple_graph V'')
+
+           (Gpc : preconnected G)
+           (Gpc' : preconnected G')
            (Gpc'' : preconnected G'')
+
+abbreviation cofinite_hom := {φ : G →g G' // cofinite φ}
+
+infix ` ↣g `:50 := cofinite_hom -- type as `\rightarrowtail`
+
+
+@[simp] theorem cofinite_hom.cofinite {G : simple_graph V} {G' : simple_graph V'} (φ : G ↣g G') : cofinite φ :=
+  φ.property
+
+def cofinite_hom.id : G ↣g G := ⟨hom.id, cofinite.id⟩
+
+def cofinite_hom.comp (ψ : G' ↣g G'') (φ : G ↣g G') : G ↣g G'' :=
+  ⟨ψ.val.comp φ.val, (cofinite_hom.cofinite φ).comp (cofinite_hom.cofinite ψ)⟩
+
+def cofinite_hom.component_map {G : simple_graph V} {G' : simple_graph V'} (φ : G ↣g G') (L : set V')  : G.comp_out (φ⁻¹' L) → G'.comp_out L :=
+  connected_component.map (G.out (φ ⁻¹' L)) (G'.out L)
+  (comp_out.preimage_hom (↑φ) L)
+
+theorem cofinite_hom.component_map_back (φ : G ↣g G') (L L' : set V') (h : L ⊆ L') : ∀ C, (cofinite_hom.component_map φ L' C).back h = cofinite_hom.component_map φ L (C.back $ preimage_mono h) :=
+begin
+  intro C,
+  dsimp only [comp_out.back, cofinite_hom.component_map],
+  simp only [connected_component.map_comp],
+  refl,
+end
+
+def cofinite_hom.Ends (φ : G ↣g G') : Ends G → Ends G' :=
+begin
+  rintro ⟨s, sec⟩,
+  fsplit,
+  {
+    intro L,
+    let K := cofinite.preimage φ.cofinite L,
+    obtain ⟨C, Cdis⟩ := s K,
+    fsplit,
+    apply connected_component.map,
+    apply comp_out.preimage_hom φ.val,
+    apply eq.mp (congr_arg _ _) C,
+    apply cofinite.preimage.coe,
+
+    intro v', simp,
+    intros hv'L H,
+
+    -- obviously, because
+    -- v' ∈ L and hence cannot
+    -- be in any G.comp_out L
+
+    apply Cdis,
+    {
+      sorry,
+    },
+    sorry,
+  },
+
+  dsimp [Ends, category_theory.functor.sections],
+  intros L L' h,
+  dsimp [ComplComp, dis_comp_out.back, maps_to.restrict, subtype.map],
+  dsimp [comp_out.back, cofinite.preimage],
+  sorry,
+end
+
 
 
 def good_finset (f : V → V') (K : finset V') (L : finset V) :=

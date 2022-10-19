@@ -89,6 +89,37 @@ namespace simple_graph
 
 variables  {V : Type u} (G : simple_graph V)
 
+def reachable.map {V' : Type*} {G' : simple_graph V'} (φ : G →g G') {u v : V} : G.reachable u v →  G'.reachable (φ u) (φ v) :=
+begin
+  simp_rw [reachable_iff_refl_trans_gen] at *,
+  fapply refl_trans_gen.lift,
+  intros _ _,
+  apply hom.map_adj φ,
+end
+
+def connected_component.map {V' : Type*} (G' : simple_graph V') (φ : G →g G') (C : G.connected_component) : G'.connected_component :=
+begin
+  apply @connected_component.lift V G _ (λ v, connected_component_mk _ (φ v)),
+  rotate,
+  exact C,
+  rintro v w p ppath,
+  simp,
+  apply simple_graph.reachable.map,
+  rotate,
+  apply nonempty.intro,
+  exact p,
+end
+
+@[simp] def connected_component.map_id : ∀ C, connected_component.map G G hom.id C = C := by
+{ intro C, refine C.ind _, intro _, refl, }
+
+@[simp] def connected_component.map_comp
+  {V' : Type*} (G' : simple_graph V') {V'' : Type*} (G'' : simple_graph V'')
+  (φ : G →g G') (ψ : G' →g G'') :
+  ∀ C, connected_component.map G' G'' ψ (connected_component.map G G' φ C) =
+  connected_component.map G G'' (hom.comp ψ φ) C := by
+  { intro C, refine C.ind _, intro _, refl, }
+
 lemma walk.split_along_set {V : Type u} {G : simple_graph V} :
 ∀ {u v : V} (p : G.walk u v) (S : set V) (uS : u ∈ S) (vS : v ∉ S),
   ∃ (x y : V) (w : G.walk u x) (a : G.adj x y) (w' : G.walk y v), p = w.append (cons a w') ∧  (w.support.to_finset : set V) ⊆ S ∧ y ∉ S
@@ -124,6 +155,10 @@ match u, v, w, p, h with
 }
 end
 
+/-
+
+Error: Lemma has already been declared
+
 lemma walk.mem_support_iff_exists_append  {V : Type u} {G : simple_graph V} {u v w : V} {p : G.walk u v} :
   w ∈ p.support ↔ ∃ (q : G.walk u w) (r : G.walk w v), p = q.append r :=
 begin
@@ -131,6 +166,7 @@ begin
   { exact walk.mem_support_to_exists_append },
   { rintros ⟨q,r,rfl⟩,simp only [mem_support_append_iff, end_mem_support, start_mem_support, or_self],},
 end
+-/
 
 lemma walk.support_append_subset_left {V : Type u} {G : simple_graph V} {u v w : V} (p : G.walk u v) (q : G.walk v w) :
   p.support ⊆ (p.append q).support := by simp only [walk.support_append,list.subset_append_left]

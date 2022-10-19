@@ -23,7 +23,7 @@ variables  {V : Type u}
 variables (G : simple_graph V)  (K : set V)
 
 
-set_option profiler true
+-- set_option profiler true
 
 /--!
 
@@ -82,6 +82,10 @@ begin
 end
 
 lemma out.empty (G : simple_graph V) : G.out ∅ = G := by {ext, obviously,}
+
+def out.map_to {V V' : Type*} {G : simple_graph V} {G' : simple_graph V'}
+  (φ : G →g G') (K : set V) (L : set V') (h : φ⁻¹' L ⊆ K) : G.out K →g G'.out L :=
+    ⟨φ, λ a b ⟨ha, hb, hadj⟩, ⟨λ ha', ha (h ha'), λ hb', hb (h hb'), hom.map_adj φ hadj⟩⟩
 
 -- where to put this?
 private def walk_cast_aux {G G' : simple_graph V} {S : set V} (e : G = G') {u v : V} (p : G.walk u v)
@@ -392,23 +396,19 @@ end finiteness
 
 section back
 
+def out.incl {K L : set V} (h : K ⊆ L) : G.out L →g G.out K :=
+  out.map_to hom.id _ _ h
+
 /-- Every connected component outside a given set is contained in a unique connected component outside a smaller set.
   `back` takes a component outside a set `L` to a component outside a set `K`, when `K ⊆ L`. -/
 def back {K L : set V} (h : K ⊆ L) (C : G.comp_out L) : G.comp_out K :=
-begin
-  fapply @connected_component.lift V (G.out L) _ (λ v, connected_component_mk _ v), rotate,
-  exact C,
-  rintro v w p pp,
-  simp,
-  apply out.reachable_mono G K L h,
-  exact (⟨p⟩: (G.out L).reachable v w),
-end
+  connected_component.map _ _ (out.incl h) C
 
 lemma back_sub {K L : set V} (h : K ⊆ L) (C : G.comp_out L) : (C : set V) ⊆ (C.back h : set V) :=
 begin
   refine connected_component.ind _ C,
   rintro v u uv,
-  dsimp [back], simp at uv ⊢,
+  dsimp [back, connected_component.map], simp at uv ⊢,
   apply out.reachable_mono G K L h u v uv,
 end
 
@@ -428,12 +428,12 @@ end
 
 @[simp]
 lemma back_refl_apply {K : set V} (C : G.comp_out K) : C.back (subset_refl K) = C :=
-by {refine C.ind _, rintro v, dsimp only [back], refl,}
+by {refine C.ind _, intro _, refl, }
 
 @[simp]
 lemma back_trans_apply {K L M : set V} (kl : K ⊆ L) (lm : L ⊆ M) (C : G.comp_out M) :
   (C.back ‹L ⊆ M›).back ‹K ⊆ L› = C.back (‹K ⊆ L›.trans  ‹L ⊆ M›) :=
-by {refine C.ind _, rintro v, dsimp only [back], simp only [connected_component.lift_mk],}
+by {refine C.ind _, intro _, refl, }
 
 end back
 
@@ -546,6 +546,10 @@ end infinite
 
 
 section misc
+
+def preimage_hom {V V' : Type*} {G : simple_graph V} {G' : simple_graph V'} (φ : G →g G') (L : set V') :
+  G.out (φ⁻¹' L) →g G'.out L :=
+  out.map_to φ _ _ rfl.subset
 
 def equiv_of_iso {V V' : Type*} {G : simple_graph V} {G' : simple_graph V'} (φ : G ≃g G')
  (K : set V) : G.comp_out K ≃ G'.comp_out (φ '' K) :=
