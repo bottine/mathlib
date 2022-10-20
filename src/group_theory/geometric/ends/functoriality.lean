@@ -98,23 +98,13 @@ begin
     intro L,
     let K := cofinite.preimage φ.cofinite L,
     obtain ⟨C, Cdis⟩ := s K,
+
     fsplit,
     apply connected_component.map,
     apply comp_out.preimage_hom φ.val,
     apply eq.mp (congr_arg _ _) C,
     apply cofinite.preimage.coe,
 
-    intro v', simp,
-    intros hv'L H,
-
-    -- obviously, because
-    -- v' ∈ L and hence cannot
-    -- be in any G.comp_out L
-
-    apply Cdis,
-    {
-      sorry,
-    },
     sorry,
   },
 

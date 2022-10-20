@@ -402,7 +402,7 @@ def out.incl {K L : set V} (h : K ⊆ L) : G.out L →g G.out K :=
 /-- Every connected component outside a given set is contained in a unique connected component outside a smaller set.
   `back` takes a component outside a set `L` to a component outside a set `K`, when `K ⊆ L`. -/
 def back {K L : set V} (h : K ⊆ L) (C : G.comp_out L) : G.comp_out K :=
-  connected_component.map _ _ (out.incl h) C
+  connected_component.map (out.incl h) C
 
 lemma back_sub {K L : set V} (h : K ⊆ L) (C : G.comp_out L) : (C : set V) ⊆ (C.back h : set V) :=
 begin
@@ -440,12 +440,25 @@ end back
 
 section dis
 
+lemma connected_component.map_of_dis {V' : Type*} (G' : simple_graph V')
+  (φ : G →g G') (C : G.connected_component) {K : set V} {L : set V'} (h : K ⊆ φ⁻¹' L)
+  : disjoint K C → disjoint L (C.map φ) :=
+begin
+  rintro Cdis,
+  intro v',
+  simp,
+  intros hv'L hv'mapC,
+  apply Cdis,
+  simp, split,
+  sorry -- probably false
+end
+
 lemma back_of_dis {K L : set V} (h : K ⊆ L) (C : G.comp_out L) : C.dis → (C.back h).dis :=
 begin
   rintro Cdis,
   dsimp only [dis] at Cdis ⊢,
   by_contra h',
-  simp at h',
+  simp only [not_dis_iff_singleton_in, exists_prop] at h',
   obtain ⟨k,kK,backk⟩ := h',
   let c := C.nempty.some,
   let cC := C.nempty.some_spec,

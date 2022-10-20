@@ -97,7 +97,8 @@ begin
   apply hom.map_adj φ,
 end
 
-def connected_component.map {V' : Type*} (G' : simple_graph V') (φ : G →g G') (C : G.connected_component) : G'.connected_component :=
+def connected_component.map {V : Type*} {G : simple_graph V} {V' : Type*} {G' : simple_graph V'}
+  (φ : G →g G') (C : G.connected_component) : G'.connected_component :=
 begin
   apply @connected_component.lift V G _ (λ v, connected_component_mk _ (φ v)),
   rotate,
@@ -110,14 +111,14 @@ begin
   exact p,
 end
 
-@[simp] def connected_component.map_id : ∀ C, connected_component.map G G hom.id C = C := by
+@[simp] def connected_component.map_id : ∀ C : connected_component G, connected_component.map hom.id C = C := by
 { intro C, refine C.ind _, intro _, refl, }
 
 @[simp] def connected_component.map_comp
   {V' : Type*} (G' : simple_graph V') {V'' : Type*} (G'' : simple_graph V'')
   (φ : G →g G') (ψ : G' →g G'') :
-  ∀ C, connected_component.map G' G'' ψ (connected_component.map G G' φ C) =
-  connected_component.map G G'' (hom.comp ψ φ) C := by
+  ∀ C, connected_component.map ψ (connected_component.map φ C) =
+  connected_component.map (hom.comp ψ φ) C := by
   { intro C, refine C.ind _, intro _, refl, }
 
 lemma walk.split_along_set {V : Type u} {G : simple_graph V} :
