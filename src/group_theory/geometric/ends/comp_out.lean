@@ -450,7 +450,7 @@ begin
   intros hv'L hv'mapC,
   apply Cdis,
   simp, split,
-  sorry -- probably false
+  all_goals {sorry} -- probably false
 end
 
 lemma back_of_dis {K L : set V} (h : K ⊆ L) (C : G.comp_out L) : C.dis → (C.back h).dis :=
