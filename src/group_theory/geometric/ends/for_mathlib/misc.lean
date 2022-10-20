@@ -89,7 +89,8 @@ namespace simple_graph
 
 variables  {V : Type u} (G : simple_graph V)
 
-def reachable.map {V' : Type*} {G' : simple_graph V'} (φ : G →g G') {u v : V} : G.reachable u v →  G'.reachable (φ u) (φ v) :=
+def reachable.map {V : Type u} {G : simple_graph V} {V' : Type*} {G' : simple_graph V'}
+  (φ : G →g G') {u v : V} : G.reachable u v →  G'.reachable (φ u) (φ v) :=
 begin
   simp_rw [reachable_iff_refl_trans_gen] at *,
   fapply refl_trans_gen.lift,

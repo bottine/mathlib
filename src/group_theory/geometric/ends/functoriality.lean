@@ -65,24 +65,30 @@ variables  {V : Type u}
            (Gpc' : preconnected G')
            (Gpc'' : preconnected G'')
 
+
+
 abbreviation cofinite_hom := {φ : G →g G' // cofinite φ}
 
-infix ` ↣g `:50 := cofinite_hom -- type as `\rightarrowtail`
+namespace cofinite_hom
 
+local infix ` ↣g `:50 := cofinite_hom -- type as `\rightarrowtail`
 
-@[simp] theorem cofinite_hom.cofinite {G : simple_graph V} {G' : simple_graph V'} (φ : G ↣g G') : cofinite φ :=
+@[simp] theorem cofinite {G : simple_graph V} {G' : simple_graph V'}
+    (φ : G ↣g G') : cofinite φ :=
   φ.property
 
-def cofinite_hom.id : G ↣g G := ⟨hom.id, cofinite.id⟩
+protected def id : G ↣g G := ⟨hom.id, cofinite.id⟩
 
-def cofinite_hom.comp (ψ : G' ↣g G'') (φ : G ↣g G') : G ↣g G'' :=
+def comp (ψ : G' ↣g G'') (φ : G ↣g G') : G ↣g G'' :=
   ⟨ψ.val.comp φ.val, (cofinite_hom.cofinite φ).comp (cofinite_hom.cofinite ψ)⟩
 
-def cofinite_hom.component_map {G : simple_graph V} {G' : simple_graph V'} (φ : G ↣g G') (L : set V')  : G.comp_out (φ⁻¹' L) → G'.comp_out L :=
-  connected_component.map (G.out (φ ⁻¹' L)) (G'.out L)
-  (comp_out.preimage_hom (↑φ) L)
+def component_map {G : simple_graph V} {G' : simple_graph V'} (
+    φ : G ↣g G') (L : set V')  : G.comp_out (φ⁻¹' L) → G'.comp_out L :=
+  connected_component.map $ comp_out.preimage_hom ↑φ L
 
-theorem cofinite_hom.component_map_back (φ : G ↣g G') (L L' : set V') (h : L ⊆ L') : ∀ C, (cofinite_hom.component_map φ L' C).back h = cofinite_hom.component_map φ L (C.back $ preimage_mono h) :=
+theorem component_map_back (φ : G ↣g G') (L L' : set V') (h : L ⊆ L') :
+  ∀ C, (cofinite_hom.component_map φ L' C).back h =
+  cofinite_hom.component_map φ L (C.back $ preimage_mono h) :=
 begin
   intro C,
   dsimp only [comp_out.back, cofinite_hom.component_map],
@@ -90,32 +96,61 @@ begin
   refl,
 end
 
-def cofinite_hom.Ends (φ : G ↣g G') : Ends G → Ends G' :=
-begin
-  rintro ⟨s, sec⟩,
-  fsplit,
-  {
-    intro L,
-    let K := cofinite.preimage φ.cofinite L,
-    obtain ⟨C, Cdis⟩ := s K,
+end cofinite_hom
 
-    fsplit,
-    apply connected_component.map,
-    apply comp_out.preimage_hom φ.val,
-    apply eq.mp (congr_arg _ _) C,
-    apply cofinite.preimage.coe,
+/-- A `weak_hom` between graphs preserves only reachability, not adjacency. -/
+-- This is the counterpart to `good_finset`
+abbreviation weak_hom := rel_hom G.reachable G'.reachable
 
-    sorry,
-  },
+abbreviation reachable_hom (f : V → V') :=
+  ∀ {v w : V}, G.reachable v w → G'.reachable (f v) (f w)
 
-  dsimp [Ends, category_theory.functor.sections],
-  intros L L' h,
-  dsimp [ComplComp, dis_comp_out.back, maps_to.restrict, subtype.map],
-  dsimp [comp_out.back, cofinite.preimage],
-  sorry,
-end
+namespace weak_hom
 
+infix ` ↝g `:50 := weak_hom -- type as `\r~`
 
+lemma map_reachable {G : simple_graph V} {G' : simple_graph V'}
+  (φ : G ↝g G') : reachable_hom G G' φ :=
+  λ _ _, φ.map_rel
+
+def from_hom (φ : G →g G') : G ↝g G' :=
+  ⟨φ, λ {a} {b}, reachable.map φ⟩
+
+def component_map (φ : G ↝g G') (C : G.connected_component) : G'.connected_component :=
+  connected_component.lift (λ v, connected_component_mk G' (φ v))
+    ( λ _ _ p _,
+      connected_component.eq.mpr
+      (map_reachable φ (nonempty.intro p)) )
+    C
+
+protected def id : G ↝g G := ⟨id, λ _ _, id⟩
+
+def comp (φ : G ↝g G') (ψ : G' ↝g G'') : G ↝g G'' :=
+  ⟨ψ ∘ φ, λ _ _, ψ.map_reachable ∘ φ.map_reachable⟩
+
+end weak_hom
+
+-- the counterpart of `coarse`
+-- needs a better name
+structure weak_end_hom (φ : V → V') :=
+  (fin_map : finset V' → finset V)
+  (reachable_out : ∀ L : finset V',
+    reachable_hom (G.out (fin_map L)) (G'.out L) φ)
+
+protected def weak_end_hom.id : weak_end_hom G G id :=
+  ⟨id, λ _ _ _, id⟩
+
+def weak_end_hom.comp (φ : V → V') (ψ : V' → V'')
+  (hφ : weak_end_hom G G' φ) (hψ : weak_end_hom G' G'' ψ) :
+    weak_end_hom G G'' (ψ ∘ φ) :=
+    ⟨hφ.fin_map ∘ hψ.fin_map, by {
+      intros _ _ _ h,
+      apply hψ.reachable_out,
+      apply hφ.reachable_out,
+      exact h, }⟩
+
+def weak_end_hom.ends_map (φ : V → V') (hφ : weak_end_hom G G' φ) :
+  Ends G → Ends G' := sorry
 
 def good_finset (f : V → V') (K : finset V') (L : finset V) :=
   Π D : inf_comp_out G L, {C : inf_comp_out G' K | f '' (D : set V) ⊆ C}
