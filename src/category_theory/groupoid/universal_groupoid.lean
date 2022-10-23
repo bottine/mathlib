@@ -184,14 +184,16 @@ quotient.lift _
       induction h,
       { dsimp [quiver.push.of, category_struct.comp, category_struct.id, quiver.hom.to_path],
         simp only [functor.map_comp, cast_cast, category.id_comp],
-        --finish,
-        sorry,
-         },
+        apply eq_of_heq,
+        apply (cast_heq _ _).trans,
+        congr, any_goals { apply hτ₀ },
+        all_goals { symmetry, simp only [cast_heq], }, },
       { dsimp [quiver.push.of, category_struct.comp, category_struct.id, quiver.hom.to_path],
         simp only [functor.map_id, cast_cast, category.id_comp],
-        --finish,
-        sorry
-        /-I'm overusing finish… I have no idea how it works-/ }, } )
+        apply eq_of_heq,
+        symmetry,
+        apply (cast_heq _ _).trans,
+        rw hτ₀, }, } )
 
 lemma lift_spec_obj : (lift σ θ τ₀ hτ₀).obj = τ₀ ∘ (as σ) := rfl
 
