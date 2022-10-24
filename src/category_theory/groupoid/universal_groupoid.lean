@@ -230,13 +230,15 @@ end ump
 
 section reduced_words
 
+open relation
+
 variables {X Y : paths $ quiver.push σ} (p q r : X ⟶ Y)
 
 -- we defined it the wrong way round
 abbreviation R (p q : X ⟶ Y) : Prop := quotient.comp_closure (red_step σ) q p
-abbreviation R' (p q : X ⟶ Y) : Prop := relation.refl_gen (R σ) p q
-abbreviation RR (p q : X ⟶ Y) : Prop := relation.refl_trans_gen (R σ) p q
-abbreviation RRR (p q : X ⟶ Y) : Prop := relation.join (RR σ) p q
+abbreviation R' (p q : X ⟶ Y) : Prop := refl_gen (R σ) p q
+abbreviation RR (p q : X ⟶ Y) : Prop := refl_trans_gen (R σ) p q
+abbreviation RRR (p q : X ⟶ Y) : Prop := join (RR σ) p q
 
 lemma red_step_iff :
   red_step σ p q ↔
@@ -283,13 +285,12 @@ lemma diamond' : R σ r p → R σ r q → ∃ s, R' σ p s ∧ RR σ q s :=
 begin
   rintro pq pr,
   obtain ⟨s,qs,rs⟩ := diamond σ _ _ _ pq pr,
-  exact ⟨s,relation.refl_gen.single qs,relation.refl_trans_gen.single rs⟩,
+  exact ⟨s,refl_gen.single qs,refl_trans_gen.single rs⟩,
 end
-
 
 lemma church_rosser : RR σ r p → RR σ r q → ∃ s, RR σ p s ∧ RR σ q s :=
 begin
-  refine relation.church_rosser _,
+  refine church_rosser _,
   rintro p q r pq pr,
   exact diamond' σ _ _ _ pq pr,
 end
@@ -305,15 +306,15 @@ begin
 end
 
 -- maybe should be done using `wf.fix` ?
-lemma exists_reduced : ∀ (p : X ⟶ Y),
-  ∃ (r : X ⟶ Y), RR σ p r ∧ is_reduced σ r
-| p := if h : is_reduced σ p then ⟨p, by {apply relation.refl_trans_gen.refl}, h⟩ else by
+ lemma exists_reduced : ∀ (p : X ⟶ Y),
+  ∃ (r : X ⟶ Y), (RR σ p r ∧ is_reduced σ r)
+| p := if h : is_reduced σ p then ⟨p, by {apply refl_trans_gen.refl}, h⟩ else by
   { dsimp [is_reduced] at h, push_neg at h,
     obtain ⟨q,qp⟩ := h,
-    let hl : q.length < p.length := comp_closure_red_step_len_lt σ q p qp, -- hint for well-foundedness
+    let : q.length < p.length := comp_closure_red_step_len_lt σ q p qp, -- hint for well-foundedness
     obtain ⟨r, rq, rred⟩ := exists_reduced q,
     refine ⟨r, _, rred⟩,
-    refine relation.refl_trans_gen.trans _ rq, apply relation.refl_trans_gen.single, apply qp, }
+    exact refl_trans_gen.trans (refl_trans_gen.single qp) rq, }
 using_well_founded
 { dec_tac := `[assumption],
   rel_tac := λ _ _, `[exact ⟨_, measure_wf (λ (f : X ⟶ Y), f.length)⟩] }
@@ -330,19 +331,36 @@ begin
   { apply (qred ⟨t,qt⟩).elim, },
 end
 
-lemma unique_reduced : eqv_gen (R σ) p q → is_reduced σ p → is_reduced σ q → p = q :=
+lemma unique_reduced' : eqv_gen (R σ) p q → is_reduced σ p → is_reduced σ q → p = q :=
 begin
   rintro h pred qred,
   -- A boring bit of gymnastic to get `RRR` from `eqv_gen`…
   have equiv : _root_.equivalence (@RRR _ _ _ σ X Y) :=
-    relation.equivalence_join_refl_trans_gen (λ a b c, diamond' σ _ _ _),
+    equivalence_join_refl_trans_gen (λ a b c, diamond' σ _ _ _),
   have le : ∀ (f g : X ⟶ Y), R σ f g → RRR σ f g := λ f g h',
-    relation.join_of_single relation.reflexive_refl_trans_gen (relation.refl_trans_gen.single h'),
+    join_of_single reflexive_refl_trans_gen (refl_trans_gen.single h'),
   let h' := eqv_gen.mono le h,
   rw (equivalence.eqv_gen_eq equiv) at h',
   -- Now we have it
   rcases h' with ⟨d,pd,qd⟩,
   rw [equal_of_is_reduced σ _ _ pd pred, equal_of_is_reduced σ _ _ qd qred],
+end
+
+lemma unique_reduced {X Y : universal_groupoid σ} (p : X ⟶ Y) :
+  ∃! (f : X.as ⟶ Y.as), is_reduced σ f ∧ quot.mk _ f = p :=
+begin
+  apply quot.induction_on p,
+  rintro f, apply exists_unique_of_exists_of_unique,
+  { use (exists_reduced σ f).some, split,
+    exact (exists_reduced σ f).some_spec.2,
+    apply quot.eqv_gen_sound,
+    let := (exists_reduced σ f).some_spec.1,
+    -- Should get from `RR` to `eqv_gen`…
+    sorry },
+  { rintros g h ⟨gred,geq⟩ ⟨hred,heq⟩,
+    have := quot.exact _ (geq.trans heq.symm),
+    refine unique_reduced' σ g h _ gred hred,
+    convert this, sorry, /- wtf???-/  }
 end
 
 end reduced_words
