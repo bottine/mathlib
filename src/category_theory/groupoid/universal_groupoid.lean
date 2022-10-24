@@ -11,21 +11,25 @@ import combinatorics.quiver.basic
 import combinatorics.quiver.symmetric
 import logic.relation
 import tactic.nth_rewrite
+import tactic.rewrite_search
 import category_theory.path_category
 import category_theory.quotient
 import category_theory.groupoid.vertex_group
 
+
 /-!
 # Universal groupoid
 
-This file defines the universal groupoid of a groupoid along a function. to its unique
+This file defines the universal groupoid of a groupoid along a function.
 
 -/
 
+open classical
+local attribute [instance] prop_decidable
+
+
 namespace category_theory
-
 namespace groupoid
-
 namespace universal
 
 universes u v u' v' u'' v''
@@ -96,7 +100,7 @@ begin
   { rcases f with ⟨x,y,f⟩,
     simp only [quiver.path.reverse],
     fapply eqv_gen.trans,
-    { exact q ≫ (q.reverse),},
+    { exact q ≫ (q.reverse), },
     { apply eqv_gen.symm,
       fapply eqv_gen.trans,
       { exact q ≫ ((σ *).map (𝟙 x)).to_path ≫ q.reverse, },
@@ -112,9 +116,9 @@ begin
       dsimp only [category_struct.comp, quiver.hom.to_path,
                   quiver.path.comp, quiver.push.of, quiver.reverse, quiver.has_reverse.reverse'] at this ⊢,
       simpa only [←quiver.path.comp_assoc,quiver.path.comp_cons, quiver.path.comp_nil, inv_eq_inv,
-                 is_iso.hom_inv_id] using this, -- UGLY
+                 is_iso.hom_inv_id] using this,
        }, },
-    { exact ih }, },
+    { exact ih, }, },
 end
 
 lemma congr_reverse_comp {X Y : paths $ quiver.push σ} (p : X ⟶ Y) :
@@ -149,14 +153,18 @@ def extend : V ⥤ (universal_groupoid σ) :=
     ((σ * .map f).to_path ≫ (σ * .map g).to_path)
     (red_step.comp X Y Z f g) }
 
-def as : (universal_groupoid σ) → V' := λ x, x.as
+/-- Get the original vertex. -/
+abbreviation as : (universal_groupoid σ) → V' := λ x, x.as
+
 lemma extend_eq : (extend σ).to_prefunctor =
   ((quiver.push.of σ).comp paths.of).comp (quotient.functor $ red_step σ).to_prefunctor := rfl
 
+-- Thanks Adam Topaz
 lemma _root_.category_theory.functor.to_prefunctor_ext {C D : Type*} [category C] [category D]
   (F G : C ⥤ D) : F = G ↔ F.to_prefunctor = G.to_prefunctor :=
 begin
-  split, { rintros rfl, refl },
+  split,
+  { rintros rfl, refl },
   intros h,
   have h1 : F.obj = G.obj,
   { show F.to_prefunctor.obj = G.to_prefunctor.obj,
@@ -165,7 +173,6 @@ begin
   congr, ext A B f,
   simpa using congr_arg_heq (λ e : prefunctor C D, e.map f) h,
 end
-
 
 section ump
 
@@ -186,7 +193,8 @@ quotient.lift _
         simp only [functor.map_comp, cast_cast, category.id_comp],
         apply eq_of_heq,
         apply (cast_heq _ _).trans,
-        congr, any_goals { apply hτ₀ },
+        congr,
+        any_goals { apply hτ₀ },
         all_goals { symmetry, simp only [cast_heq], }, },
       { dsimp [quiver.push.of, category_struct.comp, category_struct.id, quiver.hom.to_path],
         simp only [functor.map_id, cast_cast, category.id_comp],
@@ -220,44 +228,125 @@ end
 
 end ump
 
-section composite
-/-!
-Given `σ : V → V'` and `τ : V' → V''`, and `[groupoid V]`, taking the universal groupoid along
-`τ∘σ` is equivalent to first taking it along `σ`, and then along `τ`.
--/
-variables {V'' : Type*} (τ : V' → V'')
+section reduced_words
 
-end composite
+variables {X Y : paths $ quiver.push σ} (p q r : X ⟶ Y)
 
-section universal_group
-/-!
-The universal group is the universal groupoid for the constant map to a singleton type.
--/
+-- we defined it the wrong way round
+abbreviation R (p q : X ⟶ Y) : Prop := quotient.comp_closure (red_step σ) q p
+abbreviation R' (p q : X ⟶ Y) : Prop := relation.refl_gen (R σ) p q
+abbreviation RR (p q : X ⟶ Y) : Prop := relation.refl_trans_gen (R σ) p q
+abbreviation RRR (p q : X ⟶ Y) : Prop := relation.join (RR σ) p q
 
-def _root_.category_theory.groupoid.universal_group.groupoid (V : Type*) [groupoid V] :=
-@universal_groupoid V _ unit (λ (X : V), unit.star)
+lemma red_step_iff :
+  red_step σ p q ↔
+  (∃ (x z y : V) (f : x ⟶ z) (g : z ⟶ y) (xX : σ x = X) (yY : σ y = Y),
+    p = (eq_to_hom xX.symm) ≫ ((σ *).map (f ≫ g)).to_path ≫ (eq_to_hom yY) ∧
+    q = (eq_to_hom xX.symm) ≫ (((σ *).map f).to_path ≫ ((σ *).map g).to_path) ≫ (eq_to_hom yY)) ∨
+  (∃ (x : V) (xX : σ x = X) (XY : X = Y),
+    p = eq_to_hom XY ∧
+    q = (eq_to_hom xX.symm) ≫ ((σ *).map $ 𝟙 x).to_path ≫ (eq_to_hom $ xX.trans XY))  :=
+begin
+  split,
+  {
+    rintros (⟨x, z, y, f, g⟩|(x)),
+    { left, use [x,z,y,f,g,rfl,rfl],
+      dsimp [quiver.push.of, quiver.hom.to_path],
+      simp only [category.comp_id, category.id_comp, eq_self_iff_true, true_and], refl, },
+    { right, use [x,rfl,rfl],
+      dsimp [quiver.push.of, quiver.hom.to_path],
+      simp only [category.comp_id, category.id_comp, eq_self_iff_true, and_true], refl, }, },
+  { rintros (⟨x, z, y, f, g, rfl, rfl, rfl, rfl⟩|⟨x, rfl, rfl, rfl, rfl⟩),
+    { constructor, },
+    { constructor, }, },
+end
 
-instance (V : Type*) [groupoid V] : groupoid (universal_group.groupoid V) :=
-category_theory.groupoid.universal_groupoid.category_theory.groupoid (λ (X : V), unit.star)
+lemma red_step_length (h : red_step σ p q) :
+  p.length.succ = q.length := by { cases h; refl, }
 
-def _root_.category_theory.groupoid.universal_group.star  (V : Type*) [groupoid V] :
-  universal_group.groupoid V := ⟨unit.star⟩
+lemma comp_closure_red_step_length
+ (h : R σ q p ) : p.length.succ = q.length :=
+begin
+  cases h,
+  simp only [quiver.path.length_comp, category_struct.comp, ←red_step_length σ _ _ h_h,
+             nat.succ_add],
+  refl,
+end
 
-def _root_.category_theory.groupoid.universal_group :=
-  (universal_group.star V) ⟶ (universal_group.star V)
-
-namespace group
-
+lemma comp_closure_red_step_len_lt
+ (h : R σ q p) : p.length < q.length := by
+{ rw ←comp_closure_red_step_length σ p q h, exact lt_add_one (quiver.path.length p), }
 
 
-def lift :
+lemma diamond : R σ r p → R σ r q → ∃ s, R σ p s ∧ R σ q s := sorry
+lemma diamond' : R σ r p → R σ r q → ∃ s, R' σ p s ∧ RR σ q s :=
+begin
+  rintro pq pr,
+  obtain ⟨s,qs,rs⟩ := diamond σ _ _ _ pq pr,
+  exact ⟨s,relation.refl_gen.single qs,relation.refl_trans_gen.single rs⟩,
+end
 
-end group
 
-end universal_group
+lemma church_rosser : RR σ r p → RR σ r q → ∃ s, RR σ p s ∧ RR σ q s :=
+begin
+  refine relation.church_rosser _,
+  rintro p q r pq pr,
+  exact diamond' σ _ _ _ pq pr,
+end
+
+def is_reduced := ¬ ∃ (q : X ⟶ Y), R σ p q
+
+lemma equal_of_is_reduced : RR σ p q → is_reduced σ p → p = q :=
+begin
+  rintro pq pred,
+  rcases pq.cases_head with (rfl|⟨r,pr,rq⟩),
+  { refl, },
+  { apply (pred ⟨r,pr⟩).elim, },
+end
+
+-- maybe should be done using `wf.fix` ?
+lemma exists_reduced : ∀ (p : X ⟶ Y),
+  ∃ (r : X ⟶ Y), RR σ p r ∧ is_reduced σ r
+| p := if h : is_reduced σ p then ⟨p, by {apply relation.refl_trans_gen.refl}, h⟩ else by
+  { dsimp [is_reduced] at h, push_neg at h,
+    obtain ⟨q,qp⟩ := h,
+    let hl : q.length < p.length := comp_closure_red_step_len_lt σ q p qp, -- hint for well-foundedness
+    obtain ⟨r, rq, rred⟩ := exists_reduced q,
+    refine ⟨r, _, rred⟩,
+    refine relation.refl_trans_gen.trans _ rq, apply relation.refl_trans_gen.single, apply qp, }
+using_well_founded
+{ dec_tac := `[assumption],
+  rel_tac := λ _ _, `[exact ⟨_, measure_wf (λ (f : X ⟶ Y), f.length)⟩] }
+
+lemma unique_reduced_down : RR σ p q → RR σ p r → is_reduced σ q → is_reduced σ r → q = r :=
+begin
+  rintros pq pr qred rred,
+  obtain ⟨s,qs,rs⟩ := church_rosser σ _ _ _ pq pr,
+  rcases qs.cases_head with (rfl|⟨t,qt,ts⟩);
+  rcases rs.cases_head with (rfl|⟨u,ru,us⟩),
+  { refl, },
+  { apply (rred ⟨u,ru⟩).elim, },
+  { apply (qred ⟨t,qt⟩).elim, },
+  { apply (qred ⟨t,qt⟩).elim, },
+end
+
+lemma unique_reduced : eqv_gen (R σ) p q → is_reduced σ p → is_reduced σ q → p = q :=
+begin
+  rintro h pred qred,
+  -- A boring bit of gymnastic to get `RRR` from `eqv_gen`…
+  have equiv : _root_.equivalence (@RRR _ _ _ σ X Y) :=
+    relation.equivalence_join_refl_trans_gen (λ a b c, diamond' σ _ _ _),
+  have le : ∀ (f g : X ⟶ Y), R σ f g → RRR σ f g := λ f g h',
+    relation.join_of_single relation.reflexive_refl_trans_gen (relation.refl_trans_gen.single h'),
+  let h' := eqv_gen.mono le h,
+  rw (equivalence.eqv_gen_eq equiv) at h',
+  -- Now we have it
+  rcases h' with ⟨d,pd,qd⟩,
+  rw [equal_of_is_reduced σ _ _ pd pred, equal_of_is_reduced σ _ _ qd qred],
+end
+
+end reduced_words
 
 end universal
-
 end groupoid
-
 end category_theory
