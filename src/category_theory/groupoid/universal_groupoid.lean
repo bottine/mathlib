@@ -37,16 +37,17 @@ universes u v u' v' u'' v''
 variables {V : Type u} [groupoid V] {V' : Type u'} (σ : V → V')
 
 local postfix ` * ` := quiver.push.of
+local notation σ ` † ` f := ((σ *).map f).to_path
 
 /-- Two reduction steps possible: compose composable arrows, or drop identity arrows -/
 inductive red.atomic_step : hom_rel (paths (quiver.push σ))
 | comp (X Y Z : V) (f : X ⟶ Y) (g : Y ⟶ Z) :
     red.atomic_step
-      (((σ *).map f).to_path ≫ ((σ *).map g).to_path)
-      ((σ *).map (f ≫ g)).to_path
+      ((σ † f) ≫ (σ † g))
+      (σ † (f ≫ g))
 | id (X : V) :
     red.atomic_step
-      ((σ *).map $ 𝟙 X).to_path
+      (σ † (𝟙 X))
       (𝟙 $ σ X)
 
 def red.step {X Y : paths $ quiver.push σ} (p q : X ⟶ Y) :=
@@ -63,11 +64,11 @@ lemma congr_reverse {X Y : paths $ quiver.push σ} (p q : X ⟶ Y) :
 begin
   rintros ⟨U, W, XW, pp, qq, WY, (⟨x, y, z, f, g⟩|(x))⟩,
   { have : red.step σ
-      (WY.reverse ≫ ((((σ *)).map (quiver.reverse g)).to_path
-        ≫ (((σ *)).map (quiver.reverse f)).to_path)
+      (WY.reverse ≫ ((σ † (quiver.reverse g))
+        ≫ (σ † (quiver.reverse f)))
           ≫ XW.reverse)
       (WY.reverse
-        ≫ (((σ *)).map (quiver.reverse $ f≫g)).to_path
+        ≫ (σ † (quiver.reverse $ f≫g))
           ≫  XW.reverse),
     { apply quotient.comp_closure.intro,
       have := @red.atomic_step.comp _ _ _ σ (z) (y) (x) (inv g) (inv f),
@@ -77,7 +78,7 @@ begin
                 inv_eq_inv, is_iso.inv_comp, quiver.path.comp_nil, quiver.path.comp_assoc,
                 quiver.path.reverse_to_path] using this, },
   { have : red.step σ
-      (WY.reverse ≫ (((σ *)).map (𝟙 x)).to_path ≫ XW.reverse)
+      (WY.reverse ≫ (σ † (𝟙 x)) ≫ XW.reverse)
       (WY.reverse ≫ 𝟙 _ ≫  XW.reverse),
     { apply quotient.comp_closure.intro,
       have := @red.atomic_step.id _ _ _ σ  (x),
@@ -108,8 +109,8 @@ begin
         apply eqv_gen.symm, apply eqv_gen.rel, constructor, constructor, },
       { apply eqv_gen.symm, apply eqv_gen.rel,
         have : red.step σ
-               (q ≫ ((σ * .map f).to_path ≫ (σ * .map $ inv f).to_path) ≫ q.reverse)
-               (q ≫ (σ * .map $ f ≫ inv f).to_path ≫ q.reverse), by
+               (q ≫ ((σ † f) ≫ (σ † (inv f))) ≫ q.reverse)
+               (q ≫ (σ † (f ≫ inv f)) ≫ q.reverse), by
         { apply quotient.comp_closure.intro, constructor, },
       dsimp only [category_struct.comp, quiver.hom.to_path,
                   quiver.path.comp, quiver.push.of, quiver.reverse, quiver.has_reverse.reverse'] at this ⊢,
@@ -235,8 +236,8 @@ abbreviation red.symm (p q : X ⟶ Y) : Prop := join (red σ) p q
 lemma red_step_iff :
   red.atomic_step σ p q ↔
   (∃ (x z y : V) (f : x ⟶ z) (g : z ⟶ y) (xX : σ x = X) (yY : σ y = Y),
-    q = (eq_to_hom xX.symm) ≫ ((σ *).map (f ≫ g)).to_path ≫ (eq_to_hom yY) ∧
-    p = (eq_to_hom xX.symm) ≫ (((σ *).map f).to_path ≫ ((σ *).map g).to_path) ≫ (eq_to_hom yY)) ∨
+    q = (eq_to_hom xX.symm) ≫ (σ † (f ≫ g)) ≫ (eq_to_hom yY) ∧
+    p = (eq_to_hom xX.symm) ≫ ((σ †  f) ≫ (σ †  g)) ≫ (eq_to_hom yY)) ∨
   (∃ (x : V) (xX : σ x = X) (XY : X = Y),
     q = eq_to_hom XY ∧
     p = (eq_to_hom xX.symm) ≫ ((σ *).map $ 𝟙 x).to_path ≫ (eq_to_hom $ xX.trans XY))  :=
@@ -268,13 +269,57 @@ end
 
 lemma red.step_length_lt (h : red.step σ p q) : q.length < p.length := by
 { rw red.step_length σ p q h, exact lt_add_one (quiver.path.length q), }
+/-
+lemma red.step_not_nil (s t : X ⟶ X) : red.step σ s t → s ≠ quiver.path.nil :=
+begin
+  rintro h, cases h, cases h_h,
+  { simp, simp [quiver.path.comp, quiver.hom.to_path], sorry, },
+  { rintro h,
+    let := congr_arg (quiver.path.length) h,
+    simp at this, sorry, },
+end
+-/
+/-
+/-- Two reduction steps possible: compose composable arrows, or drop identity arrows -/
+inductive red.atomic_step : hom_rel (paths (quiver.push σ))
+| comp (X Y Z : V) (f : X ⟶ Y) (g : Y ⟶ Z) :
+    red.atomic_step
+      ((σ †  f) ≫ (σ †  g))
+      (σ † (f ≫ g))
+| id (X : V) :
+    red.atomic_step
+      (σ † (𝟙 X))
+      (𝟙 $ σ X)
+-/
 
-lemma nil_not_red_step (s : X ⟶ X) : ¬ red.step σ (quiver.path.nil : X ⟶ X) s := by
-{ rintro r, cases h : r,  }
+lemma red.step_diamond_aux_comp_comp :
+∀ (a b : paths $ quiver.push σ) {X Y Z : V} {X' Y' Z' : V}
+  (pre : a ⟶ σ X) (f : X ⟶ Y) (g : Y ⟶ Z) (suf : σ Z ⟶ b)
+  (pre' : a ⟶ σ X') (f' : X' ⟶ Y') (g' : Y' ⟶ Z') (suf' : σ Z' ⟶ b),
+  pre ≫ ((σ † f) ≫ (σ † g)) ≫ suf = pre' ≫ ((σ † f') ≫ (σ † g')) ≫ suf'
+→ pre ≫ (σ † (f ≫ g)) ≫ suf = pre' ≫ (σ † (f' ≫ g')) ≫ suf' ∨
+  ∃ p, red.step σ (pre ≫ (σ † (f ≫ g)) ≫ suf) p ∧
+       red.step σ (pre' ≫ (σ † (f' ≫ g')) ≫ suf') p := sorry
 
-lemma diamond : ∀ {X Y} (p q r : X ⟶ Y),  red.step σ r p → red.step σ r q → ∃ s, red.step σ p s ∧ red.step σ q s
-| _ _ (quiver.path.nil) _ _ _ := sorry
-| _ _ (quiver.path.cons p f) _ _ _ := sorry
+lemma red.step_diamond_aux_comp_nil : ∀ (a b : paths $ quiver.push σ) {X Y Z W : V}
+  (pre : a ⟶ σ X) (f : X ⟶ Y) (g : Y ⟶ Z) (suf : σ Z ⟶ b)
+  (pre' : a ⟶ σ W) (suf' : σ W ⟶ b),
+  pre ≫ ((σ † f) ≫ (σ † g)) ≫ suf = pre' ≫ (σ † 𝟙 W) ≫ suf'
+→ ∃ p, red.step σ (pre ≫ (σ † (f ≫ g)) ≫ suf) p ∧
+       red.step σ (pre' ≫ (𝟙 $ σ W) ≫ suf') p := sorry
+
+lemma red.step_diamond_aux_nil_nil : ∀ (a b : paths $ quiver.push σ) {W W' : V}
+  (pre : a ⟶ σ W) (suf : σ W ⟶ b)
+  (pre' : a ⟶ σ W') (suf' : σ W' ⟶ b),
+  pre ≫ (σ † 𝟙 W) ≫ suf = pre' ≫ (σ † 𝟙 W') ≫ suf' →
+  pre ≫ (𝟙 $ σ W) ≫ suf = pre' ≫ (𝟙 $ σ W') ≫ suf' ∨
+  ∃ p, red.step σ (pre ≫ (σ † 𝟙 _) ≫ suf) p ∧
+       red.step σ (pre' ≫ (σ † 𝟙 _) ≫ suf') p := sorry
+
+
+lemma diamond : ∀ {X Y} (r p q : X ⟶ Y),  red.step σ r p → red.step σ r q → ∃ s, red.step σ p s ∧ red.step σ q s
+| _ _ (quiver.path.nil) _ _ _ _ := by { sorry, }
+| _ _ (quiver.path.cons p f) _ _ _ _ := by { sorry, }
 
 lemma diamond' : red.step σ r p → red.step σ r q → ∃ s, red.step_refl σ p s ∧ red σ q s :=
 begin
@@ -371,7 +416,7 @@ begin
 end
 
 lemma push_arrow_red {x y : V} (f : x ⟶ y) :
-  (∃ q, red.step σ ((σ *).map f).to_path q) → (∃ h : x = y, f = eq_to_hom h) :=
+  (∃ q, red.step σ (σ †  f) q) → (∃ h : x = y, f = eq_to_hom h) :=
 begin
   rintro ⟨q,fq⟩,
   induction fq with a b pre p q suf rs,
