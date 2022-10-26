@@ -39,49 +39,48 @@ variables {V : Type u} [groupoid V] {V' : Type u'} (σ : V → V')
 local postfix ` * ` := quiver.push.of
 
 /-- Two reduction steps possible: compose composable arrows, or drop identity arrows -/
-inductive red_step : hom_rel (paths (quiver.push σ))
+inductive red.atomic_step : hom_rel (paths (quiver.push σ))
 | comp (X Y Z : V) (f : X ⟶ Y) (g : Y ⟶ Z) :
-    red_step
-      ((σ *).map (f ≫ g)).to_path
+    red.atomic_step
       (((σ *).map f).to_path ≫ ((σ *).map g).to_path)
+      ((σ *).map (f ≫ g)).to_path
 | id (X : V) :
-    red_step
-      (𝟙 $ σ X)
+    red.atomic_step
       ((σ *).map $ 𝟙 X).to_path
+      (𝟙 $ σ X)
+
+def red.step {X Y : paths $ quiver.push σ} (p q : X ⟶ Y) :=
+  quotient.comp_closure (red.atomic_step σ) p q
 
 /-- The underlying vertices of the universal groupoid -/
 def _root_.category_theory.groupoid.universal_groupoid
-  {V : Type u} [groupoid V] {V' : Type u'} (σ : V → V') := quotient (red_step σ)
+  {V : Type u} [groupoid V] {V' : Type u'} (σ : V → V') := quotient (red.atomic_step σ)
 
-instance : category (universal_groupoid σ) := quotient.category (red_step σ)
+instance : category (universal_groupoid σ) := quotient.category (red.atomic_step σ)
 
 lemma congr_reverse {X Y : paths $ quiver.push σ} (p q : X ⟶ Y) :
-  quotient.comp_closure (red_step σ) p q →
-  quotient.comp_closure (red_step σ) (p.reverse) (q.reverse)  :=
+  red.step σ p q → red.step σ (p.reverse) (q.reverse) :=
 begin
   rintros ⟨U, W, XW, pp, qq, WY, (⟨x, y, z, f, g⟩|(x))⟩,
-  --rcases rs with (⟨x, y, z, f, g⟩|⟨x⟩),
-  { have : quotient.comp_closure
-      (red_step σ)
-      (WY.reverse
-        ≫ (((σ *)).map (quiver.reverse $ f≫g)).to_path
-          ≫  XW.reverse)
+  { have : red.step σ
       (WY.reverse ≫ ((((σ *)).map (quiver.reverse g)).to_path
         ≫ (((σ *)).map (quiver.reverse f)).to_path)
-          ≫ XW.reverse),
+          ≫ XW.reverse)
+      (WY.reverse
+        ≫ (((σ *)).map (quiver.reverse $ f≫g)).to_path
+          ≫  XW.reverse),
     { apply quotient.comp_closure.intro,
-      have := @red_step.comp _ _ _ σ (z) (y) (x) (inv g) (inv f),
+      have := @red.atomic_step.comp _ _ _ σ (z) (y) (x) (inv g) (inv f),
       simpa only [reverse_eq_inv, inv_eq_inv, is_iso.inv_comp] using this, },
     simpa only [category_struct.comp, quiver.path.reverse, quiver.path.reverse_comp,
                 quiver.push.of_reverse, reverse_eq_inv,
                 inv_eq_inv, is_iso.inv_comp, quiver.path.comp_nil, quiver.path.comp_assoc,
                 quiver.path.reverse_to_path] using this, },
-  { have : quotient.comp_closure
-      (red_step σ)
-      (WY.reverse ≫ 𝟙 _ ≫  XW.reverse)
-      (WY.reverse ≫ (((σ *)).map (𝟙 x)).to_path ≫ XW.reverse),
+  { have : red.step σ
+      (WY.reverse ≫ (((σ *)).map (𝟙 x)).to_path ≫ XW.reverse)
+      (WY.reverse ≫ 𝟙 _ ≫  XW.reverse),
     { apply quotient.comp_closure.intro,
-      have := @red_step.id _ _ _ σ  (x),
+      have := @red.atomic_step.id _ _ _ σ  (x),
       simpa only [reverse_eq_inv, inv_eq_inv, is_iso.inv_comp] using this, },
     simpa only [category_struct.comp, category_struct.id, quiver.path.reverse,
                 quiver.path.reverse_comp, quiver.push.of_reverse,
@@ -91,8 +90,8 @@ begin
 end
 
 lemma congr_comp_reverse {X Y : paths $ quiver.push σ} (p : X ⟶ Y) :
-  quot.mk (@quotient.comp_closure _ _ (red_step σ) _ _) (p ≫ p.reverse) =
-  quot.mk (@quotient.comp_closure _ _ (red_step σ) _ _) (𝟙 X) :=
+  quot.mk (@red.step _ _ _ σ _ _) (p ≫ p.reverse) =
+  quot.mk (@red.step _ _ _ σ _ _) (𝟙 X) :=
 begin
   apply quot.eqv_gen_sound,
   induction p with _ _ q f ih,
@@ -106,12 +105,11 @@ begin
       { exact q ≫ ((σ *).map (𝟙 x)).to_path ≫ q.reverse, },
       { have : ((paths.category_paths (quiver.push σ)).id $ σ x) ≫ q.reverse = q.reverse, by simp,
         nth_rewrite_lhs 0 ←this,
-        apply eqv_gen.rel, constructor, constructor, },
-      { apply eqv_gen.rel,
-        have : quotient.comp_closure
-               (red_step σ)
-               (q ≫ (σ * .map $ f ≫ inv f).to_path ≫ q.reverse)
-               (q ≫ ((σ * .map f).to_path ≫ (σ * .map $ inv f).to_path) ≫ q.reverse), by
+        apply eqv_gen.symm, apply eqv_gen.rel, constructor, constructor, },
+      { apply eqv_gen.symm, apply eqv_gen.rel,
+        have : red.step σ
+               (q ≫ ((σ * .map f).to_path ≫ (σ * .map $ inv f).to_path) ≫ q.reverse)
+               (q ≫ (σ * .map $ f ≫ inv f).to_path ≫ q.reverse), by
         { apply quotient.comp_closure.intro, constructor, },
       dsimp only [category_struct.comp, quiver.hom.to_path,
                   quiver.path.comp, quiver.push.of, quiver.reverse, quiver.has_reverse.reverse'] at this ⊢,
@@ -122,8 +120,8 @@ begin
 end
 
 lemma congr_reverse_comp {X Y : paths $ quiver.push σ} (p : X ⟶ Y) :
-  quot.mk (@quotient.comp_closure _ _ (red_step σ) _ _) (p.reverse ≫ p) =
-  quot.mk (@quotient.comp_closure _ _ (red_step σ) _ _) (𝟙 Y) :=
+  quot.mk (@red.step _ _ _ σ _ _) (p.reverse ≫ p) =
+  quot.mk (@red.step _ _ _ σ _ _) (𝟙 Y) :=
 begin
   nth_rewrite 1 ←quiver.path.reverse_reverse p,
   apply congr_comp_reverse,
@@ -144,20 +142,15 @@ instance : groupoid (universal_groupoid σ) :=
 def extend : V ⥤ (universal_groupoid σ) :=
 { obj := λ X, ⟨σ X⟩,
   map := λ X Y f, quot.mk _ (((σ *)).map f).to_path,
-  map_id' := λ X, eq.symm $ quot.sound $ quotient.comp_closure.of _
-    (𝟙 _)
-    (σ * .map $ _).to_path
-    (red_step.id X),
-  map_comp' := λ X Y Z f g, quot.sound $ quotient.comp_closure.of _
-    (σ * .map (f ≫ g)).to_path
-    ((σ * .map f).to_path ≫ (σ * .map g).to_path)
-    (red_step.comp X Y Z f g) }
+  map_id' := λ X, quot.sound $ quotient.comp_closure.of _ _ _ (red.atomic_step.id X),
+  map_comp' := λ X Y Z f g, eq.symm $ quot.sound $
+    quotient.comp_closure.of _ _ _ (red.atomic_step.comp X Y Z f g) }
 
 /-- Get the original vertex. -/
 abbreviation as : (universal_groupoid σ) → V' := λ x, x.as
 
 lemma extend_eq : (extend σ).to_prefunctor =
-  ((quiver.push.of σ).comp paths.of).comp (quotient.functor $ red_step σ).to_prefunctor := rfl
+  ((quiver.push.of σ).comp paths.of).comp (quotient.functor $ red.atomic_step σ).to_prefunctor := rfl
 
 -- Thanks Adam Topaz
 lemma _root_.category_theory.functor.to_prefunctor_ext {C D : Type*} [category C] [category D]
@@ -192,6 +185,7 @@ quotient.lift _
       { dsimp [quiver.push.of, category_struct.comp, category_struct.id, quiver.hom.to_path],
         simp only [functor.map_comp, cast_cast, category.id_comp],
         apply eq_of_heq,
+        symmetry,
         apply (cast_heq _ _).trans,
         congr,
         any_goals { apply hτ₀ },
@@ -199,7 +193,6 @@ quotient.lift _
       { dsimp [quiver.push.of, category_struct.comp, category_struct.id, quiver.hom.to_path],
         simp only [functor.map_id, cast_cast, category.id_comp],
         apply eq_of_heq,
-        symmetry,
         apply (cast_heq _ _).trans,
         rw hτ₀, }, } )
 
@@ -235,19 +228,18 @@ open relation
 variables {X Y : paths $ quiver.push σ} (p q r : X ⟶ Y)
 
 -- we defined it the wrong way round
-abbreviation R (p q : X ⟶ Y) : Prop := quotient.comp_closure (red_step σ) q p
-abbreviation R' (p q : X ⟶ Y) : Prop := refl_gen (R σ) p q
-abbreviation RR (p q : X ⟶ Y) : Prop := refl_trans_gen (R σ) p q
-abbreviation RRR (p q : X ⟶ Y) : Prop := join (RR σ) p q
+abbreviation red.step_refl (p q : X ⟶ Y) : Prop := refl_gen (red.step σ) p q
+abbreviation red (p q : X ⟶ Y) : Prop := refl_trans_gen (red.step σ) p q
+abbreviation red.symm (p q : X ⟶ Y) : Prop := join (red σ) p q
 
 lemma red_step_iff :
-  red_step σ p q ↔
+  red.atomic_step σ p q ↔
   (∃ (x z y : V) (f : x ⟶ z) (g : z ⟶ y) (xX : σ x = X) (yY : σ y = Y),
-    p = (eq_to_hom xX.symm) ≫ ((σ *).map (f ≫ g)).to_path ≫ (eq_to_hom yY) ∧
-    q = (eq_to_hom xX.symm) ≫ (((σ *).map f).to_path ≫ ((σ *).map g).to_path) ≫ (eq_to_hom yY)) ∨
+    q = (eq_to_hom xX.symm) ≫ ((σ *).map (f ≫ g)).to_path ≫ (eq_to_hom yY) ∧
+    p = (eq_to_hom xX.symm) ≫ (((σ *).map f).to_path ≫ ((σ *).map g).to_path) ≫ (eq_to_hom yY)) ∨
   (∃ (x : V) (xX : σ x = X) (XY : X = Y),
-    p = eq_to_hom XY ∧
-    q = (eq_to_hom xX.symm) ≫ ((σ *).map $ 𝟙 x).to_path ≫ (eq_to_hom $ xX.trans XY))  :=
+    q = eq_to_hom XY ∧
+    p = (eq_to_hom xX.symm) ≫ ((σ *).map $ 𝟙 x).to_path ≫ (eq_to_hom $ xX.trans XY))  :=
 begin
   split,
   {
@@ -259,45 +251,48 @@ begin
       dsimp [quiver.push.of, quiver.hom.to_path],
       simp only [category.comp_id, category.id_comp, eq_self_iff_true, and_true], refl, }, },
   { rintros (⟨x, z, y, f, g, rfl, rfl, rfl, rfl⟩|⟨x, rfl, rfl, rfl, rfl⟩),
-    { constructor, },
+    { simp only [eq_to_hom_refl, category.comp_id, category.id_comp], constructor, },
     { constructor, }, },
 end
 
-lemma red_step_length (h : red_step σ p q) :
-  p.length.succ = q.length := by { cases h; refl, }
+lemma red.atomic_step_length (h : red.atomic_step σ p q) :
+  p.length = q.length.succ := by { cases h; refl, }
 
-lemma comp_closure_red_step_length
- (h : R σ q p ) : p.length.succ = q.length :=
+lemma red.step_length (h : red.step σ p q ) : p.length = q.length.succ :=
 begin
   cases h,
-  simp only [quiver.path.length_comp, category_struct.comp, ←red_step_length σ _ _ h_h,
+  simp only [quiver.path.length_comp, category_struct.comp, red.atomic_step_length σ _ _ h_h,
              nat.succ_add],
   refl,
 end
 
-lemma comp_closure_red_step_len_lt
- (h : R σ q p) : p.length < q.length := by
-{ rw ←comp_closure_red_step_length σ p q h, exact lt_add_one (quiver.path.length p), }
+lemma red.step_length_lt (h : red.step σ p q) : q.length < p.length := by
+{ rw red.step_length σ p q h, exact lt_add_one (quiver.path.length q), }
 
+lemma nil_not_red_step (s : X ⟶ X) : ¬ red.step σ (quiver.path.nil : X ⟶ X) s := by
+{ rintro r, cases h : r,  }
 
-lemma diamond : R σ r p → R σ r q → ∃ s, R σ p s ∧ R σ q s := sorry
-lemma diamond' : R σ r p → R σ r q → ∃ s, R' σ p s ∧ RR σ q s :=
+lemma diamond : ∀ {X Y} (p q r : X ⟶ Y),  red.step σ r p → red.step σ r q → ∃ s, red.step σ p s ∧ red.step σ q s
+| _ _ (quiver.path.nil) _ _ _ := sorry
+| _ _ (quiver.path.cons p f) _ _ _ := sorry
+
+lemma diamond' : red.step σ r p → red.step σ r q → ∃ s, red.step_refl σ p s ∧ red σ q s :=
 begin
   rintro pq pr,
   obtain ⟨s,qs,rs⟩ := diamond σ _ _ _ pq pr,
   exact ⟨s,refl_gen.single qs,refl_trans_gen.single rs⟩,
 end
 
-lemma church_rosser : RR σ r p → RR σ r q → ∃ s, RR σ p s ∧ RR σ q s :=
+lemma church_rosser : red σ r p → red σ r q → ∃ s, red σ p s ∧ red σ q s :=
 begin
   refine church_rosser _,
   rintro p q r pq pr,
   exact diamond' σ _ _ _ pq pr,
 end
 
-def is_reduced := ¬ ∃ (q : X ⟶ Y), R σ p q
+def is_reduced := ¬ ∃ (q : X ⟶ Y), red.step σ p q
 
-lemma equal_of_is_reduced : RR σ p q → is_reduced σ p → p = q :=
+lemma red.equal_of_is_reduced : red σ p q → is_reduced σ p → p = q :=
 begin
   rintro pq pred,
   rcases pq.cases_head with (rfl|⟨r,pr,rq⟩),
@@ -306,20 +301,19 @@ begin
 end
 
 -- maybe should be done using `wf.fix` ?
- lemma exists_reduced : ∀ (p : X ⟶ Y),
-  ∃ (r : X ⟶ Y), (RR σ p r ∧ is_reduced σ r)
+ lemma red.exists_is_reduced : ∀ (p : X ⟶ Y), ∃ (r : X ⟶ Y), (red σ p r ∧ is_reduced σ r)
 | p := if h : is_reduced σ p then ⟨p, by {apply refl_trans_gen.refl}, h⟩ else by
   { dsimp [is_reduced] at h, push_neg at h,
     obtain ⟨q,qp⟩ := h,
-    let : q.length < p.length := comp_closure_red_step_len_lt σ q p qp, -- hint for well-foundedness
-    obtain ⟨r, rq, rred⟩ := exists_reduced q,
+    let : q.length < p.length := red.step_length_lt σ p q qp, -- hint for well-foundedness
+    obtain ⟨r, rq, rred⟩ := red.exists_is_reduced q,
     refine ⟨r, _, rred⟩,
     exact refl_trans_gen.trans (refl_trans_gen.single qp) rq, }
 using_well_founded
 { dec_tac := `[assumption],
   rel_tac := λ _ _, `[exact ⟨_, measure_wf (λ (f : X ⟶ Y), f.length)⟩] }
 
-lemma unique_reduced_down : RR σ p q → RR σ p r → is_reduced σ q → is_reduced σ r → q = r :=
+lemma red.unique_reduced : red σ p q → red σ p r → is_reduced σ q → is_reduced σ r → q = r :=
 begin
   rintros pq pr qred rred,
   obtain ⟨s,qs,rs⟩ := church_rosser σ _ _ _ pq pr,
@@ -331,19 +325,32 @@ begin
   { apply (qred ⟨t,qt⟩).elim, },
 end
 
-lemma unique_reduced' : eqv_gen (R σ) p q → is_reduced σ p → is_reduced σ q → p = q :=
+lemma red.symm_of_eqv_gen : eqv_gen (red.step σ) p q → red.symm  σ p q :=
 begin
-  rintro h pred qred,
-  -- A boring bit of gymnastic to get `RRR` from `eqv_gen`…
-  have equiv : _root_.equivalence (@RRR _ _ _ σ X Y) :=
+  rintro h,
+  have equiv : _root_.equivalence (@red.symm  _ _ _ σ X Y) :=
     equivalence_join_refl_trans_gen (λ a b c, diamond' σ _ _ _),
-  have le : ∀ (f g : X ⟶ Y), R σ f g → RRR σ f g := λ f g h',
+  have le : ∀ (f g : X ⟶ Y), red.step σ f g → red.symm  σ f g := λ f g h',
     join_of_single reflexive_refl_trans_gen (refl_trans_gen.single h'),
   let h' := eqv_gen.mono le h,
   rw (equivalence.eqv_gen_eq equiv) at h',
-  -- Now we have it
+  exact h',
+end
+
+lemma eqv_gen_of_red : red σ p q → eqv_gen (red.step σ) p q :=
+begin
+  rintro h,
+  induction h with _ _ _ r ih,
+  { apply eqv_gen.refl p, },
+  { apply eqv_gen.trans, exact ih, apply eqv_gen.rel, exact r, },
+end
+
+lemma unique_reduced' : eqv_gen (red.step σ) p q → is_reduced σ p → is_reduced σ q → p = q :=
+begin
+  rintro h pred qred,
+  have h' : red.symm  σ p q := red.symm_of_eqv_gen σ p q h,
   rcases h' with ⟨d,pd,qd⟩,
-  rw [equal_of_is_reduced σ _ _ pd pred, equal_of_is_reduced σ _ _ qd qred],
+  rw [red.equal_of_is_reduced σ _ _ pd pred, red.equal_of_is_reduced σ _ _ qd qred],
 end
 
 lemma unique_reduced {X Y : universal_groupoid σ} (p : X ⟶ Y) :
@@ -351,19 +358,55 @@ lemma unique_reduced {X Y : universal_groupoid σ} (p : X ⟶ Y) :
 begin
   apply quot.induction_on p,
   rintro f, apply exists_unique_of_exists_of_unique,
-  { use (exists_reduced σ f).some, split,
-    exact (exists_reduced σ f).some_spec.2,
+  { let g := (red.exists_is_reduced σ f).some,
+    obtain ⟨fg, gred⟩ := (red.exists_is_reduced σ f).some_spec,
+    refine ⟨g,gred,_⟩,
     apply quot.eqv_gen_sound,
-    let := (exists_reduced σ f).some_spec.1,
-    -- Should get from `RR` to `eqv_gen`…
-    sorry },
+    apply eqv_gen.symm,
+    apply eqv_gen_of_red,
+    exact fg, },
   { rintros g h ⟨gred,geq⟩ ⟨hred,heq⟩,
     have := quot.exact _ (geq.trans heq.symm),
-    refine unique_reduced' σ g h _ gred hred,
-    convert this, sorry, /- wtf???-/  }
+    exact unique_reduced' σ g h this gred hred, },
 end
 
+lemma push_arrow_red {x y : V} (f : x ⟶ y) :
+  (∃ q, red.step σ ((σ *).map f).to_path q) → (∃ h : x = y, f = eq_to_hom h) :=
+begin
+  rintro ⟨q,fq⟩,
+  induction fq with a b pre p q suf rs,
+  rw red_step_iff at rs,
+  rcases rs with ⟨a,b,c,d,e,f,g,h,i⟩|⟨a,b,c,d,e⟩,
+  { sorry },
+  { sorry },
+end
+
+lemma push_arrow_is_reduced {x y : V} (f : x ⟶ y) (hf : ¬ ∃ h : x = y, f = eq_to_hom h) :
+  is_reduced σ ((σ *).map (f)).to_path :=
+begin
+  rintro ⟨q,fq⟩,
+  let := red.step_length σ _ _ fq,
+  simp [quiver.hom.to_path, quiver.path.length, nat.succ_eq_one_add] at this,
+  let := quiver.path.nil_of_length_zero _ this,
+
+  induction fq with a b pre p q suf rs,
+  rw red_step_iff at rs,
+  rcases rs with ⟨a,b,c,d,e,f,g,h,i⟩|⟨a,b,c,d,e⟩,
+  { sorry, },
+  { sorry, },
+end
+
+
 end reduced_words
+
+lemma of_very_faithful {x y z w : V} (p : x ⟶ y) (q : z ⟶ w)
+  (xz : (extend σ).obj x = (extend σ).obj z) (yw : (extend σ).obj y = (extend σ).obj w) :
+  (extend σ).map p ≫ (eq_to_hom yw) = (eq_to_hom xz) ≫ (extend σ).map q →
+  ∃ (h : x = y) (k : z = w) (l : x = y), p = eq_to_hom h ∧ q = eq_to_hom k :=
+begin
+  intro he,
+  by_contra, push_neg at h, sorry
+end
 
 end universal
 end groupoid

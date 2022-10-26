@@ -47,6 +47,10 @@ instance {a : V} : inhabited (path a a) := ⟨path.nil⟩
 lemma eq_of_length_zero (p : path a b) (hzero : p.length = 0) : a = b :=
 by { cases p, { refl }, { cases nat.succ_ne_zero _ hzero } }
 
+lemma nil_of_length_zero (p : path a b) (hzero : p.length = 0) :
+  p = (eq_of_length_zero p hzero).rec_on (@path.nil _ _ a) :=
+by { cases p, { refl, }, { cases nat.succ_ne_zero _ hzero } }
+
 /-- Composition of paths. -/
 def comp {a b : V} : Π {c}, path a b → path b c → path a c
 | _ p (path.nil) := p
