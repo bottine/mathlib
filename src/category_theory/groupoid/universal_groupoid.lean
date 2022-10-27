@@ -229,7 +229,6 @@ open relation
 
 variables {X Y : paths $ quiver.push σ} (p q r : X ⟶ Y)
 
--- we defined it the wrong way round
 abbreviation red.step_refl (p q : X ⟶ Y) : Prop := refl_gen (red.step σ) p q
 abbreviation red (p q : X ⟶ Y) : Prop := refl_trans_gen (red.step σ) p q
 abbreviation red.symm (p q : X ⟶ Y) : Prop := join (red σ) p q
