@@ -15,6 +15,7 @@ import tactic.rewrite_search
 import category_theory.path_category
 import category_theory.quotient
 import category_theory.groupoid.vertex_group
+import tactic.induction
 
 
 /-!
@@ -269,63 +270,75 @@ end
 
 lemma red.step_length_lt (h : red.step σ p q) : q.length < p.length := by
 { rw red.step_length σ p q h, exact lt_add_one (quiver.path.length q), }
-/-
+
 lemma red.step_not_nil (s t : X ⟶ X) : red.step σ s t → s ≠ quiver.path.nil :=
 begin
-  rintro h, cases h, cases h_h,
-  { simp, simp [quiver.path.comp, quiver.hom.to_path], sorry, },
+  rintro h, cases h, cases h_h;
   { rintro h,
     let := congr_arg (quiver.path.length) h,
-    simp at this, sorry, },
+    simpa [category_struct.comp] using this, },
 end
--/
-/-
-/-- Two reduction steps possible: compose composable arrows, or drop identity arrows -/
-inductive red.atomic_step : hom_rel (paths (quiver.push σ))
-| comp (X Y Z : V) (f : X ⟶ Y) (g : Y ⟶ Z) :
-    red.atomic_step
-      ((σ †  f) ≫ (σ †  g))
-      (σ † (f ≫ g))
-| id (X : V) :
-    red.atomic_step
-      (σ † (𝟙 X))
-      (𝟙 $ σ X)
--/
 
-lemma red.step_diamond_aux_comp_comp :
-∀ (a b : paths $ quiver.push σ) {X Y Z : V} {X' Y' Z' : V}
-  (pre : a ⟶ σ X) (f : X ⟶ Y) (g : Y ⟶ Z) (suf : σ Z ⟶ b)
-  (pre' : a ⟶ σ X') (f' : X' ⟶ Y') (g' : Y' ⟶ Z') (suf' : σ Z' ⟶ b),
+section diamond_helper
+
+open quiver.path
+
+lemma red.step_diamond_comp_comp :
+∀ {a b : paths $ quiver.push σ} {X Y Z : V} {X' Y' Z' : V}
+  {pre : a ⟶ σ X} {f : X ⟶ Y} {g : Y ⟶ Z} {suf : σ Z ⟶ b}
+  {pre' : a ⟶ σ X'} {f' : X' ⟶ Y'} {g' : Y' ⟶ Z'} {suf' : σ Z' ⟶ b},
   pre ≫ ((σ † f) ≫ (σ † g)) ≫ suf = pre' ≫ ((σ † f') ≫ (σ † g')) ≫ suf'
 → pre ≫ (σ † (f ≫ g)) ≫ suf = pre' ≫ (σ † (f' ≫ g')) ≫ suf' ∨
   ∃ p, red.step σ (pre ≫ (σ † (f ≫ g)) ≫ suf) p ∧
        red.step σ (pre' ≫ (σ † (f' ≫ g')) ≫ suf') p := sorry
 
-lemma red.step_diamond_aux_comp_nil : ∀ (a b : paths $ quiver.push σ) {X Y Z W : V}
-  (pre : a ⟶ σ X) (f : X ⟶ Y) (g : Y ⟶ Z) (suf : σ Z ⟶ b)
-  (pre' : a ⟶ σ W) (suf' : σ W ⟶ b),
+lemma red.step_diamond_comp_nil : ∀ {a b : paths $ quiver.push σ} {X Y Z W : V}
+  {pre : a ⟶ σ X} {f : X ⟶ Y} {g : Y ⟶ Z} {suf : σ Z ⟶ b}
+  {pre' : a ⟶ σ W} {suf' : σ W ⟶ b},
   pre ≫ ((σ † f) ≫ (σ † g)) ≫ suf = pre' ≫ (σ † 𝟙 W) ≫ suf'
 → ∃ p, red.step σ (pre ≫ (σ † (f ≫ g)) ≫ suf) p ∧
        red.step σ (pre' ≫ (𝟙 $ σ W) ≫ suf') p := sorry
 
-lemma red.step_diamond_aux_nil_nil : ∀ (a b : paths $ quiver.push σ) {W W' : V}
-  (pre : a ⟶ σ W) (suf : σ W ⟶ b)
-  (pre' : a ⟶ σ W') (suf' : σ W' ⟶ b),
+lemma red.step_diamond_nil_nil : ∀ {a b : paths $ quiver.push σ} {W W' : V}
+  {pre : a ⟶ σ W} {suf : σ W ⟶ b}
+  {pre' : a ⟶ σ W'} {suf' : σ W' ⟶ b},
   pre ≫ (σ † 𝟙 W) ≫ suf = pre' ≫ (σ † 𝟙 W') ≫ suf' →
   pre ≫ (𝟙 $ σ W) ≫ suf = pre' ≫ (𝟙 $ σ W') ≫ suf' ∨
-  ∃ p, red.step σ (pre ≫ (σ † 𝟙 _) ≫ suf) p ∧
-       red.step σ (pre' ≫ (σ † 𝟙 _) ≫ suf') p := sorry
+  ∃ p, red.step σ (pre ≫ (𝟙 $ σ _) ≫ suf) p ∧
+       red.step σ (pre' ≫ (𝟙 $ σ _) ≫ suf') p :=
+begin
+  rintros a b W W' pre suf pre' suf',
+  induction' pre,
+end
 
+end diamond_helper
 
-lemma diamond : ∀ {X Y} (r p q : X ⟶ Y),  red.step σ r p → red.step σ r q → ∃ s, red.step σ p s ∧ red.step σ q s
-| _ _ (quiver.path.nil) _ _ _ _ := by { sorry, }
-| _ _ (quiver.path.cons p f) _ _ _ _ := by { sorry, }
+lemma diamond : ∀ {X Y} (r p q : X ⟶ Y),
+  red.step σ r p → red.step σ r q → p = q ∨ ∃ s, red.step σ p s ∧ red.step σ q s :=
+begin
+  rintro X Y r p q ⟨ap,bp,prep,mp,mp',sufp,hp⟩ rq,
+  induction' rq with aq bq preq mq mq' sufq hq,
+  induction' hp,
+  { induction' hq,
+    { obtain e|⟨h,r⟩ := red.step_diamond_comp_comp σ induction_eq_4,
+      { left, exact e.symm, },
+      { right, exact ⟨h,r.symm⟩, }, },
+    { right, exact red.step_diamond_comp_nil σ induction_eq_4.symm, }, },
+  { induction' hq,
+    { right,
+      obtain ⟨h,l,r⟩:= red.step_diamond_comp_nil σ induction_eq_4,
+      exact ⟨h,r,l⟩, },
+    { obtain e|⟨h,r,l⟩ := red.step_diamond_nil_nil σ induction_eq_4,
+      { left, exact e.symm, },
+      { right, exact ⟨h,l,r⟩, }, }  },
+end
 
 lemma diamond' : red.step σ r p → red.step σ r q → ∃ s, red.step_refl σ p s ∧ red σ q s :=
 begin
   rintro pq pr,
-  obtain ⟨s,qs,rs⟩ := diamond σ _ _ _ pq pr,
-  exact ⟨s,refl_gen.single qs,refl_trans_gen.single rs⟩,
+  rcases diamond σ _ _ _ pq pr with (rfl|⟨s,qs,rs⟩),
+  { use p, split, constructor, constructor, },
+  { exact ⟨s,refl_gen.single qs,refl_trans_gen.single rs⟩, },
 end
 
 lemma church_rosser : red σ r p → red σ r q → ∃ s, red σ p s ∧ red σ q s :=
@@ -382,7 +395,7 @@ begin
   exact h',
 end
 
-lemma eqv_gen_of_red : red σ p q → eqv_gen (red.step σ) p q :=
+lemma red.eqv_gen : red σ p q → eqv_gen (red.step σ) p q :=
 begin
   rintro h,
   induction h with _ _ _ r ih,
@@ -408,7 +421,7 @@ begin
     refine ⟨g,gred,_⟩,
     apply quot.eqv_gen_sound,
     apply eqv_gen.symm,
-    apply eqv_gen_of_red,
+    apply red.eqv_gen,
     exact fg, },
   { rintros g h ⟨gred,geq⟩ ⟨hred,heq⟩,
     have := quot.exact _ (geq.trans heq.symm),
@@ -416,18 +429,20 @@ begin
 end
 
 lemma push_arrow_red {x y : V} (f : x ⟶ y) :
-  (∃ q, red.step σ (σ †  f) q) → (∃ h : x = y, f = eq_to_hom h) :=
+  (∃ q, red.step σ (σ † f) q) → (∃ h : x = y, f = eq_to_hom h) :=
 begin
   rintro ⟨q,fq⟩,
-  induction fq with a b pre p q suf rs,
-  rw red_step_iff at rs,
-  rcases rs with ⟨a,b,c,d,e,f,g,h,i⟩|⟨a,b,c,d,e⟩,
-  { sorry },
-  { sorry },
+  induction' fq,
+  induction' h;
+  simp [quiver.hom.to_path, category_struct.comp, quiver.path.comp] at induction_eq_4;
+  let := congr_arg quiver.path.length induction_eq_4;
+  simp [quiver.path.length_cons] at this,
+  { sorry, /- `this` is impossible -/ },
+  { sorry,/- the equality of length should force `f` to be nil-/}
 end
 
 lemma push_arrow_is_reduced {x y : V} (f : x ⟶ y) (hf : ¬ ∃ h : x = y, f = eq_to_hom h) :
-  is_reduced σ ((σ *).map (f)).to_path :=
+  is_reduced σ (σ † f) :=
 begin
   rintro ⟨q,fq⟩,
   let := red.step_length σ _ _ fq,
