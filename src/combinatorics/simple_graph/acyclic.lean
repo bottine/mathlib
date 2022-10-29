@@ -67,6 +67,8 @@ lemma is_acyclic_iff_forall_edge_is_bridge :
   G.is_acyclic ↔ ∀ (e ∈ G.edge_set), G.is_bridge e :=
 by simp [is_acyclic_iff_forall_adj_is_bridge, sym2.forall]
 
+lemma is_acyclic.le {G H : simple_graph V} (h : G.is_acyclic) : H ≤ G → H.is_acyclic := sorry
+
 lemma is_acyclic.path_unique {G : simple_graph V} (h : G.is_acyclic) {v w : V} (p q : G.path v w) :
   p = q :=
 begin
@@ -133,5 +135,29 @@ begin
     { rintros v w ⟨p, hp⟩ ⟨q, hq⟩,
       simp only [unique_of_exists_unique (h v w) hp hq] } },
 end
+
+section min_max
+
+variables {T : simple_graph V} (hT : T.is_connected) {B : simple_graph V} (hB : B.is_acyclic)
+
+abbreviation is_max_acyclic := G ≤ T ∧ G.is_acyclic ∧ ∀ H ≤ T, H.is_acyclic → H ≤ G
+
+abbreviation is_min_connected := G ≥ B ∧ G.is_connected ∧ ∀ H ≥ T, H.connected → H ≥ G
+
+lemma is_max_acyclic_iff : G.is_max_acyclic hT ↔
+  G ≤ T ∧ ∀ e : T.edge_set \ G.edge_set, ¬ (G.add_edges {e}).is_acyclic := sorry
+
+lemma is_min_connected_iff : G.is_min_connected hB ↔
+  G ≥ B ∧ e : G.edge_set \ B.edge_set, ¬ (G.delete_edges {e}).is_connected := sorry
+
+lemma is_tree.is_max_acyclic {GT : G ≤ T} : G.is_max_acyclic hT := sorry
+
+lemma is_tree.is_min_connected {GB : G ≥ B} : G.is_min_connected hB := sorry
+
+lemma is_max_acyclic.is_connected : G.is_max_acyclic hT → G.is_connected := sorry
+
+lemma is_min_connected.is_acyclic : G.is_connected hB → G.is_acyclic := sorry
+
+end min_max
 
 end simple_graph
