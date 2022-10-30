@@ -41,7 +41,7 @@ begin
   { rintro h' u v (⟨rfl,rfl⟩|⟨rfl,rfl⟩), exact h', exact h'.symm, },
 end
 
-lemma add_edge_adj (u v)  (h : u ≠ v) : (G.add_edges {⟦⟨u,v⟩⟧}).adj u v := sorry
+lemma add_edge_adj (u v) (h : u ≠ v) : (G.add_edges {⟦⟨u,v⟩⟧}).adj u v := sorry
 
 lemma add_edge_hom_not_edges (u v) (h : u ≠ v)
   {x y : V} (p : G.path x y) :

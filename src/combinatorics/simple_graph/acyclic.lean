@@ -260,7 +260,8 @@ end
 lemma is_min_connected.is_acyclic (hB : B.is_acyclic) : G.is_min_connected B → G.is_acyclic :=
 begin
   rintro G_min_co,
-  rw is_min_connected_iff at G_min_co, obtain ⟨BG,Gco,Gmin⟩ := G_min_co,
+  rw is_min_connected_iff at G_min_co,
+  obtain ⟨BG,Gco,Gmin⟩ := G_min_co,
   sorry,
 end
 
