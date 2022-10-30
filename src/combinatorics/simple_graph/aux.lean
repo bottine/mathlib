@@ -9,7 +9,8 @@ variables {V : Type*} {G : simple_graph V} {u v : V}
 
 section add_delete_edges
 
-lemma delete_edges_eq_iff (s : set (sym2 V)) : G.delete_edges s = G ↔ disjoint s G.edge_set := sorry
+lemma delete_edges_eq_iff (s : set (sym2 V)) :
+  G.delete_edges s = G ↔ disjoint s G.edge_set := sorry
 
 lemma delete_edge_eq_iff (u v) :
   G.delete_edges {⟦⟨u,v⟩⟧} = G ↔ ¬ G.adj u v := by { simp [delete_edges_eq_iff] }
@@ -23,8 +24,11 @@ def add_edges (G : simple_graph V) (s : set (sym2 V)) : simple_graph V :=
   loopless := λ a, by
   { rintro (l|⟨ne,r⟩), { exact G.loopless a l, }, { exact ne rfl }, } }
 
-def le_add_edges  (G : simple_graph V) (s : set (sym2 V)) : G ≤ (G.add_edges s) := by
+lemma le_add_edges  (G : simple_graph V) (s : set (sym2 V)) : G ≤ (G.add_edges s) := by
 { rintros a b h, exact or.inl h, }
+
+lemma add_edges_le  (G T: simple_graph V) (s : set (sym2 V)) :
+  G ≤ T → s ⊆ T.edge_set → G.add_edges s ≤ T := sorry
 
 lemma add_edges_eq_iff (s : set (sym2 V)) :
   G.add_edges s = G ↔ (∀ u v, ((⟦⟨u,v⟩⟧ : sym2 V) ∈ s) → G.adj u v) := sorry
@@ -53,6 +57,17 @@ lemma delete_edge_hom_not_edges (u v) (h : G.adj u v)
     (simple_graph.hom.map_spanning_subgraphs (delete_edges_le G {⟦⟨u,v⟩⟧}))
     (function.injective_id) p)).val.edges := sorry
 
+lemma add_delete_edges {s : set (sym2 V)} (hs : disjoint s G.edge_set) :
+  (G.add_edges s).delete_edges s = G := sorry
+
+lemma add_delete_edge (u v) (h : ¬ G.adj u v) :
+  (G.add_edges {⟦⟨u,v⟩⟧}).delete_edges {⟦⟨u,v⟩⟧} = G := sorry
+
+lemma delete_add_edges {s : set (sym2 V)} (hs : s ⊆ G.edge_set) :
+  (G.delete_edges s).add_edges s = G := sorry
+
+lemma delete_add_edge (u v) (e : G.adj u v) :
+  (G.delete_edges {⟦⟨u,v⟩⟧}).add_edges {⟦⟨u,v⟩⟧} = G := sorry
 
 end add_delete_edges
 
@@ -73,18 +88,13 @@ end path
 
 namespace walk
 
-abbreviation of_edge (e : G.adj u v) : G.walk u v := walk.cons e nil
-
-abbreviation _root_.simple_graph.path.of_edge (e : G.adj u v) : G.path u v :=
-⟨ walk.of_edge e, by
-  { rw is_path_def,
-    simp only [support_cons, support_nil, list.nodup_cons, list.mem_singleton,
-               list.not_mem_nil, not_false_iff, list.nodup_nil, and_true],
-    exact adj.ne e, } ⟩
-
 variable (c : G.walk u u)
 
 variables {V' : Type*} {G' : simple_graph V'} {f : G →g G'}
+
+lemma is_cycle.to_delete_edges (s : set (sym2 V))
+  {v : V} {p : G.walk v v} (h : p.is_cycle) (hp : ∀ (e : sym2 V), e ∈ p.edges → e ∉ s) :
+  (p.to_delete_edges s hp).is_cycle := sorry
 
 lemma map_is_cycle_of_injective (hinj : function.injective f) (hc : c.is_cycle) :
   (c.map f).is_cycle := sorry
@@ -93,24 +103,6 @@ protected lemma is_cycle.of_map {f : G →g G'} (hc : (c.map f).is_cycle) : c.is
 
 lemma map_is_cycle_iff_of_injective (hinj : function.injective f) :
   (c.map f).is_cycle ↔ c.is_cycle := sorry
-
-lemma split_along_set [decidable_eq V] :
-∀ {u v : V} (p : G.walk u v) (S : set V) (uS : u ∈ S) (vS : v ∉ S),
-  ∃ (x y : V) (w : G.walk u x) (a : G.adj x y) (w' : G.walk y v), p = w.append (cons a w') ∧  (w.support.to_finset : set V) ⊆ S ∧ y ∉ S
-| _ _ nil p uS vnS := (vnS uS).elim
-| _ _ (cons' u x v a w) S uS vnS := by
-{ by_cases h : S x,
-  { obtain ⟨x',y,w',a',w'',weq,wS,ynS⟩ := w.split_along_set S h vnS,
-    use [x',y,cons a w',a',w''],
-    split,
-    { simp only [cons_append,weq], },
-    { simp only [support_cons, list.to_finset_cons, finset.coe_insert, set.insert_subset],
-      exact ⟨⟨uS,wS⟩,ynS⟩, }, },
-  { use [u,x,nil,a,w],
-    simp only [nil_append, eq_self_iff_true, support_nil, list.to_finset_cons,
-               list.to_finset_nil, insert_emptyc_eq, finset.coe_singleton,
-               set.singleton_subset_iff, true_and],
-    exact ⟨uS,h⟩, }, }
 
 lemma split_along_set' [decidable_eq V] :
 ∀ {u v : V} (p : G.walk u v) (S : set V) (uS : u ∈ S) (vS : v ∉ S),

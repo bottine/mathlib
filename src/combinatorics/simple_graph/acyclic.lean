@@ -157,7 +157,20 @@ abbreviation is_max_acyclic := G ≤ T ∧ G.is_acyclic ∧ ∀ H, H ≤ T →  
 abbreviation is_min_connected := B ≤ G ∧ G.connected ∧ ∀ H, B ≤ H →  H.connected → G ≤ H
 
 lemma is_max_acyclic_iff : G.is_max_acyclic T ↔
-  G ≤ T ∧ G.is_acyclic ∧ ∀ e ∈ (T.edge_set \ G.edge_set), ¬ (G.add_edges {e}).is_acyclic := sorry
+  G ≤ T ∧ G.is_acyclic ∧ ∀ e ∈ (T.edge_set \ G.edge_set), ¬ (G.add_edges {e}).is_acyclic :=
+begin
+  split,
+  { rintro ⟨GT,Gac,Gmax⟩, use [GT,Gac],
+    rintro e ⟨eT,neG⟩,
+    rintro Geac,
+    specialize Gmax (G.add_edges {e}) (add_edges_le G T {e} GT (by simp [eT])) Geac,
+    have : G.add_edges {e} = G := le_antisymm Gmax  (le_add_edges G {e}),
+    simp only [add_edges_eq_iff, set.mem_singleton_iff] at this,
+    obtain ⟨u,v⟩ := e, change ¬ (⟦⟨u,v⟩⟧ : sym2 V) ∈ G.edge_set at neG, rw mem_edge_set at neG,
+    exact neG (this u v rfl), },
+  { rintro ⟨GT,Gac,Gmax⟩, use [GT,Gac],
+    rintro H HT Hac, by_contra, sorry, },
+end
 
 lemma is_min_connected_iff : G.is_min_connected B ↔
   B ≤ G ∧ G.connected ∧ ∀ e ∈ (G.edge_set \ B.edge_set), ¬ (G.delete_edges {e}).connected := sorry
@@ -220,37 +233,36 @@ lemma is_max_acyclic.is_connected [decidable_eq V] (hT : T.connected) :
   G.is_max_acyclic T → G.connected :=
 begin
   rintros G_max_ac,
-  rw is_max_acyclic_iff at G_max_ac,
+  rw is_max_acyclic_iff at G_max_ac, obtain ⟨GT,Gac,Gmax⟩ := G_max_ac,
   rw connected_iff, refine ⟨_,hT.2⟩,
-  obtain ⟨GT,Gac,Gmax⟩ := G_max_ac,
   rintro u v,
   by_contra h,
-  let w := (hT.1 u v).some,
   obtain ⟨x,y,e,hx',hy'⟩ := (hT.1 u v).some.split_along_set' ({x | G.reachable u x}) (by {simp,}) h,
-  have hy : ¬ G.reachable x y, by {rintro h, apply hy', exact hx'.trans h, },
-  have xney : x≠y, by { rintro h, rw h at hy, apply hy, reflexivity, },
+  have hy : ¬ G.reachable x y := λ h, hy' (hx'.trans h),
+  have xnay : ¬ G.adj x y := λ a, hy ⟨(path.singleton a).val⟩,
+  have hG : G = (G.add_edges {⟦⟨x,y⟩⟧}).delete_edges {⟦⟨x,y⟩⟧} := (add_delete_edge x y xnay).symm,
   specialize Gmax ⟦⟨x,y⟩⟧
-    ( by { rw [set.mem_diff, mem_edge_set], exact ⟨e, λ a, hy ⟨(path.singleton a).val⟩⟩ } ),
-  dsimp [is_acyclic] at Gmax, push_neg at Gmax,
+    ( by { rw [set.mem_diff, mem_edge_set], exact ⟨e, xnay⟩ } ),
+  dsimp [is_acyclic] at Gmax,
+  push_neg at Gmax,
   obtain ⟨v,w,wc⟩ := Gmax,
   by_cases h : (⟦⟨x,y⟩⟧ : sym2 V) ∈ w.edges,
-  { have : x ∈ w.support := simple_graph.walk.fst_mem_support_of_mem_edges w h,
-    -- need to cover the two possible orders of appearence of x and y in the circuit
-    -- Then, play with `take_until` and `drop_until` to build a path from x to y
-    sorry,
-   },
-  { let w' : G.walk v v := sorry,
-    have wc' : w'.is_cycle := sorry,
-    exact Gac _ _ wc', },
-  /-
-  If this cycle contains e, then it does so at a unique position, so that it can be decomposed into p.cons e
-  with p not containing e, and hence a path in G, contradicting unreachability.
-  If this cycle does not contain e, we get a cycle in G, contradicting acyclicity
-  -/
-
+  { apply hy, rw hG,
+    exact ((@adj_and_reachable_delete_edges_iff_exists_cycle V (G.add_edges {⟦⟨x,y⟩⟧}) x y).mpr
+      ⟨v,w,⟨wc,h⟩⟩).2, },
+  { rw hG at Gac,
+    apply Gac,
+    let w' := walk.to_delete_edge ⟦⟨x,y⟩⟧ w h,
+    exact (walk.is_cycle.to_delete_edges {⟦⟨x,y⟩⟧} wc _ : w'.is_cycle), },
 end
 
-lemma is_min_connected.is_acyclic  (hB : B.is_acyclic)  : G.is_min_connected B → G.is_acyclic := sorry
+
+lemma is_min_connected.is_acyclic (hB : B.is_acyclic) : G.is_min_connected B → G.is_acyclic :=
+begin
+  rintro G_min_co,
+  rw is_min_connected_iff at G_min_co, obtain ⟨BG,Gco,Gmin⟩ := G_min_co,
+  sorry,
+end
 
 end min_max
 
