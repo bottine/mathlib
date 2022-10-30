@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Kyle Miller
 -/
 import combinatorics.simple_graph.connectivity
+import .aux
 /-!
 
 # Acyclic graphs and trees
@@ -66,8 +67,6 @@ end
 lemma is_acyclic_iff_forall_edge_is_bridge :
   G.is_acyclic ↔ ∀ (e ∈ G.edge_set), G.is_bridge e :=
 by simp [is_acyclic_iff_forall_adj_is_bridge, sym2.forall]
-
-lemma is_acyclic.le {G H : simple_graph V} (h : G.is_acyclic) : H ≤ G → H.is_acyclic := sorry
 
 lemma is_acyclic.path_unique {G : simple_graph V} (h : G.is_acyclic) {v w : V} (p q : G.path v w) :
   p = q :=
@@ -138,25 +137,120 @@ end
 
 section min_max
 
-variables {T : simple_graph V} (hT : T.is_connected) {B : simple_graph V} (hB : B.is_acyclic)
+variables (G) (T : simple_graph V) (hT : T.connected) (B : simple_graph V) (hB : B.is_acyclic)
 
-abbreviation is_max_acyclic := G ≤ T ∧ G.is_acyclic ∧ ∀ H ≤ T, H.is_acyclic → H ≤ G
+lemma is_acyclic.le {G H : simple_graph V} (Ga : G.is_acyclic) : H ≤ G → H.is_acyclic :=
+begin
+  rintros h _ w wcycle,
+  refine Ga _ _ (w.map_is_cycle_of_injective _ wcycle),
+  exact simple_graph.hom.map_spanning_subgraphs h, exact function.injective_id,
+end
 
-abbreviation is_min_connected := G ≥ B ∧ G.is_connected ∧ ∀ H ≥ T, H.connected → H ≥ G
+lemma connected.le {G H : simple_graph V} (Hc : H.connected) : H ≤ G → G.connected :=
+begin
+  rintro h, rw connected_iff at Hc ⊢, refine ⟨_,Hc.2⟩,
+  exact λ u v, ⟨(Hc.1 u v).some.map (simple_graph.hom.map_spanning_subgraphs h)⟩,
+end
 
-lemma is_max_acyclic_iff : G.is_max_acyclic hT ↔
-  G ≤ T ∧ ∀ e : T.edge_set \ G.edge_set, ¬ (G.add_edges {e}).is_acyclic := sorry
+abbreviation is_max_acyclic := G ≤ T ∧ G.is_acyclic ∧ ∀ H, H ≤ T →  H.is_acyclic → H ≤ G
 
-lemma is_min_connected_iff : G.is_min_connected hB ↔
-  G ≥ B ∧ e : G.edge_set \ B.edge_set, ¬ (G.delete_edges {e}).is_connected := sorry
+abbreviation is_min_connected := B ≤ G ∧ G.connected ∧ ∀ H, B ≤ H →  H.connected → G ≤ H
 
-lemma is_tree.is_max_acyclic {GT : G ≤ T} : G.is_max_acyclic hT := sorry
+lemma is_max_acyclic_iff : G.is_max_acyclic T ↔
+  G ≤ T ∧ G.is_acyclic ∧ ∀ e ∈ (T.edge_set \ G.edge_set), ¬ (G.add_edges {e}).is_acyclic := sorry
 
-lemma is_tree.is_min_connected {GB : G ≥ B} : G.is_min_connected hB := sorry
+lemma is_min_connected_iff : G.is_min_connected B ↔
+  B ≤ G ∧ G.connected ∧ ∀ e ∈ (G.edge_set \ B.edge_set), ¬ (G.delete_edges {e}).connected := sorry
 
-lemma is_max_acyclic.is_connected : G.is_max_acyclic hT → G.is_connected := sorry
+lemma is_tree.is_max_acyclic [decidable_eq V] (hG : G.is_tree) {GT : G ≤ T} : G.is_max_acyclic T :=
+begin
+  rw is_max_acyclic_iff,
+  use [GT,hG.right],
+  rintro ⟨u,v⟩ ⟨eT,neG⟩,
+  have : u ≠ v := ((mem_edge_set T).mp eT).ne,
+  rintro Ge_ac,
 
-lemma is_min_connected.is_acyclic : G.is_connected hB → G.is_acyclic := sorry
+  -- A path from `u` to `v` given by `connected`ness of `G`
+  let p₁ : (G.add_edges {⟦⟨u,v⟩⟧}).path u v :=
+    simple_graph.path.map
+      (simple_graph.hom.map_spanning_subgraphs (le_add_edges G _))
+      function.injective_id
+      (hG.left.1 u v).some.to_path,
+
+  -- The singleton path from `u` to `v` given by the edge `⟦⟨u,v⟩⟧`
+  let p₂ : (G.add_edges {⟦⟨u,v⟩⟧}).path u v := path.singleton (add_edge_adj u v ‹u≠v›),
+
+  -- Cannot be equal, since the edge is contained in one but not the other,
+  have : p₁ ≠ p₂, by
+  { rintro e,
+    have : ⟦(u, v)⟧ ∉ p₁.val.edges := add_edge_hom_not_edges u v ‹u≠v› _,
+    rw e at this,
+    exact this (path.mk_mem_edges_singleton (add_edge_adj u v ‹u≠v›)), },
+
+  -- By assumption, the extended graph is acyclic, hence unique paths, a contradiction
+  exact this (Ge_ac.path_unique p₁ p₂),
+end
+
+lemma is_tree.is_min_connected [decidable_eq V] (hG : G.is_tree) {BG : B ≤ G} :
+  G.is_min_connected B :=
+begin
+  rw is_min_connected_iff,
+  use [BG,hG.left],
+  rintro ⟨u,v⟩ ⟨eG,neB⟩,
+  have : u ≠ v := ((mem_edge_set G).mp eG).ne,
+  rintro Gne_co,
+
+  let p₁ : G.path u v := simple_graph.path.map
+      (simple_graph.hom.map_spanning_subgraphs (delete_edges_le G _))
+      function.injective_id
+      (Gne_co.1 u v).some.to_path,
+
+  let p₂ : G.path u v := path.singleton ((mem_edge_set G).mp eG),
+
+  have : p₁ ≠ p₂, by
+  { rintro e,
+    have : ⟦(u, v)⟧ ∉ p₁.val.edges := delete_edge_hom_not_edges u v eG _,
+    rw e at this,
+    exact this (path.mk_mem_edges_singleton ((mem_edge_set G).mp eG)), },
+
+  exact this (hG.right.path_unique p₁ p₂),
+end
+
+lemma is_max_acyclic.is_connected [decidable_eq V] (hT : T.connected) :
+  G.is_max_acyclic T → G.connected :=
+begin
+  rintros G_max_ac,
+  rw is_max_acyclic_iff at G_max_ac,
+  rw connected_iff, refine ⟨_,hT.2⟩,
+  obtain ⟨GT,Gac,Gmax⟩ := G_max_ac,
+  rintro u v,
+  by_contra h,
+  let w := (hT.1 u v).some,
+  obtain ⟨x,y,e,hx',hy'⟩ := (hT.1 u v).some.split_along_set' ({x | G.reachable u x}) (by {simp,}) h,
+  have hy : ¬ G.reachable x y, by {rintro h, apply hy', exact hx'.trans h, },
+  have xney : x≠y, by { rintro h, rw h at hy, apply hy, reflexivity, },
+  specialize Gmax ⟦⟨x,y⟩⟧
+    ( by { rw [set.mem_diff, mem_edge_set], exact ⟨e, λ a, hy ⟨(path.singleton a).val⟩⟩ } ),
+  dsimp [is_acyclic] at Gmax, push_neg at Gmax,
+  obtain ⟨v,w,wc⟩ := Gmax,
+  by_cases h : (⟦⟨x,y⟩⟧ : sym2 V) ∈ w.edges,
+  { have : x ∈ w.support := simple_graph.walk.fst_mem_support_of_mem_edges w h,
+    -- need to cover the two possible orders of appearence of x and y in the circuit
+    -- Then, play with `take_until` and `drop_until` to build a path from x to y
+    sorry,
+   },
+  { let w' : G.walk v v := sorry,
+    have wc' : w'.is_cycle := sorry,
+    exact Gac _ _ wc', },
+  /-
+  If this cycle contains e, then it does so at a unique position, so that it can be decomposed into p.cons e
+  with p not containing e, and hence a path in G, contradicting unreachability.
+  If this cycle does not contain e, we get a cycle in G, contradicting acyclicity
+  -/
+
+end
+
+lemma is_min_connected.is_acyclic  (hB : B.is_acyclic)  : G.is_min_connected B → G.is_acyclic := sorry
 
 end min_max
 
