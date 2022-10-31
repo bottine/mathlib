@@ -159,14 +159,13 @@ lemma is_max_acyclic_iff : G.is_max_acyclic T ↔
   G ≤ T ∧ G.is_acyclic ∧ ∀ e ∈ (T.edge_set \ G.edge_set), ¬ (G.add_edges {e}).is_acyclic :=
 begin
   split,
-  { rintro ⟨GT,Gac,Gmax⟩, use [GT,Gac],
+  { rintro ⟨GT,Gac,Gmax⟩, refine ⟨GT, Gac, _⟩,
     rintro ⟨u,v⟩ ⟨eT,neG⟩ Geac,
-    change ¬ (⟦⟨u,v⟩⟧ : sym2 V) ∈ G.edge_set at neG, rw mem_edge_set at neG,
-    apply neG,
+    apply (by {simpa using neG} : ¬ G.adj u v),
     rw ←add_edge_eq_iff u v ((mem_edge_set T).mp eT).ne,
     exact Gmax (G.add_edges _)
                (le_add_edges _ _) (add_edges_le G T _ GT (by { simpa using eT, })) Geac, },
-  { rintro ⟨GT,Gac,Gmax⟩, use [GT,Gac],
+  { rintro ⟨GT,Gac,Gmax⟩, refine ⟨GT, Gac, _⟩,
     rintro H GH HT Hac,
     by_contra h,
     have h' : ¬ H ≤ G := λ HG, h (le_antisymm HG GH),
@@ -176,16 +175,17 @@ begin
     apply Gmax
       (⟦⟨u,v⟩⟧ : sym2 V)
       (by {simp only [set.mem_diff, mem_edge_set], exact ⟨HT Ha, nGa⟩}),
-    apply Hac.le, apply add_edges_le, exact GH, simp [Ha], },
+    refine Hac.le (add_edges_le G H _ GH _),
+    simpa only [set.singleton_subset_iff] using Ha, },
 end
 
 lemma is_min_connected_iff : G.is_min_connected B ↔
   B ≤ G ∧ G.connected ∧ ∀ e ∈ (G.edge_set \ B.edge_set), ¬ (G.delete_edges {e}).connected :=
 begin
   split,
-  { rintro ⟨BG,Gco,Gmin⟩, use [BG, Gco],
+  { rintro ⟨BG,Gco,Gmin⟩, refine ⟨BG, Gco, _⟩,
     rintro ⟨u,v⟩ ⟨eG,neB⟩ Gneco,
-    change ¬ (⟦⟨u,v⟩⟧ : sym2 V) ∈ B.edge_set at neB, rw mem_edge_set at neB,
+    have neB : ¬ B.adj u v, by { simpa using neB, },
     change (⟦⟨u,v⟩⟧ : sym2 V) ∈ G.edge_set at eG,
     rw [mem_edge_set, ←@not_not (G.adj u v), ←delete_edge_eq_iff u v] at eG,
     apply eG,
@@ -193,7 +193,7 @@ begin
     { apply le_delete_edges G B _ BG, simp, exact neB },
     { apply delete_edges_le, },
     { exact Gneco}, },
-  { rintro ⟨BG,Gco,Gmin⟩, use [BG,Gco],
+  { rintro ⟨BG,Gco,Gmin⟩, refine ⟨BG, Gco, _⟩,
     rintro H BH HG Hco,
     by_contra h,
     have h' : ¬ G ≤ H := λ GH, h (le_antisymm HG GH),
@@ -203,7 +203,8 @@ begin
     apply Gmin
       (⟦⟨u,v⟩⟧ : sym2 V)
       (by {simp only [set.mem_diff, mem_edge_set], exact ⟨Ga, λ h, nHa (BH h)⟩}),
-    apply Hco.le, apply le_delete_edges, exact HG, simp [nHa], },
+    refine Hco.le (le_delete_edges _ _ _ HG _),
+    simpa only [set.disjoint_singleton_left] using nHa, },
 end
 
 lemma is_tree.is_max_acyclic [decidable_eq V] (hG : G.is_tree) {GT : G ≤ T} : G.is_max_acyclic T :=
@@ -240,9 +241,7 @@ lemma is_tree.is_min_connected [decidable_eq V] (hG : G.is_tree) {BG : B ≤ G} 
 begin
   rw is_min_connected_iff,
   use [BG,hG.left],
-  rintro ⟨u,v⟩ ⟨eG,neB⟩,
-  have : u ≠ v := ((mem_edge_set G).mp eG).ne,
-  rintro Gne_co,
+  rintro ⟨u,v⟩ ⟨eG,neB⟩ Gne_co,
 
   let p₁ : G.path u v := simple_graph.path.map
       (simple_graph.hom.map_spanning_subgraphs (delete_edges_le G _))
@@ -293,6 +292,14 @@ begin
   rintro G_min_co,
   rw is_min_connected_iff at G_min_co,
   obtain ⟨BG,Gco,Gmin⟩ := G_min_co,
+  rintro c w wcycle,
+  have : ∃ e, e ∈ w.edges ∧ e ∉ B.edge_set, by
+  { by_contra h, push_neg at h,
+    exact hB c (w.induce h) (w.is_cycle_induce h wcycle), },
+  obtain ⟨e,⟨ew,neB⟩⟩ := this,
+  apply Gmin e ⟨walk.edges_subset_edge_set w ew, neB⟩,
+  rw connected_iff at Gco ⊢, refine ⟨_,Gco.right⟩,
+  clear neB Gmin BG hB B,
   sorry,
 end
 
