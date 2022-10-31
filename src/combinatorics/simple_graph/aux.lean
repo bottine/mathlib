@@ -93,6 +93,9 @@ lemma le_add_edges  (G : simple_graph V) (s : set (sym2 V)) : G ≤ (G.add_edges
 lemma add_edges_le  (G T: simple_graph V) (s : set (sym2 V)) :
   G ≤ T → s ⊆ T.edge_set → G.add_edges s ≤ T := sorry
 
+lemma le_delete_edges (G B : simple_graph V)  (s : set (sym2 V)) :
+  B ≤ G → disjoint s B.edge_set → B ≤ G.delete_edges s := sorry
+
 lemma add_edges_eq_iff (s : set (sym2 V)) :
   G.add_edges s = G ↔ (∀ u v, u ≠ v → ((⟦⟨u,v⟩⟧ : sym2 V) ∈ s) → G.adj u v) := sorry
 

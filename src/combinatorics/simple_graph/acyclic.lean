@@ -151,9 +151,9 @@ begin
   exact λ u v, ⟨(Hc.1 u v).some.induce_le h⟩,
 end
 
-abbreviation is_max_acyclic := G ≤ T ∧ G.is_acyclic ∧ ∀ H, G ≤ H → H ≤ T → H.is_acyclic → G = H
+abbreviation is_max_acyclic := G ≤ T ∧ G.is_acyclic ∧ ∀ H, G ≤ H → H ≤ T → H.is_acyclic → H = G
 
-abbreviation is_min_connected := B ≤ G ∧ G.connected ∧ ∀ H, B ≤ H → H ≤ G → H.connected → G = H
+abbreviation is_min_connected := B ≤ G ∧ G.connected ∧ ∀ H, B ≤ H → H ≤ G → H.connected → H = G
 
 lemma is_max_acyclic_iff : G.is_max_acyclic T ↔
   G ≤ T ∧ G.is_acyclic ∧ ∀ e ∈ (T.edge_set \ G.edge_set), ¬ (G.add_edges {e}).is_acyclic :=
@@ -161,26 +161,50 @@ begin
   split,
   { rintro ⟨GT,Gac,Gmax⟩, use [GT,Gac],
     rintro ⟨u,v⟩ ⟨eT,neG⟩ Geac,
-    let e := (⟦⟨u,v⟩⟧ : sym2 V),
-    specialize Gmax (G.add_edges {e}) (add_edges_le G T {e} GT (by { simpa using eT, })) Geac,
-    have : G.add_edges {e} = G := le_antisymm Gmax (le_add_edges G {e}), clear Gmax,
-    rw add_edge_eq_iff u v ((mem_edge_set T).mp eT).ne at this,
     change ¬ (⟦⟨u,v⟩⟧ : sym2 V) ∈ G.edge_set at neG, rw mem_edge_set at neG,
-    exact neG this, },
+    apply neG,
+    rw ←add_edge_eq_iff u v ((mem_edge_set T).mp eT).ne,
+    exact Gmax (G.add_edges _)
+               (le_add_edges _ _) (add_edges_le G T _ GT (by { simpa using eT, })) Geac, },
   { rintro ⟨GT,Gac,Gmax⟩, use [GT,Gac],
-    rintro H HT Hac,
+    rintro H GH HT Hac,
     by_contra h,
-    simp only [has_le.le, simple_graph.is_subgraph] at h,
-    push_neg at h,
-    obtain ⟨u, v, ⟨Ha,nGa⟩⟩ := h,
+    have h' : ¬ H ≤ G := λ HG, h (le_antisymm HG GH),
+    simp only [has_le.le, simple_graph.is_subgraph] at h',
+    push_neg at h',
+    obtain ⟨u, v, ⟨Ha,nGa⟩⟩ := h',
     apply Gmax
       (⟦⟨u,v⟩⟧ : sym2 V)
       (by {simp only [set.mem_diff, mem_edge_set], exact ⟨HT Ha, nGa⟩}),
-     },
+    apply Hac.le, apply add_edges_le, exact GH, simp [Ha], },
 end
 
 lemma is_min_connected_iff : G.is_min_connected B ↔
-  B ≤ G ∧ G.connected ∧ ∀ e ∈ (G.edge_set \ B.edge_set), ¬ (G.delete_edges {e}).connected := sorry
+  B ≤ G ∧ G.connected ∧ ∀ e ∈ (G.edge_set \ B.edge_set), ¬ (G.delete_edges {e}).connected :=
+begin
+  split,
+  { rintro ⟨BG,Gco,Gmin⟩, use [BG, Gco],
+    rintro ⟨u,v⟩ ⟨eG,neB⟩ Gneco,
+    change ¬ (⟦⟨u,v⟩⟧ : sym2 V) ∈ B.edge_set at neB, rw mem_edge_set at neB,
+    change (⟦⟨u,v⟩⟧ : sym2 V) ∈ G.edge_set at eG,
+    rw [mem_edge_set, ←@not_not (G.adj u v), ←delete_edge_eq_iff u v] at eG,
+    apply eG,
+    apply Gmin (G.delete_edges _),
+    { apply le_delete_edges G B _ BG, simp, exact neB },
+    { apply delete_edges_le, },
+    { exact Gneco}, },
+  { rintro ⟨BG,Gco,Gmin⟩, use [BG,Gco],
+    rintro H BH HG Hco,
+    by_contra h,
+    have h' : ¬ G ≤ H := λ GH, h (le_antisymm HG GH),
+    simp only [has_le.le, simple_graph.is_subgraph] at h',
+    push_neg at h',
+    obtain ⟨u, v, ⟨Ga,nHa⟩⟩ := h',
+    apply Gmin
+      (⟦⟨u,v⟩⟧ : sym2 V)
+      (by {simp only [set.mem_diff, mem_edge_set], exact ⟨Ga, λ h, nHa (BH h)⟩}),
+    apply Hco.le, apply le_delete_edges, exact HG, simp [nHa], },
+end
 
 lemma is_tree.is_max_acyclic [decidable_eq V] (hG : G.is_tree) {GT : G ≤ T} : G.is_max_acyclic T :=
 begin
