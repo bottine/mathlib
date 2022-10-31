@@ -139,37 +139,44 @@ section min_max
 
 variables (G) (T : simple_graph V) (hT : T.connected) (B : simple_graph V) (hB : B.is_acyclic)
 
-lemma is_acyclic.le {G H : simple_graph V} (Ga : G.is_acyclic) : H ≤ G → H.is_acyclic :=
+lemma is_acyclic.le {G H : simple_graph V} (Gac : G.is_acyclic) : H ≤ G → H.is_acyclic :=
 begin
   rintros h _ w wcycle,
-  refine Ga _ _ (w.map_is_cycle_of_injective _ wcycle),
-  exact simple_graph.hom.map_spanning_subgraphs h, exact function.injective_id,
+  refine Gac _ (w.induce_le h) (w.is_cycle_induce_le h wcycle),
 end
 
 lemma connected.le {G H : simple_graph V} (Hc : H.connected) : H ≤ G → G.connected :=
 begin
   rintro h, rw connected_iff at Hc ⊢, refine ⟨_,Hc.2⟩,
-  exact λ u v, ⟨(Hc.1 u v).some.map (simple_graph.hom.map_spanning_subgraphs h)⟩,
+  exact λ u v, ⟨(Hc.1 u v).some.induce_le h⟩,
 end
 
-abbreviation is_max_acyclic := G ≤ T ∧ G.is_acyclic ∧ ∀ H, H ≤ T →  H.is_acyclic → H ≤ G
+abbreviation is_max_acyclic := G ≤ T ∧ G.is_acyclic ∧ ∀ H, G ≤ H → H ≤ T → H.is_acyclic → G = H
 
-abbreviation is_min_connected := B ≤ G ∧ G.connected ∧ ∀ H, B ≤ H →  H.connected → G ≤ H
+abbreviation is_min_connected := B ≤ G ∧ G.connected ∧ ∀ H, B ≤ H → H ≤ G → H.connected → G = H
 
 lemma is_max_acyclic_iff : G.is_max_acyclic T ↔
   G ≤ T ∧ G.is_acyclic ∧ ∀ e ∈ (T.edge_set \ G.edge_set), ¬ (G.add_edges {e}).is_acyclic :=
 begin
   split,
   { rintro ⟨GT,Gac,Gmax⟩, use [GT,Gac],
-    rintro e ⟨eT,neG⟩,
-    rintro Geac,
-    specialize Gmax (G.add_edges {e}) (add_edges_le G T {e} GT (by simp [eT])) Geac,
-    have : G.add_edges {e} = G := le_antisymm Gmax  (le_add_edges G {e}),
-    simp only [add_edges_eq_iff, set.mem_singleton_iff] at this,
-    obtain ⟨u,v⟩ := e, change ¬ (⟦⟨u,v⟩⟧ : sym2 V) ∈ G.edge_set at neG, rw mem_edge_set at neG,
-    exact neG (this u v rfl), },
+    rintro ⟨u,v⟩ ⟨eT,neG⟩ Geac,
+    let e := (⟦⟨u,v⟩⟧ : sym2 V),
+    specialize Gmax (G.add_edges {e}) (add_edges_le G T {e} GT (by { simpa using eT, })) Geac,
+    have : G.add_edges {e} = G := le_antisymm Gmax (le_add_edges G {e}), clear Gmax,
+    rw add_edge_eq_iff u v ((mem_edge_set T).mp eT).ne at this,
+    change ¬ (⟦⟨u,v⟩⟧ : sym2 V) ∈ G.edge_set at neG, rw mem_edge_set at neG,
+    exact neG this, },
   { rintro ⟨GT,Gac,Gmax⟩, use [GT,Gac],
-    rintro H HT Hac, by_contra, sorry, },
+    rintro H HT Hac,
+    by_contra h,
+    simp only [has_le.le, simple_graph.is_subgraph] at h,
+    push_neg at h,
+    obtain ⟨u, v, ⟨Ha,nGa⟩⟩ := h,
+    apply Gmax
+      (⟦⟨u,v⟩⟧ : sym2 V)
+      (by {simp only [set.mem_diff, mem_edge_set], exact ⟨HT Ha, nGa⟩}),
+     },
 end
 
 lemma is_min_connected_iff : G.is_min_connected B ↔
