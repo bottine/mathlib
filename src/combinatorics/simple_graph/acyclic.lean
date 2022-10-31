@@ -5,6 +5,7 @@ Authors: Kyle Miller
 -/
 import combinatorics.simple_graph.connectivity
 import .aux
+import .split_cycle
 /-!
 
 # Acyclic graphs and trees

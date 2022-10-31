@@ -59,15 +59,6 @@ begin
   { exact λ ⟨hp,he⟩, path.cons_is_cycle (⟨p,hp⟩ : G.path v u) h he, },
 end
 
-lemma split_cycle {x : V} {p : G.walk x x} (pc : p.is_cycle) (ep : (⟦⟨u,v⟩⟧ : sym2 V) ∈ p.edges) :
-  ∃ q : G.walk u v, (⟦⟨u,v⟩⟧ : sym2 V) ∉ q.edges :=
-begin
-  cases p,
-  { simp only [is_cycle.not_of_nil] at pc,
-    exact pc.elim, },
-  { sorry, }
-end
-
 end walk
 
 namespace walk
