@@ -1,14 +1,53 @@
 import combinatorics.simple_graph.connectivity
 import combinatorics.simple_graph.basic
 
-open function
+open function classical
 
 namespace simple_graph
 
-variables {V : Type*} {G : simple_graph V} {u v : V}
+variables {V : Type*} {G : simple_graph V} {u v: V}
 
 
 namespace walk
+
+local attribute [instance] classical.prop_decidable
+
+@[simp] noncomputable def substitute : Π {u v : V} (p : G.walk u v) {x y : V}
+  (r : G.walk x y) (h : (⟦⟨x,y⟩⟧ : sym2 V) ∉ r.edges), G.walk u v
+| _ _ walk.nil _ _ _ _ := walk.nil
+| _ _ (walk.cons' u v w a p) x y r h :=
+  if fwd : x = u ∧ y = v then by
+    { rw ←fwd.1, let p' := p.substitute r h, rw ←fwd.2 at p', exact r.append p', }
+  else if bwd : x = v ∧ y = u then by
+    { rw ←bwd.2, let p' := p.substitute r h, rw ←bwd.1 at p', exact r.reverse.append p', }
+  else
+    walk.cons a (p.substitute r h)
+
+lemma substitute_edge_not_mem  {u v : V} (p : G.walk u v) {x y : V}
+  (r : G.walk x y) (h : (⟦⟨x,y⟩⟧ : sym2 V) ∉ r.edges) :
+  (⟦⟨x,y⟩⟧ : sym2 V) ∉ (p.substitute r h).edges :=
+begin
+  induction p,
+  { simp only [substitute, edges_nil, list.not_mem_nil, not_false_iff], },
+  { by_cases fwd : x = p_u ∧ y = p_v,
+    { rcases fwd with ⟨rfl,rfl⟩,
+      simp only [substitute, eq_self_iff_true, and_self, eq_mp_eq_cast, cast_eq, eq_mpr_eq_cast,
+                 dite_eq_ite, if_true, edges_append, list.mem_append],
+      push_neg, exact ⟨h,p_ih⟩, },
+    { simp only [substitute], rw [dif_neg fwd],
+      by_cases bwd : x = p_v ∧ y = p_u,
+      { rcases bwd with ⟨rfl,rfl⟩,
+        simp only [substitute, eq_self_iff_true, and_self, eq_mp_eq_cast, cast_eq, eq_mpr_eq_cast,
+                  dite_eq_ite, if_true, edges_append, list.mem_append],
+        push_neg, refine ⟨_, p_ih⟩,
+        simp only [edges_reverse, list.mem_reverse], exact h, },
+      { rw [dif_neg bwd],
+        simp only [edges_cons, list.mem_cons_iff, quotient.eq, sym2.rel_iff],
+        rintro ((fwd'|bwd')|r),
+        exact fwd fwd', exact bwd bwd',
+        exact p_ih r, }, }, },
+end
+
 
 lemma cons_is_cycle_iff {u v : V} (p : G.walk v u) (h : G.adj u v) :
   (p.cons h).is_cycle ↔ p.is_path ∧ ¬ ⟦(u, v)⟧ ∈ p.edges :=
@@ -18,6 +57,15 @@ begin
                list.tail_cons, true_and, simple_graph.walk.is_path_def],
     tauto, },
   { exact λ ⟨hp,he⟩, path.cons_is_cycle (⟨p,hp⟩ : G.path v u) h he, },
+end
+
+lemma split_cycle {x : V} {p : G.walk x x} (pc : p.is_cycle) (ep : (⟦⟨u,v⟩⟧ : sym2 V) ∈ p.edges) :
+  ∃ q : G.walk u v, (⟦⟨u,v⟩⟧ : sym2 V) ∉ q.edges :=
+begin
+  cases p,
+  { simp only [is_cycle.not_of_nil] at pc,
+    exact pc.elim, },
+  { sorry, }
 end
 
 end walk

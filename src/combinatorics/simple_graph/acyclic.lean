@@ -278,8 +278,8 @@ begin
   obtain ⟨v,w,wc⟩ := Gmax,
   by_cases h : (⟦⟨x,y⟩⟧ : sym2 V) ∈ w.edges,
   { apply hy, rw hG,
-    exact ((@adj_and_reachable_delete_edges_iff_exists_cycle V (G.add_edges {⟦⟨x,y⟩⟧}) x y).mpr
-      ⟨v,w,⟨wc,h⟩⟩).2, },
+    obtain ⟨p,hp⟩ := walk.split_cycle wc h,
+    exact ⟨walk.to_delete_edge ⟦⟨x,y⟩⟧ p hp⟩, },
   { rw hG at Gac,
     apply Gac,
     let w' := walk.to_delete_edge ⟦⟨x,y⟩⟧ w h,
@@ -292,15 +292,21 @@ begin
   rintro G_min_co,
   rw is_min_connected_iff at G_min_co,
   obtain ⟨BG,Gco,Gmin⟩ := G_min_co,
-  rintro c w wcycle,
+  rintro c w wc,
   have : ∃ e, e ∈ w.edges ∧ e ∉ B.edge_set, by
   { by_contra h, push_neg at h,
-    exact hB c (w.induce h) (w.is_cycle_induce h wcycle), },
-  obtain ⟨e,⟨ew,neB⟩⟩ := this,
-  apply Gmin e ⟨walk.edges_subset_edge_set w ew, neB⟩,
+    exact hB c (w.induce h) (w.is_cycle_induce h wc), },
+  obtain ⟨⟨u,v⟩,⟨ew,neB⟩⟩ := this,
+  apply Gmin ⟦⟨u,v⟩⟧ ⟨walk.edges_subset_edge_set w ew, neB⟩,
   rw connected_iff at Gco ⊢, refine ⟨_,Gco.right⟩,
   clear neB Gmin BG hB B,
-  sorry,
+  obtain ⟨p,hp⟩ := walk.split_cycle wc ew,
+  rintros x y,
+  obtain ⟨wG⟩ := Gco.left x y,
+  let wG' := wG.substitute p hp,
+  let hwG' := wG.substitute_edge_not_mem p hp,
+  constructor,
+  exact walk.to_delete_edge ⟦⟨u,v⟩⟧ wG' hwG',
 end
 
 end min_max
