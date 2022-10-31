@@ -151,12 +151,19 @@ end
 
 lemma add_edge_adj (u v) (h : u ≠ v) : (G.add_edges {⟦⟨u,v⟩⟧}).adj u v := or.inr ⟨h,rfl⟩
 
-lemma add_edge_hom_not_edges (u v) (h : u ≠ v)
+lemma add_edge_hom_not_edges (u v) (h : u ≠ v) (h' : ¬ G.adj u v)
   {x y : V} (p : G.path x y) :
   (⟦⟨u,v⟩⟧ : sym2 V) ∉
   ((simple_graph.path.map
     (simple_graph.hom.map_spanning_subgraphs (le_add_edges G {⟦⟨u,v⟩⟧}))
-    (function.injective_id) p)).val.edges := sorry
+    (function.injective_id) p)).val.edges :=
+begin
+  simp,
+  rintro mem,
+  apply h',
+  rw ←mem_edge_set,
+  apply (simple_graph.walk.edges_subset_edge_set p.val) mem,
+end
 
 lemma delete_edge_hom_not_edges (u v) (h : G.adj u v)
   {x y : V} (p : (G.delete_edges {⟦⟨u,v⟩⟧}).path x y) :

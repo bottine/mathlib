@@ -228,7 +228,7 @@ begin
   -- Cannot be equal, since the edge is contained in one but not the other,
   have : p₁ ≠ p₂, by
   { rintro e,
-    have : ⟦(u, v)⟧ ∉ p₁.val.edges := add_edge_hom_not_edges u v ‹u≠v› _,
+    have : ⟦(u, v)⟧ ∉ p₁.val.edges := add_edge_hom_not_edges u v ‹u≠v› (λ x, neG x) _,
     rw e at this,
     exact this (path.mk_mem_edges_singleton (add_edge_adj u v ‹u≠v›)), },
 
