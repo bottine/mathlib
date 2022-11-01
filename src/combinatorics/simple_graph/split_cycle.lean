@@ -10,7 +10,7 @@ variables {V : Type*} {G : simple_graph V} {u v: V}
 
 namespace walk
 
-lemma split_cycle.aux {x y : V} (p' : G.walk x y) (p : G.walk y x)
+lemma split_cycle.aux {x y : V} (p : G.walk y x) (p' : G.walk x y)
   (pc : (p'.append p).is_cycle)
   {u v : V}
   (ep : (⟦⟨u,v⟩⟧ : sym2 V) ∈ p.edges)
@@ -50,14 +50,14 @@ begin
         { simp only [edges_append, edges_cons, edges_nil, list.mem_append, list.mem_singleton,
                      quotient.eq, sym2.rel_iff],
           rintro (one|(two|three)),
-          exact ep' one, exact h' two, exact h'' ⟨three.2,three.1⟩, }, }, }, }
+          exact ep' one, exact h' two, exact h'' ⟨three.2,three.1⟩, }, }, }, },
 end
 
 lemma split_cycle {x : V} {p : G.walk x x} (pc : p.is_cycle)
   {u v : V} (ep : (⟦⟨u,v⟩⟧ : sym2 V) ∈ p.edges) :
   ∃ q : G.walk u v, (⟦⟨u,v⟩⟧ : sym2 V) ∉ q.edges :=
 begin
-  apply split_cycle.aux nil p,
+  apply split_cycle.aux p nil,
   { rw [nil_append], exact pc, },
   { exact ep, },
   { rintro h, simpa only [edges_nil, list.not_mem_nil] using h, },

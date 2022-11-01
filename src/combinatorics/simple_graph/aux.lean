@@ -125,13 +125,30 @@ lemma induce_comp {K : simple_graph V} (k : ∀ e, e ∈ p.edges → e ∈ K.edg
   simp only [induce, eq_self_iff_true, heq_iff_eq, true_and],
   apply p_ih, }
 
-lemma induce_append (q : G.walk v w) (hq :  ∀ e, e ∈ q.edges → e ∈ H.edge_set) :
+@[simp] lemma induce_append (q : G.walk v w) (hq :  ∀ e, e ∈ q.edges → e ∈ H.edge_set) :
   (p.append q).induce (by { rintro e, simp, rintro (ep|eq), exact h e ep, exact hq e eq, }) =
   (p.induce h).append (q.induce hq) := by
 { induction p,
   simp only [induce, nil_append],
   simp only [walk.cons_append, induce, eq_self_iff_true, heq_iff_eq, true_and],
   apply p_ih, }
+
+@[simp] lemma induce_reverse :
+  p.reverse.induce (by {simp [edges_reverse, list.mem_reverse], exact h})
+= (p.induce h).reverse := by
+{ induction p,
+  simp only [induce, reverse_nil],
+  simp only [induce, reverse_cons],
+  rw [induce_append, p_ih], refl,
+  simp only [edges_cons, list.mem_cons_iff, forall_eq_or_imp, mem_edge_set] at h,
+  simp only [edges_cons, edges_nil, list.mem_singleton, forall_eq, mem_edge_set],
+  exact (h.left).symm, }
+
+abbreviation to_delete_edges' (s : set (sym2 V)) (hp : ∀ e, e ∈ p.edges → ¬ e ∈ s) :
+  (G.delete_edges s).walk u v :=
+p.induce (by
+  { simp only [edge_set_delete_edges, set.mem_diff],
+    exact λ e ep, ⟨edges_subset_edge_set p ep, hp e ep⟩, })
 
 end walk
 
@@ -175,7 +192,11 @@ begin
 end
 
 lemma le_delete_edges (G B : simple_graph V)  (s : set (sym2 V)) :
-  B ≤ G → disjoint s B.edge_set → B ≤ G.delete_edges s := sorry
+  B ≤ G → disjoint s B.edge_set → B ≤ G.delete_edges s :=
+begin
+  rintro BG sB x y a,
+  exact ⟨BG a, λ as, sB ⟨as,a⟩⟩,
+end
 
 lemma add_edges_eq_iff (s : set (sym2 V)) :
   G.add_edges s = G ↔ (∀ u v, u ≠ v → ((⟦⟨u,v⟩⟧ : sym2 V) ∈ s) → G.adj u v) := sorry
