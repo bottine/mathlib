@@ -198,8 +198,15 @@ begin
   exact ⟨BG a, λ as, sB ⟨as,a⟩⟩,
 end
 
+lemma add_edge_adj (u v) (h : u ≠ v) : (G.add_edges {⟦⟨u,v⟩⟧}).adj u v := or.inr ⟨h,rfl⟩
+
 lemma add_edges_eq_iff (s : set (sym2 V)) :
-  G.add_edges s = G ↔ (∀ u v, u ≠ v → ((⟦⟨u,v⟩⟧ : sym2 V) ∈ s) → G.adj u v) := sorry
+  G.add_edges s = G ↔ (∀ u v, u ≠ v → ((⟦⟨u,v⟩⟧ : sym2 V) ∈ s) → G.adj u v) :=
+begin
+  split,
+  { rintro GseG u v unev uvs, rw ←GseG, right, exact ⟨unev, uvs⟩, },
+  { rintro h, ext, dsimp [add_edges], simp only [or_iff_left_iff_imp, and_imp], apply h, },
+end
 
 lemma add_edge_eq_iff (u v) (h : u ≠ v) : G.add_edges {⟦⟨u,v⟩⟧} = G ↔ G.adj u v :=
 begin
@@ -209,8 +216,6 @@ begin
   { rintro h' u v hn (⟨rfl,rfl⟩|⟨rfl,rfl⟩), exact h', exact h'.symm, },
 end
 
-lemma add_edge_adj (u v) (h : u ≠ v) : (G.add_edges {⟦⟨u,v⟩⟧}).adj u v := or.inr ⟨h,rfl⟩
-
 lemma add_edge_hom_not_edges (u v) (h : u ≠ v) (h' : ¬ G.adj u v)
   {x y : V} (p : G.path x y) :
   (⟦⟨u,v⟩⟧ : sym2 V) ∉
@@ -218,7 +223,8 @@ lemma add_edge_hom_not_edges (u v) (h : u ≠ v) (h' : ¬ G.adj u v)
     (simple_graph.hom.map_spanning_subgraphs (le_add_edges G {⟦⟨u,v⟩⟧}))
     (function.injective_id) p)).val.edges :=
 begin
-  simp,
+  simp only [subtype.val_eq_coe, path.map_coe, walk.edges_map, list.mem_map,
+             hom.map_spanning_subgraphs_apply, sym2.map_id', id.def, exists_eq_right],
   rintro mem,
   apply h',
   rw ←mem_edge_set,
@@ -230,7 +236,14 @@ lemma delete_edge_hom_not_edges (u v) (h : G.adj u v)
   (⟦⟨u,v⟩⟧ : sym2 V) ∉
   ((simple_graph.path.map
     (simple_graph.hom.map_spanning_subgraphs (delete_edges_le G {⟦⟨u,v⟩⟧}))
-    (function.injective_id) p)).val.edges := sorry
+    (function.injective_id) p)).val.edges :=
+begin
+  simp only [subtype.val_eq_coe, path.map_coe, walk.edges_map, list.mem_map,
+             hom.map_spanning_subgraphs_apply, sym2.map_id', id.def, exists_eq_right],
+  rintro mem,
+  simpa only [mem_edge_set, delete_edges_adj, set.mem_singleton, not_true, and_false]
+    using p.val.edges_subset_edge_set mem,
+end
 
 lemma add_delete_edges {s : set (sym2 V)} (hs : disjoint s G.edge_set) :
   (G.add_edges s).delete_edges s = G := sorry
