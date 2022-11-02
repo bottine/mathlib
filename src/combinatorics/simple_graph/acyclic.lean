@@ -5,7 +5,6 @@ Authors: Kyle Miller
 -/
 import combinatorics.simple_graph.connectivity
 import .aux
-import .split_cycle
 /-!
 
 # Acyclic graphs and trees
@@ -279,8 +278,7 @@ begin
   obtain ⟨v,w,wc⟩ := Gmax,
   by_cases h : (⟦⟨x,y⟩⟧ : sym2 V) ∈ w.edges,
   { apply hy, rw hG,
-    obtain ⟨p,hp⟩ := walk.split_cycle wc h,
-    exact ⟨walk.to_delete_edge ⟦⟨x,y⟩⟧ p hp⟩, },
+    exact (adj_and_reachable_delete_edges_iff_exists_cycle.mpr ⟨v,w,wc,h⟩).right, },
   { rw hG at Gac,
     apply Gac,
     let w' := walk.to_delete_edge ⟦⟨x,y⟩⟧ w h,
@@ -301,7 +299,12 @@ begin
   apply Gmin ⟦⟨u,v⟩⟧ ⟨walk.edges_subset_edge_set w ew, neB⟩,
   rw connected_iff at Gco ⊢, refine ⟨_,Gco.right⟩,
   clear neB Gmin BG hB B,
-  obtain ⟨p,hp⟩ := walk.split_cycle wc ew,
+  obtain ⟨_,⟨p'⟩⟩ := (adj_and_reachable_delete_edges_iff_exists_cycle.mpr ⟨c,w,wc,ew⟩),
+  let p : G.walk u v := p'.induce_le (by {apply delete_edges_le,}),
+  have hp : (⟦⟨u,v⟩⟧ : sym2 V) ∉ p.edges := λ h, by
+  { rw walk.induce_edges at h,
+    simpa only [mem_edge_set, delete_edges_adj, set.mem_singleton, not_true, and_false]
+      using p'.edges_subset_edge_set h, },
   rintros x y,
   obtain ⟨wG⟩ := Gco.left x y,
   let wG' := wG.substitute p hp,
