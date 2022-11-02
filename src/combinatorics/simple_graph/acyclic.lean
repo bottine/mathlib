@@ -273,7 +273,7 @@ begin
   have hG : G = (G.add_edges {⟦⟨x,y⟩⟧}).delete_edges {⟦⟨x,y⟩⟧} := (add_delete_edge x y xnay).symm,
   specialize Gmax ⟦⟨x,y⟩⟧
     ( by { rw [set.mem_diff, mem_edge_set], exact ⟨e, xnay⟩ } ),
-  dsimp [is_acyclic] at Gmax,
+  dsimp only [is_acyclic] at Gmax,
   push_neg at Gmax,
   obtain ⟨v,w,wc⟩ := Gmax,
   by_cases h : (⟦⟨x,y⟩⟧ : sym2 V) ∈ w.edges,
