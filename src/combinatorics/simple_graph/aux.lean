@@ -29,25 +29,22 @@ lemma substitute_edge_not_mem  {u v : V} (p : G.walk u v) {x y : V}
 begin
   induction p,
   { simp only [substitute, edges_nil, list.not_mem_nil, not_false_iff], },
-  { by_cases fwd : x = p_u ∧ y = p_v,
+  { dsimp only [substitute],
+    split_ifs with fwd bwd,
     { rcases fwd with ⟨rfl,rfl⟩,
-      simp only [substitute, eq_self_iff_true, and_self, eq_mp_eq_cast, cast_eq, eq_mpr_eq_cast,
-                 dite_eq_ite, if_true, edges_append, list.mem_append],
-      push_neg, exact ⟨h,p_ih⟩, },
-    { simp only [substitute], rw [dif_neg fwd],
-      by_cases bwd : x = p_v ∧ y = p_u,
+      simp only [eq_mp_eq_cast, cast_eq, eq_mpr_eq_cast, edges_append, list.mem_append],
+      push_neg,
+      exact ⟨h,p_ih,⟩ },
       { rcases bwd with ⟨rfl,rfl⟩,
-        simp only [substitute, eq_self_iff_true, and_self, eq_mp_eq_cast, cast_eq, eq_mpr_eq_cast,
-                  dite_eq_ite, if_true, edges_append, list.mem_append],
-        push_neg, refine ⟨_, p_ih⟩,
-        simp only [edges_reverse, list.mem_reverse], exact h, },
-      { rw [dif_neg bwd],
-        simp only [edges_cons, list.mem_cons_iff, quotient.eq, sym2.rel_iff],
+        simp only [eq_mp_eq_cast, cast_eq, eq_mpr_eq_cast, edges_append, edges_reverse,
+                   list.mem_append, list.mem_reverse],
+        push_neg,
+        exact ⟨h, p_ih⟩, },
+      { simp only [edges_cons, list.mem_cons_iff, quotient.eq, sym2.rel_iff],
         rintro ((fwd'|bwd')|r),
         exact fwd fwd', exact bwd bwd',
-        exact p_ih r, }, }, },
+        exact p_ih r, }, },
 end
-
 
 lemma cons_is_cycle_iff {u v : V} (p : G.walk v u) (h : G.adj u v) :
   (p.cons h).is_cycle ↔ p.is_path ∧ ¬ ⟦(u, v)⟧ ∈ p.edges :=
@@ -126,7 +123,7 @@ lemma induce_comp {K : simple_graph V} (k : ∀ e, e ∈ p.edges → e ∈ K.edg
   apply p_ih, }
 
 @[simp] lemma induce_append (q : G.walk v w) (hq :  ∀ e, e ∈ q.edges → e ∈ H.edge_set) :
-  (p.append q).induce (by { rintro e, simp, rintro (ep|eq), exact h e ep, exact hq e eq, }) =
+  (p.append q).induce (by { rintro e, simp only [edges_append, list.mem_append], rintro (ep|eq), exact h e ep, exact hq e eq, }) =
   (p.induce h).append (q.induce hq) := by
 { induction p,
   simp only [induce, nil_append],
