@@ -180,6 +180,14 @@ instance : has_inf (simple_graph V) := ⟨λ x y,
 @[simp] lemma inf_adj (x y : simple_graph V) (v w : V) : (x ⊓ y).adj v w ↔ x.adj v w ∧ y.adj v w :=
 iff.rfl
 
+lemma simple_graph.from_rel_mono {V : Type u} {r s : V → V → Prop} (h : ∀ x y, r x y → s x y) :
+  simple_graph.from_rel r ≤ simple_graph.from_rel s :=
+begin
+  rintros x y,
+  simp only [from_rel_adj, ne.def, and_imp],
+  exact λ neq rel, ⟨neq, rel.cases_on (or.inl ∘ h x y) (or.inr ∘ h y x)⟩
+end
+
 /--
 We define `Gᶜ` to be the `simple_graph V` such that no two adjacent vertices in `G`
 are adjacent in the complement, and every nonadjacent pair of vertices is adjacent
