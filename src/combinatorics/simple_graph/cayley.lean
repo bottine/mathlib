@@ -124,6 +124,38 @@ begin
       simp only [smul_inv_smul], }, },
 end
 
+def as_graph_iso (g : G) : ((cayley_graph X S) ≃g (cayley_graph X S)) :=
+{ to_fun := λ x, g • x,
+  inv_fun := λ x, g⁻¹ • x,
+  left_inv := λ x, by simp,
+  right_inv := λ x, by simp,
+  map_rel_iff' := λ x y, by
+  { simp only [adj_iff, equiv.coe_fn_mk, ne.def, smul_left_cancel_iff, exists_prop,
+               and.congr_right_iff],
+    rintro ne, split,
+    { rintro ⟨m,mS,(l|r)⟩,
+      use [m,mS], sorry, sorry, },
+      rintro ⟨m,mS,(rfl|rfl)⟩,
+     },
+   }
+
+/-
+
+m g x = g y ->
+
+-/
+
+def as_graph_iso : G →* ((cayley_graph X S) ≃g (cayley_graph X S)) :=
+{ to_fun := λ g, by {},
+  map_one := sorry,
+  map_mul := sorry }
+
+
+instance [fintype S] : locally_finite (cayley_graph X S) :=
+begin
+  sorry,
+end
+
 end group_action
 
 end cayley_graph
