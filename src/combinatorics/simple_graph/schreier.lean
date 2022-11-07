@@ -129,26 +129,17 @@ end
 
 abbreviation schreier_coset_graph (H : subgroup G) := schreier_graph (G ⧸ H) S
 
-section
-/-!
-Every Schreier graph for a pretransitive action is canonically equivalent to the coset graph
-on the stabilizer of a point.
--/
-
-variables [mul_action.is_pretransitive G X] (x₀ : X)
 
 
-noncomputable def equiv_coset_graph_of_transitive_action :
-  schreier_coset_graph S (mul_action.stabilizer G x₀) ≃g schreier_graph X S :=
-{ to_equiv := by
-  { apply  (mul_action.orbit_equiv_quotient_stabilizer G x₀).symm.trans,
-    rw mul_action.orbit_eq_univ,
-    exact equiv.set.univ X, },
+noncomputable def equiv_coset_graph_of_transitive_action
+  [mul_action.is_pretransitive G X] (x₀ : X ):
+  schreier_graph X S ≃g schreier_coset_graph S (mul_action.stabilizer G x₀) :=
+{ to_equiv := mul_action.equiv_quotient_stabilizer G x₀,
   map_rel_iff' := λ x y, by
-  { simp [mul_action.orbit_equiv_quotient_stabilizer, equiv.set.univ], } }
+  { simp [adj_iff],
+    rintro ne, split, sorry, sorry } }
 
 
-end
 
 instance [fintype S] : locally_finite (schreier_graph X S) :=
 begin

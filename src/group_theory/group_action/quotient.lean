@@ -133,6 +133,17 @@ equiv.symm $ equiv.of_bijective
   ⟨λ x y hxy, injective_of_quotient_stabilizer α b (by convert congr_arg subtype.val hxy),
   λ ⟨b, ⟨g, hgb⟩⟩, ⟨g, subtype.eq hgb⟩⟩
 
+/-- Orbit-stabilizer theorem with a pretransitive action -/
+noncomputable def equiv_quotient_stabilizer [mul_action.is_pretransitive α β] (b : β) :
+  β ≃ α ⧸ (stabilizer α b) :=
+equiv.symm $ equiv.of_bijective
+  (λ g, of_quotient_stabilizer α b g)
+  ⟨λ x y hxy, injective_of_quotient_stabilizer α b hxy,
+   λ b', let H := mul_action.exists_smul_eq α b b' in ⟨quotient_group.mk H.some, H.some_spec⟩⟩
+
+
+
+
 /-- Orbit-stabilizer theorem. -/
 @[to_additive "Orbit-stabilizer theorem."]
 noncomputable def orbit_prod_stabilizer_equiv_group (b : β) :
