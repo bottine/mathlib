@@ -132,12 +132,13 @@ abbreviation schreier_coset_graph (H : subgroup G) := schreier_graph (G ⧸ H) S
 
 
 noncomputable def equiv_coset_graph_of_transitive_action
-  [mul_action.is_pretransitive G X] (x₀ : X ):
-  schreier_graph X S ≃g schreier_coset_graph S (mul_action.stabilizer G x₀) :=
-{ to_equiv := mul_action.equiv_quotient_stabilizer G x₀,
+  [mul_action.is_pretransitive G X] (x₀ : X):
+  schreier_coset_graph S (mul_action.stabilizer G x₀) ≃g schreier_graph X S :=
+{ to_equiv := (mul_action.equiv_quotient_stabilizer G x₀).symm,
   map_rel_iff' := λ x y, by
-  { simp [adj_iff],
-    rintro ne, split, sorry, sorry } }
+  { simp only [adj_iff, mul_action.equiv_quotient_stabilizer],
+    simp only [equiv.symm_symm, equiv.of_bijective_apply, ne.def, exists_prop],
+    sorry, } }
 
 
 
