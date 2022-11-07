@@ -9,6 +9,9 @@ import combinatorics.simple_graph.connectivity
 import data.list
 import group_theory.group_action.group
 import group_theory.subgroup.basic
+import group_theory.coset
+import group_theory.quotient_group
+import group_theory.group_action.quotient
 
 open function
 
@@ -124,7 +127,37 @@ begin
       simp only [smul_inv_smul], }, },
 end
 
-lemma equiv_coset_graph_of_transitive_action [mul_action.is_pretransitive X S] (x : X) := sorry
+abbreviation schreier_coset_graph (H : subgroup G) := schreier_graph (G ⧸ H) S
+
+@[reducible]
+private def coset_graph_to_action_graph [mul_action.is_pretransitive G X] (x₀ : X) :
+  (G ⧸ (mul_action.stabilizer G x₀)) → X :=
+quot.lift (λ (g : G), g • x₀) (by
+  { rintros g h r,
+    rw quotient_group.left_rel_r_eq_left_coset_equivalence at r,
+    replace r := (left_coset_eq_iff (mul_action.stabilizer G x₀)).mp r.symm,
+    simpa [mul_action.mem_stabilizer_iff, ←inv_smul_eq_iff, ←mul_smul] using r, } )
+
+@[reducible]
+private noncomputable def action_graph_to_coset_graph [mul_action.is_pretransitive G X] (x₀ : X) :
+  X → (G ⧸ (mul_action.stabilizer G x₀)) := λ x, (mul_action.exists_smul_eq G x₀ x).some
+
+noncomputable def equiv_coset_graph_of_transitive_action
+  [mul_action.is_pretransitive G X] (x₀ : X) :
+  schreier_coset_graph S (mul_action.stabilizer G x₀) ≃g schreier_graph X S :=
+{ to_fun := coset_graph_to_action_graph x₀,
+  inv_fun := action_graph_to_coset_graph x₀,
+  left_inv := quot.ind $ by
+  { rintro g, apply quot.sound,
+    simp_rw quotient_group.left_rel_r_eq_left_coset_equivalence,
+    change left_coset _ _ = left_coset _ _,
+    simp_rw [left_coset_eq_iff (mul_action.stabilizer G x₀), mul_action.mem_stabilizer_iff,
+             mul_smul, inv_smul_eq_iff],
+    symmetry,
+    exact (mul_action.exists_smul_eq G x₀ (coset_graph_to_action_graph x₀ (quot.mk _ g))).some_spec,
+  },
+  right_inv := sorry,
+  map_rel_iff := sorry }
 
 instance [fintype S] : locally_finite (schreier_graph X S) :=
 begin
