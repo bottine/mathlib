@@ -129,35 +129,26 @@ end
 
 abbreviation schreier_coset_graph (H : subgroup G) := schreier_graph (G ⧸ H) S
 
-@[reducible]
-private def coset_graph_to_action_graph [mul_action.is_pretransitive G X] (x₀ : X) :
-  (G ⧸ (mul_action.stabilizer G x₀)) → X :=
-quot.lift (λ (g : G), g • x₀) (by
-  { rintros g h r,
-    rw quotient_group.left_rel_r_eq_left_coset_equivalence at r,
-    replace r := (left_coset_eq_iff (mul_action.stabilizer G x₀)).mp r.symm,
-    simpa [mul_action.mem_stabilizer_iff, ←inv_smul_eq_iff, ←mul_smul] using r, } )
+section
+/-!
+Every Schreier graph for a pretransitive action is canonically equivalent to the coset graph
+on the stabilizer of a point.
+-/
 
-@[reducible]
-private noncomputable def action_graph_to_coset_graph [mul_action.is_pretransitive G X] (x₀ : X) :
-  X → (G ⧸ (mul_action.stabilizer G x₀)) := λ x, (mul_action.exists_smul_eq G x₀ x).some
+variables [mul_action.is_pretransitive G X] (x₀ : X)
 
-noncomputable def equiv_coset_graph_of_transitive_action
-  [mul_action.is_pretransitive G X] (x₀ : X) :
+
+noncomputable def equiv_coset_graph_of_transitive_action :
   schreier_coset_graph S (mul_action.stabilizer G x₀) ≃g schreier_graph X S :=
-{ to_fun := coset_graph_to_action_graph x₀,
-  inv_fun := action_graph_to_coset_graph x₀,
-  left_inv := quot.ind $ by
-  { rintro g, apply quot.sound,
-    simp_rw quotient_group.left_rel_r_eq_left_coset_equivalence,
-    change left_coset _ _ = left_coset _ _,
-    simp_rw [left_coset_eq_iff (mul_action.stabilizer G x₀), mul_action.mem_stabilizer_iff,
-             mul_smul, inv_smul_eq_iff],
-    symmetry,
-    exact (mul_action.exists_smul_eq G x₀ (coset_graph_to_action_graph x₀ (quot.mk _ g))).some_spec,
-  },
-  right_inv := sorry,
-  map_rel_iff := sorry }
+{ to_equiv := by
+  { apply  (mul_action.orbit_equiv_quotient_stabilizer G x₀).symm.trans,
+    rw mul_action.orbit_eq_univ,
+    exact equiv.set.univ X, },
+  map_rel_iff' := λ x y, by
+  { simp [mul_action.orbit_equiv_quotient_stabilizer, equiv.set.univ], } }
+
+
+end
 
 instance [fintype S] : locally_finite (schreier_graph X S) :=
 begin
