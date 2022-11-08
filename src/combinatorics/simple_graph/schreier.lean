@@ -1,8 +1,3 @@
-/-
-Copyright (c) 2021 Kyle Miller. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Kyle Miller
--/
 import combinatorics.simple_graph.basic
 import combinatorics.simple_graph.subgraph
 import combinatorics.simple_graph.connectivity
@@ -39,7 +34,7 @@ end defs
 
 namespace schreier_graph
 
-section
+section basic
 
 variables {X : Type*} {M : Type*} [has_smul M X] (S : set M)
 
@@ -73,7 +68,7 @@ begin
   rintro, congr'; ext; tauto,
 end
 
-end
+end basic
 
 section group_action
 
@@ -129,19 +124,50 @@ end
 
 abbreviation schreier_coset_graph (H : subgroup G) := schreier_graph (G ⧸ H) S
 
-noncomputable def equiv_coset_graph_of_transitive_action
-  [mul_action.is_pretransitive G X] (x₀ : X) :
+noncomputable def equiv_coset_graph_of_pretransitive [mul_action.is_pretransitive G X] (x₀ : X) :
   schreier_coset_graph S (mul_action.stabilizer G x₀) ≃g schreier_graph X S :=
-{ to_equiv := (mul_action.equiv_quotient_stabilizer G x₀).symm,
+{ to_equiv     := (mul_action.equiv_quotient_stabilizer G x₀).symm,
   map_rel_iff' := λ x y, by
   { simp only [adj_iff, mul_action.equiv_quotient_stabilizer, equiv.symm_symm,
                equiv.of_bijective_apply, ne.def, exists_prop,
                ←mul_action.of_quotient_stabilizer_smul],
     simp only [injective.eq_iff (mul_action.injective_of_quotient_stabilizer G x₀)], } }
 
-instance [fintype S] : locally_finite (schreier_graph X S) :=
+instance [decidable_eq X] [h : fintype S] : locally_finite (schreier_graph X S) :=
 begin
-  sorry,
+  rintro x, rw neighbor_set_eq',
+  haveI : fintype ↥{y : X | ∃ (m : G) (H : m ∈ S), m • x = y}, by
+  { convert set.fintype_image S (•x),
+    simp only [exists_prop], },
+  haveI : fintype ↥{y : X | ∃ (m : G) (H : m ∈ S), m • y = x}, by
+  { simp_rw [←eq_inv_smul_iff],
+    convert set.fintype_image S (λ g, g⁻¹•x),
+    simp only [exists_prop],
+    ext, congr', ext, tauto, },
+  apply_instance,
+end
+
+abbreviation cayley_graph := schreier_graph G S
+
+def as_automorphism (g : G) : (cayley_graph S ≃g cayley_graph S) :=
+{ to_equiv := equiv.mul_right (g⁻¹),
+  map_rel_iff' := λ a b, by
+  { simp only [adj_iff, equiv.coe_mul_right, ne.def, mul_left_inj, smul_eq_mul, exists_prop,
+               and.congr_right_iff],
+    simp only [←mul_assoc, injective.eq_iff (group.mul_right_bijective (g⁻¹)).left],
+    exact λ _, iff.rfl, } }
+
+def as_automorphism_group : G →* (cayley_graph S ≃g cayley_graph S) :=
+{ to_fun := as_automorphism S,
+  map_one' := by { dsimp [as_automorphism], ext, simp, },
+  map_mul' := λ g g', by { dsimp [as_automorphism], ext, simp, } }
+
+def injective_as_automorphism_group : function.injective (as_automorphism_group S) :=
+begin
+  rintro g g' h,
+  simp only [as_automorphism_group, as_automorphism, equiv.mul_right, to_units, units.mul_right,
+             inv_inv, units.inv_mk, units.coe_mk, mul_equiv.coe_mk, monoid_hom.coe_mk] at h,
+  simpa using congr_fun h.left 1,
 end
 
 end group_action
