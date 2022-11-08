@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2022 Rémi Bottinelli. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Rémi Bottinelli
+-/
 import combinatorics.simple_graph.basic
 import combinatorics.simple_graph.subgraph
 import combinatorics.simple_graph.connectivity
@@ -147,7 +152,13 @@ begin
   apply_instance,
 end
 
-abbreviation cayley_graph := schreier_graph G S
+end group_action
+
+abbreviation cayley_graph {G : Type*} [group G] (S : set G) := schreier_graph G S
+
+section cayley_graph
+
+variables {G : Type*} [group G] (S : set G)
 
 def as_automorphism (g : G) : (cayley_graph S ≃g cayley_graph S) :=
 { to_equiv := equiv.mul_right (g⁻¹),
@@ -157,12 +168,14 @@ def as_automorphism (g : G) : (cayley_graph S ≃g cayley_graph S) :=
     simp only [←mul_assoc, injective.eq_iff (group.mul_right_bijective (g⁻¹)).left],
     exact λ _, iff.rfl, } }
 
+lemma as_automorphism_apply (g x : G) : (as_automorphism S g) x = x * g⁻¹ := rfl
+
 def as_automorphism_group : G →* (cayley_graph S ≃g cayley_graph S) :=
 { to_fun := as_automorphism S,
   map_one' := by { dsimp [as_automorphism], ext, simp, },
   map_mul' := λ g g', by { dsimp [as_automorphism], ext, simp, } }
 
-def injective_as_automorphism_group : function.injective (as_automorphism_group S) :=
+lemma injective_as_automorphism_group : function.injective (as_automorphism_group S) :=
 begin
   rintro g g' h,
   simp only [as_automorphism_group, as_automorphism, equiv.mul_right, to_units, units.mul_right,
@@ -170,7 +183,31 @@ begin
   simpa using congr_fun h.left 1,
 end
 
-end group_action
+def translate_walk {g h k : G} (w : (cayley_graph S).walk g h) :
+  (cayley_graph S).walk (g * k) (h * k) :=
+begin
+  induction w,
+  { exact walk.nil, },
+  { apply walk.cons _ (w_ih),
+    rw [←inv_inv k, ←as_automorphism_apply S k⁻¹ w_u, ←as_automorphism_apply S k⁻¹ w_v,
+        simple_graph.iso.map_adj_iff],
+    exact w_h, },
+end
+
+lemma connected_iff : (cayley_graph S).connected ↔ subgroup.closure S = ⊤ :=
+begin
+  rw connected_iff,
+  simp only [(⟨1⟩ : nonempty G), and_true],
+  split,
+  { rw eq_top_iff, rintro h x _,
+    obtain ⟨g,gS,rfl⟩ := (reachable_iff S).mp (h (1 : G) x),
+    simpa only [smul_eq_mul, mul_one] using gS, },
+  { rintro h g g',
+    simp only [reachable_iff, h, subgroup.mem_top, smul_eq_mul, exists_true_left],
+    refine ⟨g' * g⁻¹, _⟩, simp only [inv_mul_cancel_right], },
+end
+
+end cayley_graph
 
 end schreier_graph
 
