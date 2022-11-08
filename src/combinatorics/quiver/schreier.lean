@@ -4,14 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémi Bottinelli
 -/
 import combinatorics.quiver.basic
-import combinatorics.simple_graph.subgraph
-import combinatorics.simple_graph.connectivity
+import combinatorics.quiver.colored
 import data.list
-import group_theory.group_action.group
-import group_theory.subgroup.basic
-import group_theory.coset
-import group_theory.quotient_group
-import group_theory.group_action.quotient
+import group_theory.group_action.basic
 
 open function
 
@@ -21,21 +16,27 @@ namespace quiver
 
 section defs
 
-class colored_quiver (V : Type*) (S : Type*) extends (quiver V) :=
-(color : ∀ ⦃x y⦄, (hom x y) → S)
-
 variables (V : Type*) {M : Type*} [has_smul M V] {S : Type*} (ι : S → M)
 
 inductive schreier_graph.arrow : V → V → Sort*
 | mk (m : S) (x : V) : schreier_graph.arrow (x) (ι m • x)
 
-instance schreier_graph_colored_quiver : colored_quiver V S :=
+
+@[instance] def schreier_graph_colored_quiver : colored_quiver V S :=
 { hom := schreier_graph.arrow V ι,
   color := by {apply schreier_graph.arrow.rec, exact (λ s v, s)} }
 
+def star_bij {x: V} : (Σ y, schreier_graph.arrow V ι x y) ≃ S :=
+{ to_fun := by { rintro ⟨s,a⟩, cases a, assumption, },
+  inv_fun := by { rintro s, use ι s • x, constructor, },
+  left_inv := by { rintro ⟨s,a⟩, cases a, simp, },
+  right_inv := by { rintro s, simp, } }
 
-set_option trace.class_instances true
-lemma bijective_color {x y : V} : function.bijective (λ (a : x ⟶ y), colored_quiver.color a) := sorry
+def arrows_bij {x y : V} : (schreier_graph.arrow V ι x y) ≃ {s : S | ι s • x = y} :=
+{ to_fun := by {apply schreier_graph.arrow.rec, rintro s x, exact ⟨s,rfl⟩, },
+  inv_fun := by { rintro ⟨s,e⟩, cases e, constructor, },
+  left_inv := by { apply schreier_graph.arrow.rec, rintro s x, simp, },
+  right_inv := by { rintro ⟨s,e⟩, dsimp at e, subst_vars, } }
 
 end defs
 

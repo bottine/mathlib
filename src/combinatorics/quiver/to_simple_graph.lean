@@ -25,6 +25,9 @@ variables (V : Type*) [quiver.{u+1} V]
 lemma adj_iff {X Y : V} :
   (to_simple_graph V).adj X Y ↔ X ≠ Y ∧ (nonempty (X ⟶ Y) ∨ nonempty (Y ⟶ X)) := iff.rfl
 
+-- maybe should have a `path_to_walk` from `quiver.path` to `simple_graph.walk`
+-- and a `walk_to_path` is it even worth it?
+
 lemma zigzag_iff_reachable {X Y : V} :
   (zigzag_setoid V).r X Y ↔ (to_simple_graph V).reachable X Y :=
 begin
@@ -37,9 +40,9 @@ begin
       { rw h, },
       { apply simple_graph.adj.reachable,
         simp [adj_iff, h],
-        cases ZY,
+        rcases ZY with (⟨ZY⟩|⟨YZ⟩),
         exact or.inl (nonempty.intro ZY),
-        exact or.inr (nonempty.intro ZY), } }, },
+        exact or.inr (nonempty.intro YZ), } }, },
   { rintro ⟨XY⟩,
     induction XY,
     { apply setoid.refl', },

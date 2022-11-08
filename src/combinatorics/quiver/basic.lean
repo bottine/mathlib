@@ -97,6 +97,11 @@ begin
   { rintro X Y Z, refl, }
 end
 
+
+infix ` ⟶q `:50 := prefunctor
+infix ` ≫q `:50 := quiver.comp
+notation `𝟙q` := id
+
 end prefunctor
 
 namespace quiver
