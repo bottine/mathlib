@@ -134,22 +134,10 @@ noncomputable def equiv_coset_graph_of_transitive_action
   schreier_coset_graph S (mul_action.stabilizer G x₀) ≃g schreier_graph X S :=
 { to_equiv := (mul_action.equiv_quotient_stabilizer G x₀).symm,
   map_rel_iff' := λ x y, by
-  { letI := quotient_group.left_rel (mul_action.stabilizer G x₀),
-    simp only [adj_iff, mul_action.equiv_quotient_stabilizer, equiv.symm_symm,
+  { simp only [adj_iff, mul_action.equiv_quotient_stabilizer, equiv.symm_symm,
                equiv.of_bijective_apply, ne.def, exists_prop,
                ←mul_action.of_quotient_stabilizer_smul],
-    simp only [mul_action.of_quotient_stabilizer],
-    apply quot.induction_on₂ x y, clear x y,
-    rintro a b,
-    dsimp [quotient.lift_on', quotient.lift_on', quotient.lift_on, has_smul.smul,
-           quotient.map', quot.map],
-    have : ∀ (c d : G), quot.mk _inst.r c = quot.mk _inst.r d ↔ c • x₀ = d • x₀, by
-    { rintro c d,
-      change ⟦c⟧ = ⟦d⟧ ↔ c • x₀ = d • x₀,
-      simp only [quotient.eq, has_equiv.equiv, quotient_group.left_rel_apply, mul_smul,
-                 inv_smul_eq_iff, mul_action.mem_stabilizer_iff],
-      tauto, },
-    simp_rw [this], } }
+    simp only [injective.eq_iff (mul_action.injective_of_quotient_stabilizer G x₀)], } }
 
 instance [fintype S] : locally_finite (schreier_graph X S) :=
 begin
