@@ -141,9 +141,6 @@ equiv.symm $ equiv.of_bijective
   ⟨λ x y hxy, injective_of_quotient_stabilizer α b hxy,
    λ b', let H := mul_action.exists_smul_eq α b b' in ⟨quotient_group.mk H.some, H.some_spec⟩⟩
 
-
-
-
 /-- Orbit-stabilizer theorem. -/
 @[to_additive "Orbit-stabilizer theorem."]
 noncomputable def orbit_prod_stabilizer_equiv_group (b : β) :

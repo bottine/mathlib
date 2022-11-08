@@ -29,8 +29,8 @@ inductive schreier_graph.adj_gen : X → X → Prop
 lemma schreier_graph.adj_gen_iff {x y : X} : schreier_graph.adj_gen X S x y ↔ ∃ (m : S), y = m.val • x :=
 begin
   split,
-  { rintro ⟨m,x⟩, exact ⟨m,rfl⟩, },
-  { rintro ⟨m,rfl⟩, constructor, },
+  { rintro ⟨m, x⟩, exact ⟨m, rfl⟩, },
+  { rintro ⟨m, rfl⟩, constructor, },
 end
 
 def schreier_graph : simple_graph X := simple_graph.from_rel (schreier_graph.adj_gen X S)
@@ -46,7 +46,7 @@ variables {X : Type*} {M : Type*} [has_smul M X] (S : set M)
 lemma mono {S} {T : set M} (h : S ≤ T) : schreier_graph X S ≤ schreier_graph X T :=
 begin
   apply simple_graph.from_rel_mono,
-  rintros _ _ ⟨⟨m,mS⟩,x⟩,
+  rintros _ _ ⟨⟨m, mS⟩, x⟩,
   exact adj_gen.mk ⟨m, h mS⟩ x,
 end
 
@@ -129,18 +129,27 @@ end
 
 abbreviation schreier_coset_graph (H : subgroup G) := schreier_graph (G ⧸ H) S
 
-
-
 noncomputable def equiv_coset_graph_of_transitive_action
-  [mul_action.is_pretransitive G X] (x₀ : X):
+  [mul_action.is_pretransitive G X] (x₀ : X) :
   schreier_coset_graph S (mul_action.stabilizer G x₀) ≃g schreier_graph X S :=
 { to_equiv := (mul_action.equiv_quotient_stabilizer G x₀).symm,
   map_rel_iff' := λ x y, by
-  { simp only [adj_iff, mul_action.equiv_quotient_stabilizer],
-    simp only [equiv.symm_symm, equiv.of_bijective_apply, ne.def, exists_prop],
-    sorry, } }
-
-
+  { letI := quotient_group.left_rel (mul_action.stabilizer G x₀),
+    simp only [adj_iff, mul_action.equiv_quotient_stabilizer, equiv.symm_symm,
+               equiv.of_bijective_apply, ne.def, exists_prop,
+               ←mul_action.of_quotient_stabilizer_smul],
+    simp only [mul_action.of_quotient_stabilizer],
+    apply quot.induction_on₂ x y, clear x y,
+    rintro a b,
+    dsimp [quotient.lift_on', quotient.lift_on', quotient.lift_on, has_smul.smul,
+           quotient.map', quot.map],
+    have : ∀ (c d : G), quot.mk _inst.r c = quot.mk _inst.r d ↔ c • x₀ = d • x₀, by
+    { rintro c d,
+      change ⟦c⟧ = ⟦d⟧ ↔ c • x₀ = d • x₀,
+      simp only [quotient.eq, has_equiv.equiv, quotient_group.left_rel_apply, mul_smul,
+                 inv_smul_eq_iff, mul_action.mem_stabilizer_iff],
+      tauto, },
+    simp_rw [this], } }
 
 instance [fintype S] : locally_finite (schreier_graph X S) :=
 begin
