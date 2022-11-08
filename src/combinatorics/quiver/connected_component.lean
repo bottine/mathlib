@@ -49,6 +49,14 @@ class has_involutive_reverse extends has_reverse V :=
 
 variables {V}
 
+/-- Shorthand for the "forward" arrow corresponding to `f` in `symmetrify V` -/
+abbreviation hom.to_pos {X Y : V} (f : X ⟶ Y) :
+  (quiver.symmetrify_quiver V).hom X Y := sum.inl f
+
+/-- Shorthand for the "backward" arrow corresponding to `f` in `symmetrify V` -/
+abbreviation hom.to_neg {X Y : V} (f : X ⟶ Y) :
+  (quiver.symmetrify_quiver V).hom Y X := sum.inr f
+
 instance : has_reverse (symmetrify V) := ⟨λ a b e, e.swap⟩
 instance : has_involutive_reverse (symmetrify V) :=
 { to_has_reverse := ⟨λ a b e, e.swap⟩,

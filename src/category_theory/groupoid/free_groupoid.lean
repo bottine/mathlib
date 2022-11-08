@@ -10,6 +10,7 @@ import logic.relation
 import tactic.nth_rewrite
 import category_theory.path_category
 import category_theory.quotient
+import combinatorics.quiver.connected_component
 
 /-!
 # Free groupoid on a quiver
@@ -45,14 +46,6 @@ namespace free
 universes u v u' v' u'' v''
 
 variables {V : Type u} [quiver.{v+1} V]
-
-/-- Shorthand for the "forward" arrow corresponding to `f` in `symmetrify V` -/
-abbreviation quiver.hom.to_pos {X Y : V} (f : X ⟶ Y) :
-  (quiver.symmetrify_quiver V).hom X Y := sum.inl f
-
-/-- Shorthand for the "backward" arrow corresponding to `f` in `symmetrify V` -/
-abbreviation quiver.hom.to_neg {X Y : V} (f : X ⟶ Y) :
-  (quiver.symmetrify_quiver V).hom Y X := sum.inr f
 
 /-- Shorthand for the "forward" arrow corresponding to `f` in `paths $ symmetrify V` -/
 abbreviation quiver.hom.to_pos_path {X Y : V} (f : X ⟶ Y) :

@@ -3,7 +3,7 @@ Copyright (c) 2022 Rémi Bottinelli. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémi Bottinelli
 -/
-import combinatorics.simple_graph.basic
+import combinatorics.quiver.basic
 import combinatorics.simple_graph.subgraph
 import combinatorics.simple_graph.connectivity
 import data.list
@@ -17,23 +17,25 @@ open function
 
 universes u v w
 
-namespace simple_graph
+namespace quiver
 
 section defs
 
-variables (X : Type*) {M : Type*} [has_smul M X] (S : set M)
+class colored_quiver (V : Type*) (S : Type*) extends (quiver V) :=
+(color : ∀ ⦃x y⦄, (hom x y) → S)
 
-inductive schreier_graph.adj_gen : X → X → Prop
-| mk (m : S) (x : X) : schreier_graph.adj_gen (x) (m.val • x)
+variables (V : Type*) {M : Type*} [has_smul M V] {S : Type*} (ι : S → M)
 
-lemma schreier_graph.adj_gen_iff {x y : X} : schreier_graph.adj_gen X S x y ↔ ∃ (m : S), y = m.val • x :=
-begin
-  split,
-  { rintro ⟨m, x⟩, exact ⟨m, rfl⟩, },
-  { rintro ⟨m, rfl⟩, constructor, },
-end
+inductive schreier_graph.arrow : V → V → Sort*
+| mk (m : S) (x : V) : schreier_graph.arrow (x) (ι m • x)
 
-def schreier_graph : simple_graph X := simple_graph.from_rel (schreier_graph.adj_gen X S)
+instance schreier_graph_colored_quiver : colored_quiver V S :=
+{ hom := schreier_graph.arrow V ι,
+  color := by {apply schreier_graph.arrow.rec, exact (λ s v, s)} }
+
+
+set_option trace.class_instances true
+lemma bijective_color {x y : V} : function.bijective (λ (a : x ⟶ y), colored_quiver.color a) := sorry
 
 end defs
 
@@ -41,7 +43,7 @@ namespace schreier_graph
 
 section basic
 
-variables {X : Type*} {M : Type*} [has_smul M X] (S : set M)
+variables {X : Type*} {M : Type*} [has_smul M X] {S : Type*} (ι : S → M)
 
 lemma mono {S} {T : set M} (h : S ≤ T) : schreier_graph X S ≤ schreier_graph X T :=
 begin
@@ -211,4 +213,4 @@ end cayley_graph
 
 end schreier_graph
 
-end simple_graph
+end quiver

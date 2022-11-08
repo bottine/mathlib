@@ -20,7 +20,7 @@ universes v v₁ v₂ u u₁ u₂
 
 namespace quiver
 
-/-- `G.path a b` is the type of paths from `a` to `b` through the arrows of `G`. -/
+/-- `path a b` is the type of paths from `a` to `b` in the quiver `V` -/
 inductive path {V : Type u} [quiver.{v} V] (a : V) : V → Sort (max (u+1) v)
 | nil  : path a
 | cons : Π {b c : V}, path b → (b ⟶ c) → path c
