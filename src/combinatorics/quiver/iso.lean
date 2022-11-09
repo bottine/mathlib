@@ -71,6 +71,19 @@ begin
   simp only [prefunctor.id_comp],
 end
 
+noncomputable def iso.inv_of_bij (F : U ⟶q V)
+  (bij_obj : function.bijective F.obj)
+  (bij_map : ∀ X Y, function.bijective (F.map : (X ⟶ Y) → (_ ⟶ _))) : V ⟶q U :=
+{ obj := λ X, (bij_obj.right X).some,
+  map := λ X Y f, by
+  { rw [←(bij_obj.right X).some_spec, ←(bij_obj.right Y).some_spec] at f,
+    exact ((bij_map _ _).right f).some,  } }
+
+lemma iso.inv_of_bij_left_inv (F : U ⟶q V)
+  (bij_obj : function.bijective F.obj)
+  (bij_map : ∀ X Y, function.bijective (F.map : (X ⟶ Y) → (_ ⟶ _))) :
+  (iso.inv_of_bij F bij_obj bij_map) ≫q F = prefunctor.id V := sorry
+
 end prefunctor
 
 end quiver
