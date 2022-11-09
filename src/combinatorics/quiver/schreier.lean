@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémi Bottinelli
 -/
 import combinatorics.quiver.basic
+import combinatorics.quiver.iso
 import data.list
 import algebra.group.defs
 import group_theory.group_action.basic
@@ -22,9 +23,8 @@ universes u v w
 
 namespace quiver
 
-variables {V : Type*} [quiver.{v+1} V] {U : Type*} [quiver.{u+1} U] {W : Type*} [quiver.{w+1} W]
 
-instance iso_group : group (V ≃q V) := sorry
+instance iso_group {V : Type*} [quiver V] : group (V ≃q V) := sorry
 
 section coloring
 
@@ -62,8 +62,10 @@ lemma schreier_graph_eq : sg V ι = V := rfl
 
 
 instance schreier_graph_quiver : quiver (sg V ι) := ⟨schreier_graph.arrow V ι⟩
+
 instance schreier_graph_coloring : quiver.coloring (sg V ι) S :=
-⟨λ x y a, a.rec_on $ by { rintro s v, exact s, }⟩
+⟨@schreier_graph.arrow.rec V M S _ ι (λ _ _ _, S) (λ m _, m)⟩
+-- ⟨schreier_graph.arrow.rec (λ m _, m)⟩ -- why doesn't this work?
 
 def schreier_graph.star_bij {x : sg V ι} : (Σ y, schreier_graph.arrow V ι x y) ≃ S :=
 { to_fun := by { rintro ⟨s,a⟩, cases a, assumption, },

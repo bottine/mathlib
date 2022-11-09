@@ -86,6 +86,12 @@ def comp {U : Type*} [quiver U] {V : Type*} [quiver V] {W : Type*} [quiver W]
 { obj := λ X, G.obj (F.obj X),
   map := λ X Y f, G.map (F.map f), }
 
+@[simp] lemma comp_id {U : Type*} [quiver U] {V : Type*} [quiver V] (F : prefunctor U V) :
+  F.comp (id _) = F := by { dsimp [comp], cases F, refl}
+
+@[simp] lemma id_comp {U : Type*} [quiver U] {V : Type*} [quiver V] (F : prefunctor U V) :
+  (id _).comp F = F := by { dsimp [comp], cases F, refl}
+
 @[simp]
 lemma comp_assoc
   {U V W Z : Type*} [quiver U] [quiver V] [quiver W] [quiver Z]
@@ -97,14 +103,8 @@ begin
   { rintro X Y Z, refl, }
 end
 
-structure iso (U : Type*) [quiver.{u+1} U] (V : Type*) [quiver.{v+1} V] extends prefunctor U V :=
-(bij_obj : function.bijective to_prefunctor.obj)
-(bij_map : ∀ X Y, function.bijective
-                    (to_prefunctor.map : (X ⟶ Y) → (to_prefunctor.obj X ⟶ to_prefunctor.obj Y)))
-
 infix ` ⟶q `:50 := prefunctor
 infix ` ≫q `:50 := prefunctor.comp
-infix ` ≃q `:50 := prefunctor.iso
 notation `𝟙q` := id
 
 end prefunctor
