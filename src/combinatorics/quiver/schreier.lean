@@ -22,7 +22,9 @@ universes u v w
 
 namespace quiver
 
-instance iso_group {V : Type*} [quiver.{u+1} V] : group (V ≃q V) := sorry
+variables {V : Type*} [quiver.{v+1} V] {U : Type*} [quiver.{u+1} U] {W : Type*} [quiver.{w+1} W]
+
+instance iso_group : group (V ≃q V) := sorry
 
 section coloring
 
@@ -31,6 +33,10 @@ class coloring (V S : Type*) [quiver V] :=
 
 def color {V : Type*} (S : Type*) [quiver V] [coloring V S] {X Y : V} (f : X ⟶ Y) : S :=
 coloring.color f
+
+def color_preserving {V S : Type*} [quiver V] {V' S' : Type*} [quiver V']
+  [coloring V S] [coloring V' S'] (σ : S → S') (F : V ⟶q V') :=
+∀ {u v : V} (f : u ⟶ v), color S' (F.map f) = σ (color S f)
 
 end coloring
 
@@ -80,44 +86,14 @@ variables {V : Type*} {G S : Type*} [group G] [mul_action G V] (ι : S → G)
 
 abbreviation schreier_coset_graph (H : subgroup G) := schreier_graph (G ⧸ H) ι
 
-/-
-noncomputable def equiv_coset_graph_obj [mul_action.is_pretransitive G V] (x₀ : V) :
-  schreier_coset_graph ι (mul_action.stabilizer G x₀) → schreier_graph V ι :=
-(mul_action.equiv_quotient_stabilizer G x₀).symm.to_fun
-
-noncomputable def equiv_coset_graph_map [mul_action.is_pretransitive G V] (x₀ : V)
-  (X Y : schreier_coset_graph ι (mul_action.stabilizer G x₀)) (f : X ⟶ Y) :
-  (equiv_coset_graph_obj ι x₀ X ⟶ equiv_coset_graph_obj ι x₀ Y) :=
-begin
-  revert f X Y,
-  apply schreier_graph.arrow.rec,
-  rintro m x,
-  fapply quot.hrec_on x,
-  rintro g,
-  dsimp [equiv_coset_graph_obj, mul_action.equiv_quotient_stabilizer,
-         mul_action.of_quotient_stabilizer, quotient.lift_on', quotient.lift_on,quot.lift_on,
-         has_smul.smul, quotient.map', quot.map],
-  rw [mul_smul (ι m) g x₀], constructor,
-  rintro g h gh, simp,
-  have : g • x₀ = h • x₀, by
-  { symmetry,
-    rw [←inv_smul_eq_iff, ←mul_smul, ←mul_action.mem_stabilizer_iff,
-        ←quotient_group.left_rel_apply], exact gh, },
-
-
-end
-
+-- I'm getting confused trying to prove this
 noncomputable def equiv_coset_graph [mul_action.is_pretransitive G V] (x₀ : V) :
-  schreier_coset_graph ι (mul_action.stabilizer G x₀) ≃q schreier_graph V ι :=
-{ obj := equiv_coset_graph_obj ι x₀,
-  bij_obj := by { apply equiv.bijective, },
-  map := sorry,
-  bij_map := sorry }
+  schreier_coset_graph ι (mul_action.stabilizer G x₀) ≃q schreier_graph V ι := sorry
 
-lemma equiv_coset_graph.color [mul_action.is_pretransitive G V] (x₀ : V)
+lemma equiv_coset_graph.color_preserving [mul_action.is_pretransitive G V] (x₀ : V)
   {X Y : schreier_coset_graph ι (mul_action.stabilizer G x₀)} (f : X ⟶ Y) :
-  color S ((equiv_coset_graph ι x₀).map f) = color S f := sorry
--/
+  color_preserving (@id S) (equiv_coset_graph ι x₀).to_prefunctor := sorry
+
 
 end group_action
 
@@ -128,49 +104,24 @@ section cayley_graph
 variables {G : Type*} [group G] {S : Type*} (ι : S → G)
 
 def as_automorphism (g : G) : cayley_graph ι ≃q cayley_graph ι :=
-{ obj := equiv.mul_right (g⁻¹),
-  bij_obj := sorry,
-  map := sorry,
-  bij_map := sorry }
+{ obj := λ x, to_schreier_graph G ι ((of_schreier_graph G ι x) * g⁻¹),
+  bij_obj := by {dsimp [to_schreier_graph, of_schreier_graph], apply group.mul_right_bijective, },
+  map := λ _ _ a, a.rec_on $ by
+  { rintro s x,
+    dsimp [to_schreier_graph, of_schreier_graph],
+    change group.mul (ι s) x with (ι s) * x,
+    rw mul_assoc,
+    constructor, },
+  bij_map := λ X Y, by
+  { dsimp [to_schreier_graph, of_schreier_graph], sorry, } }
 
-lemma as_automorphism_obj_apply (g x : G) : (as_automorphism ι g).obj x = x * g⁻¹ := rfl
+lemma as_automorphism.color_preserving (g : G) :
+  color_preserving (@id S) (as_automorphism ι g).to_prefunctor := sorry
 
 def as_automorphism_group : G →* (cayley_graph ι ≃q cayley_graph ι) :=
 { to_fun := as_automorphism ι,
   map_one' := by { dsimp [as_automorphism], ext, simp, },
   map_mul' := λ g g', by { dsimp [as_automorphism], ext, simp, } }
-
-lemma injective_as_automorphism_group : function.injective (as_automorphism_group S) :=
-begin
-  rintro g g' h,
-  simp only [as_automorphism_group, as_automorphism, equiv.mul_right, to_units, units.mul_right,
-             inv_inv, units.inv_mk, units.coe_mk, mul_equiv.coe_mk, monoid_hom.coe_mk] at h,
-  simpa using congr_fun h.left 1,
-end
-
-def translate_walk {g h k : G} (w : (cayley_graph S).walk g h) :
-  (cayley_graph S).walk (g * k) (h * k) :=
-begin
-  induction w,
-  { exact walk.nil, },
-  { apply walk.cons _ (w_ih),
-    rw [←inv_inv k, ←as_automorphism_apply S k⁻¹ w_u, ←as_automorphism_apply S k⁻¹ w_v,
-        simple_graph.iso.map_adj_iff],
-    exact w_h, },
-end
-
-lemma connected_iff : (cayley_graph S).connected ↔ subgroup.closure S = ⊤ :=
-begin
-  rw connected_iff,
-  simp only [(⟨1⟩ : nonempty G), and_true],
-  split,
-  { rw eq_top_iff, rintro h x _,
-    obtain ⟨g,gS,rfl⟩ := (reachable_iff S).mp (h (1 : G) x),
-    simpa only [smul_eq_mul, mul_one] using gS, },
-  { rintro h g g',
-    simp only [reachable_iff, h, subgroup.mem_top, smul_eq_mul, exists_true_left],
-    refine ⟨g' * g⁻¹, _⟩, simp only [inv_mul_cancel_right], },
-end
 
 end cayley_graph
 
