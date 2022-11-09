@@ -97,9 +97,14 @@ begin
   { rintro X Y Z, refl, }
 end
 
+structure iso (U : Type*) [quiver U] (V : Type*) [quiver V] extends prefunctor U V :=
+(bij_obj : function.bijective to_prefunctor.obj)
+(bij_map : ∀ X Y, function.bijective
+                    (to_prefunctor.map : (X ⟶ Y) → (to_prefunctor.obj X ⟶ to_prefunctor.obj Y)))
 
 infix ` ⟶q `:50 := prefunctor
-infix ` ≫q `:50 := quiver.comp
+infix ` ≫q `:50 := prefunctor.comp
+infix ` ≃q `:50 := prefunctor.iso
 notation `𝟙q` := id
 
 end prefunctor
