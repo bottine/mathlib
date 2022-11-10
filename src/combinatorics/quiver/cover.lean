@@ -1,8 +1,3 @@
-/-
-Copyright (c) 2022 Rémi Bottinelli. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Rémi Bottinelli
--/
 import combinatorics.quiver.basic
 import combinatorics.quiver.iso
 import algebra.group.defs
@@ -14,8 +9,6 @@ import group_theory.coset
 import group_theory.quotient_group
 import group_theory.group_action.quotient
 import combinatorics.quiver.connected_component
-
-
 
 open function
 
@@ -45,33 +38,50 @@ def prefunctor.is_covering :=
 lemma comp (hφ : φ.is_covering) (hψ : ψ.is_covering) :
   (φ ≫q ψ).is_covering :=
 begin
-  cases hφ, cases hψ,
-  simp only [prefunctor.is_covering, prefunctor.star_comp],
-  split; rintro u;
-  apply function.bijective.comp, -- (hφ.left $ φ.obj v) (hφ v),
+  simp [prefunctor.is_covering],
+  exact  ⟨λ u, function.bijective.comp (hψ.left _) (hφ.left u),
+          λ u, function.bijective.comp (hψ.right _) (hφ.right u)⟩,
 end
-lemma comp' (hψ : ψ.is_covering) (φψc : (φ ≫q ψ).is_covering ) : φ.is_covering :=
+lemma comp' (hψ : ψ.is_covering) (hφψ : (φ ≫q ψ).is_covering ) : φ.is_covering :=
 begin
-  simp only [functor.is_covering,functor.star_map_comp],
-  rintro v,
-  rw ←@function.bijective.of_comp_iff' _ _ _ (φ'.star_map $ φ.obj v) (φ'c $ φ.obj v) (φ.star_map v),
-  exact φφ'c v,
+  simp [prefunctor.is_covering],
+  split,
+  { rintro u,
+    rw ←@function.bijective.of_comp_iff' _ _ _ (ψ.star $ φ.obj u) (hψ.left $ φ.obj u) (φ.star u),
+    exact hφψ.left u},
+  { rintro u,
+    rw ←@function.bijective.of_comp_iff' _ _ _ (ψ.costar $ φ.obj u) (hψ.right $ φ.obj u) (φ.costar u),
+    exact hφψ.right u},
 end
-lemma comp'' (hφ : φ.is_covering) (φψc : (φ ≫q ψ).is_covering) (φsur : function.surjective φ.obj) :
+lemma comp'' (hφ : φ.is_covering) (hφψ : (φ ≫q ψ).is_covering) (φsur : function.surjective φ.obj) :
   ψ.is_covering :=
 begin
-  simp only [functor.is_covering,functor.star_map_comp],
-  rintro v,
-  obtain ⟨u,rfl⟩ := φsur v,
-  rw ←@function.bijective.of_comp_iff _ _ _ (φ'.star_map $ φ.obj u) (φ.star_map u)  (φc u),
-  exact φφ'c u,
+  simp [prefunctor.is_covering],
+  split,
+  { rintro v,
+    obtain ⟨u,rfl⟩ := φsur v,
+    rw ←@function.bijective.of_comp_iff _ _ _ (ψ.star $ φ.obj u) (φ.star u)  (hφ.left u),
+    exact hφψ.left u, },
+  { rintro v,
+    obtain ⟨u,rfl⟩ := φsur v,
+    rw ←@function.bijective.of_comp_iff _ _ _ (ψ.costar $ φ.obj u) (φ.costar u)  (hφ.right u),
+    exact hφψ.right u, },
 end
 
 def prefunctor.symmetrify : (symmetrify U) ⟶q (symmetrify V) :=
 { obj := φ.obj,
   map := λ X Y f, sum.cases_on f (λ f, sum.inl (φ.map f)) ((λ g, sum.inr (φ.map g))) }
 
-lemma is_covering.symmetrify (hφ : φ.is_covering) : φ.symmetrify.is_covering := sorry
+lemma is_covering.symmetrify (hφ : φ.is_covering) : φ.symmetrify.is_covering :=
+begin
+  sorry,
+end
 
+@[reducible] def path_from (u : U) := Σ v : U, path u v
+
+def prefunctor.path_from (u : U) : path_from u → path_from (φ.obj u) := sorry
+
+lemma prefunctor.path_from_bijective (hφ : φ.is_covering) (u : U) :
+  function.bijective (φ.path_from u) := sorry
 
 end quiver
