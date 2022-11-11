@@ -138,10 +138,9 @@ begin
          function.surjective.sum_map (hφ.right u).right (hφ.left u).right⟩, },
 end
 
--- rename to `star_path` ?
-@[reducible] def path_from (u : U) := Σ v : U, path u v
+@[reducible] def path_star (u : U) := Σ v : U, path u v
 
-@[simp] lemma path_from_eq {u : U} (P Q : path_from u) :
+@[simp] lemma path_star_eq {u : U} (P Q : path_star u) :
   P = Q ↔ ∃ h : P.1 = Q.1, (P.2).cast rfl h = Q.2 :=
 begin
   split,
@@ -149,14 +148,14 @@ begin
   { rintro ⟨h,H⟩, induction P, induction Q, cases h, cases H, refl, }
 end
 
-def prefunctor.path_from (u : U) : path_from u → path_from (φ.obj u) :=
+def prefunctor.path_star (u : U) : path_star u → path_star (φ.obj u) :=
 λ p, ⟨φ.obj p.1, φ.map_path p.2⟩
 
-@[simp] lemma prefunctor.path_from_apply {u v : U} (p : path u v) :
-  φ.path_from u ⟨v, p⟩ = ⟨φ.obj v, φ.map_path p⟩ := rfl
+@[simp] lemma prefunctor.path_star_apply {u v : U} (p : path u v) :
+  φ.path_star u ⟨v, p⟩ = ⟨φ.obj v, φ.map_path p⟩ := rfl
 
-lemma prefunctor.path_from_bijective (hφ : φ.is_covering) (u : U) :
-  function.bijective (φ.path_from u) :=
+lemma prefunctor.path_star_bijective (hφ : φ.is_covering) (u : U) :
+  function.bijective (φ.path_star u) :=
 begin
   split,
   { rw function.injective, intros p₁ p₂,
@@ -178,24 +177,24 @@ begin
       have hφx := path.obj_eq_of_cons_eq_cons h',
       have hφp := path.heq_of_cons_eq_cons h',
       have hφe := heq.trans (hom.cast_heq rfl hφy _).symm (path.hom_heq_of_cons_eq_cons h'),
-      have h_path_from : φ.path_from u ⟨x₁, p₁⟩ = φ.path_from u ⟨x₂, p₂⟩,
+      have h_path_star : φ.path_star u ⟨x₁, p₁⟩ = φ.path_star u ⟨x₂, p₂⟩,
       { ext, exact hφx, exact hφp },
-      specialize hp₁ x₂ p₂ h_path_from, cases hp₁,
+      specialize hp₁ x₂ p₂ h_path_star, cases hp₁,
       have h_star : φ.star x₁ ⟨y₁, e₁⟩ = φ.star x₁ ⟨y₂, e₂⟩,
       { ext, exact hφy, exact hφe, },
       cases (hφ.1 x₁).1 h_star, refl, },  },
   { rintro ⟨v,p⟩,
     induction p with v' v'' p' ev ih,
-    { simp only [prefunctor.path_from_apply, path_from_eq, sigma.exists],
+    { simp only [prefunctor.path_star_apply, path_star_eq, sigma.exists],
       exact ⟨u,path.nil,rfl,rfl⟩, },
     { obtain ⟨⟨u',q'⟩,h⟩ := ih,
-      rw path_from_eq at h,
+      rw path_star_eq at h,
       obtain ⟨h,h'⟩ := h,
       cases h, cases h',
       obtain ⟨⟨u'',eu⟩,⟨h,h'⟩⟩ := (hφ.left u').right ⟨_,ev⟩,
       cases h, cases h,
       use ⟨_,q'.cons eu⟩,
-      simp only [prefunctor.path_from_apply, prefunctor.map_path_cons, eq_self_iff_true,
+      simp only [prefunctor.path_star_apply, prefunctor.map_path_cons, eq_self_iff_true,
                  heq_iff_eq, and_self], } }
 end
 
