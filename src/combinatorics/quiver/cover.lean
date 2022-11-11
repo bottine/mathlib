@@ -1,5 +1,4 @@
 import combinatorics.quiver.basic
-import combinatorics.quiver.iso
 import algebra.group.defs
 import group_theory.group_action.basic
 import group_theory.group_action.group
@@ -8,7 +7,7 @@ import group_theory.subgroup.basic
 import group_theory.coset
 import group_theory.quotient_group
 import group_theory.group_action.quotient
-import combinatorics.quiver.connected_component
+import combinatorics.quiver.symmetric
 
 open function
 
@@ -122,6 +121,9 @@ begin
   simp,
 end
 
+lemma prefunctor.symmetrify_is_reduced_iff {u v : symmetrify U} (p : path u v) :
+  p.is_reduced ↔ (φ.symmetrify.map_path p).is_reduced := sorry
+
 lemma is_covering.symmetrify (hφ : φ.is_covering) : φ.symmetrify.is_covering :=
 begin
   split;
@@ -153,7 +155,6 @@ def prefunctor.path_from (u : U) : path_from u → path_from (φ.obj u) :=
 @[simp] lemma prefunctor.path_from_apply {u v : U} (p : path u v) :
   φ.path_from u ⟨v, p⟩ = ⟨φ.obj v, φ.map_path p⟩ := rfl
 
-
 lemma prefunctor.path_from_bijective (hφ : φ.is_covering) (u : U) :
   function.bijective (φ.path_from u) :=
 begin
@@ -164,7 +165,7 @@ begin
     induction p₂ with x₂ y₂ p₂ e₂ hp₂;
     intro h,
     { refl, },
-    { exfalso,
+    { exfalso, 
       simp at h, cases h with h h',
       rw [←path.eq_cast_iff_heq rfl h.symm, path.cast_cons] at h',
       exact (path.nil_ne_cons _ _) h', },
@@ -185,3 +186,5 @@ begin
       cases (hφ.1 x₁).1 h_star, refl, },  },
   { sorry, }
 end
+
+end quiver

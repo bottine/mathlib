@@ -147,17 +147,19 @@ inductive red.step {X Y : V} : path X Y → path X Y → Prop
 | zz {Z : V} (pre : path X Z) {f g : path Z Z} (h : red.atomic_step f g) (suf : path Z Y) :
   red.step ((pre.comp f).comp suf) ((pre.comp g).comp suf)
 
-def path.is_irreducible {X Y : V} (p : path X Y) := ∀ (q : path X Y), ¬ red.step p q
+def path.is_reduced {X Y : V} (p : path X Y) := ∀ (q : path X Y), ¬ red.step p q
 
-def is_forest (V) [quiver V] [has_involutive_reverse V] :=
-  ∀ {X Y : V}, subsingleton $ subtype { p : path X Y | p.is_irreducible }
+variable (V)
 
-lemma is_forest_iff (V) [quiver V] [has_involutive_reverse V] :
-  is_forest V ↔ ∀ {X : V}, subsingleton $ subtype { p : path X X | p.is_irreducible } := sorry
+def is_forest := ∀ (X Y : V), subsingleton $ subtype { p : path X Y | p.is_reduced }
 
+lemma is_forest_iff :
+  is_forest V ↔ ∀ {X : V}, subsingleton $ subtype { p : path X X | p.is_reduced } := sorry
 
-def is_connected (V) [quiver V] [has_involutive_reverse V] :=
-  ∀ {X Y : V}, nonempty $ subtype { p : path X Y | p.is_irreducible }
+def is_connected := ∀ {X Y : V}, nonempty $ path X Y
+
+lemma is_connected_iff :
+  is_connected V ↔ ∀ (X Y : V), nonempty $ subtype { p : path X Y | p.is_reduced }
 
 end connected_and_acyclic
 
