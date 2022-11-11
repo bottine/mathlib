@@ -140,7 +140,7 @@ end
 
 @[reducible] def path_star (u : U) := Σ v : U, path u v
 
-@[simp] lemma path_star_eq {u : U} (P Q : path_star u) :
+@[simp] lemma path_star_eq_iff {u : U} (P Q : path_star u) :
   P = Q ↔ ∃ h : P.1 = Q.1, (P.2).cast rfl h = Q.2 :=
 begin
   split,
@@ -185,14 +185,16 @@ begin
       cases (hφ.1 x₁).1 h_star, refl, },  },
   { rintro ⟨v,p⟩,
     induction p with v' v'' p' ev ih,
-    { simp only [prefunctor.path_star_apply, path_star_eq, sigma.exists],
+    { simp only [prefunctor.path_star_apply, path_star_eq_iff, sigma.exists],
       exact ⟨u,path.nil,rfl,rfl⟩, },
     { obtain ⟨⟨u',q'⟩,h⟩ := ih,
-      rw path_star_eq at h,
-      obtain ⟨h,h'⟩ := h,
-      cases h, cases h',
-      obtain ⟨⟨u'',eu⟩,⟨h,h'⟩⟩ := (hφ.left u').right ⟨_,ev⟩,
-      cases h, cases h,
+      rw path_star_eq_iff at h,
+      obtain ⟨h',h''⟩ := h,
+      cases h', cases h'',
+      obtain ⟨⟨u'',eu⟩,k⟩ := (hφ.left u').right ⟨_,ev⟩,
+      rw star_eq_iff at k,
+      obtain ⟨k',k''⟩ := k,
+      cases k', cases k'',
       use ⟨_,q'.cons eu⟩,
       simp only [prefunctor.path_star_apply, prefunctor.map_path_cons, eq_self_iff_true,
                  heq_iff_eq, and_self], } }
