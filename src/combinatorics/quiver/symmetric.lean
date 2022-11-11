@@ -16,7 +16,7 @@ def symmetrify (V) : Type u := V
 instance symmetrify_quiver (V : Type u) [quiver V] : quiver (symmetrify V) :=
 ⟨λ a b : V, (a ⟶ b) ⊕ (b ⟶ a)⟩
 
-variables (V : Type u) [quiver.{v+1} V]
+variables (U V : Type*) [quiver.{u+1} U] [quiver.{v+1} V]
 
 /-- A quiver `has_reverse` if we can reverse an arrow `p` from `a` to `b` to get an arrow
     `p.reverse` from `b` to `a`.-/
@@ -34,12 +34,22 @@ class has_involutive_reverse extends has_reverse V :=
 @[simp] lemma reverse_reverse {V} [quiver.{v+1} V] [h : has_involutive_reverse V]
   {a b : V} (f : a ⟶ b) : reverse (reverse f) = f := by apply h.inv'
 
-variables {V}
+variables {U V}
+
+class prefunctor.preserves_reverse [has_reverse U] [has_reverse V] (φ : U ⟶q V) :=
+(map_reverse' : ∀ {u v : U} (e : u ⟶ v), φ.map (reverse e) = reverse (φ.map e))
+
+@[simp] lemma map_reverse  [has_reverse U] [has_reverse V] (φ : U ⟶q V) [φ.preserves_reverse]
+  {u v : U} (e : u ⟶ v) : φ.map (reverse e) = reverse (φ.map e) :=
+prefunctor.preserves_reverse.map_reverse' e
 
 instance : has_reverse (symmetrify V) := ⟨λ a b e, e.swap⟩
 instance : has_involutive_reverse (symmetrify V) :=
 { to_has_reverse := ⟨λ a b e, e.swap⟩,
   inv' := λ a b e, congr_fun sum.swap_swap_eq e }
+
+@[simp] lemma symmetrify_reverse {a b : symmetrify V} (e : a ⟶ b) :
+  reverse e = e.swap := rfl
 
 /-- Shorthand for the "forward" arrow corresponding to `f` in `symmetrify V` -/
 abbreviation hom.to_pos {X Y : V} (f : X ⟶ Y) :

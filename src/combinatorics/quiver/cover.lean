@@ -31,8 +31,8 @@ begin
     simp only [eq_self_iff_true, heq_iff_eq, and_self], }
 end
 
-def prefunctor.star (u : U) : star u → star (φ.obj u) := λ F, ⟨(φ.obj F.1), φ.map F.2⟩
-def prefunctor.costar (u : U) : costar u → costar (φ.obj u) := λ F, ⟨(φ.obj F.1), φ.map F.2⟩
+@[simps] def prefunctor.star (u : U) : star u → star (φ.obj u) := λ F, ⟨(φ.obj F.1), φ.map F.2⟩
+@[simps] def prefunctor.costar (u : U) : costar u → costar (φ.obj u) := λ F, ⟨(φ.obj F.1), φ.map F.2⟩
 
 @[simp] lemma prefunctor.star_apply {u v : U} (e : u ⟶ v) :
   φ.star u ⟨v, e⟩ = ⟨φ.obj v, φ.map e⟩ := rfl
@@ -77,9 +77,12 @@ begin
 end
 
 @[simps]
-def prefunctor.symmetrify : (symmetrify U) ⟶q (symmetrify V) :=
+def prefunctor.symmetrify (φ : U ⟶q V) : (symmetrify U) ⟶q (symmetrify V) :=
 { obj := φ.obj,
   map := λ X Y, sum.map φ.map φ.map }
+
+instance prefunctor.symmetrify_preserves_reverse :
+  prefunctor.preserves_reverse φ.symmetrify := ⟨λ u v e, by { cases e; refl }⟩
 
 def symmetrify_star (u : U) : star (symmetrify.of.obj u) ≃ star u ⊕ costar u :=
 begin
@@ -198,5 +201,40 @@ begin
       simp only [prefunctor.path_star_apply, prefunctor.map_path_cons, eq_self_iff_true,
                  heq_iff_eq, and_self], } }
 end
+
+section has_involutive_reverse
+
+variables [has_involutive_reverse U] [has_involutive_reverse V] [prefunctor.preserves_reverse φ]
+
+@[simps] def star_equiv_costar (u : U) :
+  star u ≃ costar u :=
+⟨λ e, ⟨e.1, reverse e.2⟩, λ e, ⟨e.1, reverse e.2⟩, λ e, by simp, λ e, by simp⟩
+
+@[simp] lemma star_equiv_costar_apply {u v : U} (e : u ⟶ v) :
+  star_equiv_costar u ⟨v, e⟩ = ⟨v, reverse e⟩ := rfl
+@[simp] lemma star_equiv_costar_symm_apply {u v : U} (e : v ⟶ u) :
+  (star_equiv_costar u).symm ⟨v, e⟩ = ⟨v, reverse e⟩ := rfl
+
+lemma prefunctor.costar_conj_star
+   (u : U) :
+  (φ.costar u) = (star_equiv_costar (φ.obj u)) ∘ (φ.star u) ∘ (star_equiv_costar u).symm :=
+begin
+  ext e; cases e with v e; simp,
+end
+
+lemma prefunctor.bijective_costar_iff_bijective_star (u : U) :
+  function.bijective (φ.costar u) ↔ function.bijective (φ.star u) :=
+begin
+  rw [prefunctor.costar_conj_star, function.bijective.of_comp_iff', function.bijective.of_comp_iff];
+  exact equiv.bijective  _,
+end
+
+def prefunctor.is_covering_of_bijective_star (h : ∀ u, function.bijective (φ.star u)) :
+  φ.is_covering := ⟨h, λ u, (φ.bijective_costar_iff_bijective_star u).2 (h u)⟩
+
+def prefunctor.is_covering_of_bijective_costar (h : ∀ u, function.bijective (φ.costar u)) :
+  φ.is_covering := ⟨λ u, (φ.bijective_costar_iff_bijective_star u).1 (h u), h⟩
+
+end has_involutive_reverse
 
 end quiver
