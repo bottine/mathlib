@@ -140,7 +140,7 @@ end
 
 @[reducible] def path_star (u : U) := Σ v : U, path u v
 
-@[simp] lemma path_star_eq {u : U} (P Q : path_star u) :
+@[simp] lemma path_star_eq_iff {u : U} (P Q : path_star u) :
   P = Q ↔ ∃ h : P.1 = Q.1, (P.2).cast rfl h = Q.2 :=
 begin
   split,
@@ -171,7 +171,7 @@ begin
       simp at h, cases h with h h',
       rw [←path.cast_eq_iff_heq rfl h, path.cast_cons] at h',
       exact (path.cons_ne_nil _ _) h', },
-    { simp at h, cases h with hφy h',
+    { simp only [prefunctor.path_star_apply, prefunctor.map_path_cons] at h, cases h with hφy h',
       rw [←path.cast_eq_iff_heq rfl hφy, path.cast_cons, path.cast_rfl_rfl] at h',
       have hφx := path.obj_eq_of_cons_eq_cons h',
       have hφp := path.heq_of_cons_eq_cons h',
@@ -184,14 +184,16 @@ begin
       cases (hφ.1 x₁).1 h_star, refl, },  },
   { rintro ⟨v,p⟩,
     induction p with v' v'' p' ev ih,
-    { simp only [prefunctor.path_star_apply, path_star_eq, sigma.exists],
+    { simp only [prefunctor.path_star_apply, path_star_eq_iff, sigma.exists],
       exact ⟨u,path.nil,rfl,rfl⟩, },
     { obtain ⟨⟨u',q'⟩,h⟩ := ih,
-      rw path_star_eq at h,
-      obtain ⟨h,h'⟩ := h,
-      cases h, cases h',
-      obtain ⟨⟨u'',eu⟩,⟨h,h'⟩⟩ := (hφ.left u').right ⟨_,ev⟩,
-      cases h, cases h,
+      rw path_star_eq_iff at h,
+      obtain ⟨h',h''⟩ := h,
+      cases h', cases h'',
+      obtain ⟨⟨u'',eu⟩,k⟩ := (hφ.left u').right ⟨_,ev⟩,
+      rw star_eq_iff at k,
+      obtain ⟨k',k''⟩ := k,
+      cases k', cases k'',
       use ⟨_,q'.cons eu⟩,
       simp only [prefunctor.path_star_apply, prefunctor.map_path_cons, eq_self_iff_true,
                  heq_iff_eq, and_self], } }
