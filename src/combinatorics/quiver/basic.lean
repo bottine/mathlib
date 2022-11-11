@@ -134,8 +134,108 @@ instance empty_quiver (V : Type u) : quiver.{u} (empty V) := ⟨λ a b, pempty�
 
 @[simp] lemma empty_arrow {V : Type u} (a b : empty V) : (a ⟶ b) = pempty := rfl
 
-
 /-- A quiver is thin if it has no parallel arrows. -/
 @[reducible] def is_thin (V : Type u) [quiver V] := ∀ (a b : V), subsingleton (a ⟶ b)
+
+section push
+/-!
+### Pushing the quiver structure on `V` along a map `V → W`
+-/
+
+/-- The `quiver` instance obtained by pushing arrows of `V` along `σ` -/
+def push {V : Type u} [quiver V] {W : Type u₂} (σ : V → W) := W
+
+namespace push
+
+variables {V : Type*} [quiver V] {W : Type*} (σ : V → W)
+
+inductive push_quiver {V : Type u} [quiver.{v} V] {W : Type u₂} (σ : V → W) :
+  W → W → Type (max u u₂ v)
+| arrow {X Y : V} (f : X ⟶ Y) : push_quiver (σ X) (σ Y)
+
+instance : quiver (push σ) := ⟨λ X Y, push_quiver σ X Y⟩
+
+def of : prefunctor V (push σ) :=
+{ obj := σ,
+  map := λ X Y f, push_quiver.arrow f}
+
+local postfix ` * ` := of
+
+@[simp] lemma of_obj : ((σ *)).obj = σ := rfl
+
+variables {W' : Type*} [quiver W']
+  (φ : prefunctor V W') (τ : W → W') (h : ∀ x, φ.obj x = τ (σ x) )
+
+include φ h
+def lift : prefunctor (push σ) W' :=
+{ obj := τ,
+  map := @push_quiver.rec V _ W σ
+    (λ X Y f, τ X ⟶ τ Y)
+    (λ X Y f, by {rw [←h X,←h Y], exact φ.map f}) }
+
+lemma lift_spec_obj : (lift σ φ τ h).obj = τ := rfl
+
+lemma lift_spec_comm : (of σ).comp (lift σ φ τ h) = φ :=
+begin
+  dsimp only [of,lift],
+  fapply prefunctor.ext,
+  { rintros, simp only [prefunctor.comp_obj], symmetry, exact h X, },
+  { rintros _ _ f, simp only [prefunctor.comp_map],
+    apply eq_of_heq,
+    iterate 2 { apply (cast_heq _ _).trans },
+    symmetry,
+    iterate 2 { apply (eq_rec_heq _ _).trans },
+    refl, },
+end
+
+lemma lift_unique (Φ : prefunctor (push σ) W') (Φ₀ : Φ.obj = τ) (Φcomm : (of σ).comp Φ = φ) :
+  Φ = (lift σ φ τ h) :=
+begin
+  dsimp only [of,lift],
+  fapply prefunctor.ext,
+  { rintros, simp_rw [←Φ₀], },
+  { rintros _ _ ⟨⟩, subst_vars, simp only [prefunctor.comp_map, cast_eq], refl, }
+end
+
+end push
+
+end push
+
+section cast
+/-!
+### Rewriting arrows along equalities of vertices
+-/
+
+variables {U : Type*} [quiver.{u+1} U]
+
+def hom.cast {u v u' v' : U} (hu : u = u') (hv : v = v') (e : u ⟶ v) : u' ⟶ v' :=
+eq.rec (eq.rec e hv) hu
+
+lemma hom.cast_eq_cast {u v u' v' : U} (hu : u = u') (hv : v = v') (e : u ⟶ v) :
+  e.cast hu hv = cast (by rw [hu, hv]) e :=
+eq.drec (eq.drec (eq.refl (hom.cast (eq.refl u) (eq.refl v) e)) hu) hv
+
+@[simp] lemma hom.cast_rfl_rfl {u v : U} (e : u ⟶ v) :
+  e.cast rfl rfl = e := rfl
+
+@[simp] lemma hom.cast_cast {u v u' v' u'' v'' : U} (e : u ⟶ v)
+  (hu : u = u') (hv : v = v') (hu' : u' = u'') (hv' : v' = v'') :
+  (e.cast hu hv).cast hu' hv' = e.cast (hu.trans hu') (hv.trans hv') :=
+by { subst_vars, refl }
+
+lemma hom.cast_heq {u v u' v' : U} (hu : u = u') (hv : v = v') (e : u ⟶ v) :
+  e.cast hu hv == e :=
+by { rw hom.cast_eq_cast, exact cast_heq _ _ }
+
+lemma hom.cast_eq_iff_heq {u v u' v' : U} (hu : u = u') (hv : v = v')
+  (e : u ⟶ v) (e' : u' ⟶ v') : e.cast hu hv = e' ↔ e == e' :=
+by { rw hom.cast_eq_cast, exact cast_eq_iff_heq }
+
+lemma hom.eq_cast_iff_heq {u v u' v' : U} (hu : u = u') (hv : v = v')
+  (e : u ⟶ v) (e' : u' ⟶ v') : e' = e.cast hu hv ↔ e' == e :=
+⟨λ h, ((e.cast_eq_iff_heq hu hv e').1 h.symm).symm, λ h, ((e.cast_eq_iff_heq hu hv e').2 h.symm).symm⟩
+
+end cast
+
 
 end quiver

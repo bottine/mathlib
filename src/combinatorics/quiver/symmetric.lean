@@ -1,6 +1,6 @@
 import combinatorics.quiver.basic
 import combinatorics.quiver.path
-
+import data.sum.basic
 
 universes v u
 
@@ -38,6 +38,14 @@ instance : has_reverse (symmetrify V) := ⟨λ a b e, e.swap⟩
 instance : has_involutive_reverse (symmetrify V) :=
 { to_has_reverse := ⟨λ a b e, e.swap⟩,
   inv' := λ a b e, congr_fun sum.swap_swap_eq e }
+
+/-- Shorthand for the "forward" arrow corresponding to `f` in `symmetrify V` -/
+abbreviation hom.to_pos {X Y : V} (f : X ⟶ Y) :
+  (quiver.symmetrify_quiver V).hom X Y := sum.inl f
+
+/-- Shorthand for the "backward" arrow corresponding to `f` in `symmetrify V` -/
+abbreviation hom.to_neg {X Y : V} (f : X ⟶ Y) :
+  (quiver.symmetrify_quiver V).hom Y X := sum.inr f
 
 /-- Reverse the direction of a path. -/
 @[simp] def path.reverse [has_reverse V] {a : V} : Π {b}, path a b → path b a
@@ -114,8 +122,7 @@ namespace push
 
 variables {W : Type*} (σ : V → W)
 
-
-instance [has_reverse V] : has_reverse (quiver.push σ) :=
+instance [has_reverse V] : has_reverse (push σ) :=
 { reverse' := λ a b F, by { cases F, constructor, apply reverse, exact F_f, } }
 
 instance [h : quiver.has_involutive_reverse V] : quiver.has_involutive_reverse (push σ) :=
@@ -142,6 +149,6 @@ end path
 symmetrification of `V`
 -/
 def is_forest (V) [quiver V] [has_involutive_reverse V] :=
-  ∀ (X Y : V), subsingleton { p : path X Y | ¬ p.is_reducible }
+  ∀ (X Y : V), subsingleton $ subtype { p : path X Y | ¬ p.is_reducible }
 
 end quiver
