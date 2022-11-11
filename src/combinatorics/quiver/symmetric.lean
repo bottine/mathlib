@@ -157,24 +157,6 @@ abbreviation red.symm  {X Y : V}  (p q : path X Y) : Prop := join (red) p q
 
 def path.is_reduced {X Y : V} (p : path X Y) := ∀ (q : path X Y), ¬ red.step p q
 
-def path.shift_cons {X Y : V} (p : path X Y) (e : Y ⟶ X) : path Y Y := e.to_path.comp p
-
-def path.cons_is_cyclically_reduced {X Y : V} (p : path X Y) (e : Y ⟶ X) :=
-  (p.cons e).is_reduced ∧ (path.shift_cons p e).is_reduced
-
-@[simp] def path.is_cyclically_reduced' : Π {X Y : V} (p : path X X) (XY : X = Y), Prop
-| _ _ path.nil _ := true
-| _ _ (path.cons p e) _ := p.cons_is_cyclically_reduced e ∧ p.is_reduced
-
-@[reducible]
-def path.is_cyclically_reduced {X : V} (p : path X X) := p.is_cyclically_reduced' rfl
-
-lemma path.is_reduced_of_is_cyclically_reduced {X : V} (p : path X X)
-  (hp : p.is_cyclically_reduced) : p.is_reduced :=
-begin
-  dsimp [path.is_cyclically_reduced] at hp, cases p,
-  sorry, sorry,
-end
 
 namespace red
 
@@ -232,6 +214,25 @@ using_well_founded
 
 end red
 
+def path.shift_cons {X Y : V} (p : path X Y) (e : Y ⟶ X) : path Y Y := e.to_path.comp p
+
+def path.cons_is_cyclically_reduced' {X Y : V} (p : path X Y) (e : Y ⟶ X) :=
+  (p.cons e).is_reduced ∧ (p.shift_cons e).is_reduced
+
+@[simp] def path.is_cyclically_reduced' : Π {X Y : V} (p : path X X) (XY : X = Y), Prop
+| _ _ path.nil _ := true
+| _ _ (path.cons p e) _ := p.cons_is_cyclically_reduced' e
+
+@[reducible]
+def path.is_cyclically_reduced {X : V} (p : path X X) := p.is_cyclically_reduced' rfl
+
+lemma path.is_reduced_of_is_cyclically_reduced {X : V} (p : path X X)
+  (hp : p.is_cyclically_reduced) : p.is_reduced :=
+begin
+  dsimp [path.is_cyclically_reduced] at hp, cases p,
+  { exact red.nil_is_reduced, },
+  { exact hp.left, },
+end
 
 variable (V)
 
@@ -244,7 +245,8 @@ lemma no_reduced_circuit_of_no_cyclically_reduced_circuit
 lemma no_reduced_circuit_iff_no_cyclically_reduced_circuit :
   (∀ {X : V} (p : path X X), p.is_cyclically_reduced → p = path.nil) ↔
   (∀ {X : V} (p : path X X), p.is_reduced → p = path.nil) :=
-⟨no_reduced_circuit_of_no_cyclically_reduced_circuit, λ h X p, {}⟩
+⟨no_reduced_circuit_of_no_cyclically_reduced_circuit V,
+ λ h X p hp, h p (p.is_reduced_of_is_cyclically_reduced hp)⟩
 
 
 -- ah it's not quite that: we need cyclically reduced for cycles
