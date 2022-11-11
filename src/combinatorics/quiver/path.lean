@@ -29,9 +29,22 @@ inductive path {V : Type u} [quiver.{v} V] (a : V) : V → Sort (max (u+1) v)
 def hom.to_path {V} [quiver V] {a b : V} (e : a ⟶ b) : path a b :=
 path.nil.cons e
 
+
 namespace path
 
-variables {V : Type u} [quiver V] {a b c : V}
+variables {V : Type u} [quiver V] {a b c d : V}
+
+lemma nil_ne_cons (p : path a b) (e : b ⟶ a) : path.nil ≠ p.cons e.
+lemma cons_ne_nil (p : path a b) (e : b ⟶ a) : p.cons e ≠ path.nil.
+
+lemma obj_eq_of_cons_eq_cons {p : path a b} {p' : path a c}
+  {e : b ⟶ d} {e' : c ⟶ d} (h : p.cons e = p'.cons e') : b =c := sorry
+
+lemma heq_of_cons_eq_cons {p : path a b} {p' : path a c}
+  {e : b ⟶ d} {e' : c ⟶ d} (h : p.cons e = p'.cons e') : p == p' := sorry
+
+lemma hom_heq_of_cons_eq_cons {p : path a b} {p' : path a c}
+  {e : b ⟶ d} {e' : c ⟶ d} (h : p.cons e = p'.cons e') : e == e' := sorry
 
 /-- The length of a path is the number of arrows it uses. -/
 def length {a : V} : Π {b : V}, path a b → ℕ

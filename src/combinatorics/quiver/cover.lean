@@ -23,6 +23,15 @@ variables {U : Type*} [quiver.{u+1} U]
 @[reducible] def star (u : U) := Σ (v : U), (u ⟶ v)
 @[reducible] def costar (u : U) := Σ (v : U), (v ⟶ u)
 
+@[simp] lemma star_eq_iff {u : U} (F G : star u) :
+  F = G ↔ ∃ h : F.1 = G.1, (F.2).cast rfl h = G.2 :=
+begin
+  split,
+  { rintro ⟨⟩, exact ⟨rfl,rfl⟩, },
+  { induction F, induction G, rintro ⟨h,H⟩, cases h, cases H,
+    simp only [eq_self_iff_true, heq_iff_eq, and_self], }
+end
+
 def prefunctor.star (u : U) : star u → star (φ.obj u) := λ F, ⟨(φ.obj F.1), φ.map F.2⟩
 def prefunctor.costar (u : U) : costar u → costar (φ.obj u) := λ F, ⟨(φ.obj F.1), φ.map F.2⟩
 
@@ -127,7 +136,16 @@ begin
          function.surjective.sum_map (hφ.right u).right (hφ.left u).right⟩, },
 end
 
+-- rename to `star_path` ?
 @[reducible] def path_from (u : U) := Σ v : U, path u v
+
+@[simp] lemma path_from_eq {u : U} (P Q : path_from u) :
+  P = Q ↔ ∃ h : P.1 = Q.1, (P.2).cast rfl h = Q.2 :=
+begin
+  split,
+  { rintro rfl, exact ⟨rfl,rfl⟩, },
+  { rintro ⟨h,H⟩, induction P, induction Q, cases h, cases H, refl, }
+end
 
 def prefunctor.path_from (u : U) : path_from u → path_from (φ.obj u) :=
 λ p, ⟨φ.obj p.1, φ.map_path p.2⟩
@@ -135,5 +153,35 @@ def prefunctor.path_from (u : U) : path_from u → path_from (φ.obj u) :=
 @[simp] lemma prefunctor.path_from_apply {u v : U} (p : path u v) :
   φ.path_from u ⟨v, p⟩ = ⟨φ.obj v, φ.map_path p⟩ := rfl
 
+
 lemma prefunctor.path_from_bijective (hφ : φ.is_covering) (u : U) :
-  function.bijective (φ.path_from u) := sorry
+  function.bijective (φ.path_from u) :=
+begin
+  split,
+  { rw function.injective, intros p₁ p₂,
+    cases p₁ with v₁ p₁, cases p₂ with v₂ p₂, revert v₂ p₂,
+    induction p₁ with  x₁ y₁ p₁ e₁ hp₁; intros v₂ p₂;
+    induction p₂ with x₂ y₂ p₂ e₂ hp₂;
+    intro h,
+    { refl, },
+    { exfalso,
+      simp at h, cases h with h h',
+      rw [←path.eq_cast_iff_heq rfl h.symm, path.cast_cons] at h',
+      exact (path.nil_ne_cons _ _) h', },
+    { exfalso,
+      simp at h, cases h with h h',
+      rw [←path.cast_eq_iff_heq rfl h, path.cast_cons] at h',
+      exact (path.cons_ne_nil _ _) h', },
+    { simp at h, cases h with hφy h',
+      rw [←path.cast_eq_iff_heq rfl hφy, path.cast_cons, path.cast_rfl_rfl] at h',
+      have hφx := path.obj_eq_of_cons_eq_cons h',
+      have hφp := path.heq_of_cons_eq_cons h',
+      have hφe := heq.trans (hom.cast_heq rfl hφy _).symm (path.hom_heq_of_cons_eq_cons h'),
+      have h_path_from : φ.path_from u ⟨x₁, p₁⟩ = φ.path_from u ⟨x₂, p₂⟩,
+      { ext, exact hφx, exact hφp },
+      specialize hp₁ x₂ p₂ h_path_from, cases hp₁,
+      have h_star : φ.star x₁ ⟨y₁, e₁⟩ = φ.star x₁ ⟨y₂, e₂⟩,
+      { ext, exact hφy, exact hφe, },
+      cases (hφ.1 x₁).1 h_star, refl, },  },
+  { sorry, }
+end

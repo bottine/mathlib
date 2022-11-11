@@ -136,19 +136,29 @@ instance [h : quiver.has_involutive_reverse V] : quiver.has_involutive_reverse (
 end push
 
 
-namespace path
+section connected_and_acyclic
 
-def is_reducible {V} [quiver V] [has_involutive_reverse V] {X Y : V} (r : path X Y) :=
-  ( ∃ (Z W : V) (p : path X Z) (f : Z ⟶ W) (q : path Z Y),
-        r = ((p.comp (f.to_path.cons $ quiver.reverse f)).comp q) )
+variables {V} [has_involutive_reverse V]
 
-end path
+inductive red.atomic_step {X: V} : path X X → path X X → Prop
+| zz {Y : V} (f : X ⟶ Y) : red.atomic_step ((path.nil.cons f).cons (reverse f)) path.nil
 
-/--
-`V` is a forest if there is at most one path between any two of its vertices, in the
-symmetrification of `V`
--/
+inductive red.step {X Y : V} : path X Y → path X Y → Prop
+| zz {Z : V} (pre : path X Z) {f g : path Z Z} (h : red.atomic_step f g) (suf : path Z Y) :
+  red.step ((pre.comp f).comp suf) ((pre.comp g).comp suf)
+
+def path.is_irreducible {X Y : V} (p : path X Y) := ∀ (q : path X Y), ¬ red.step p q
+
 def is_forest (V) [quiver V] [has_involutive_reverse V] :=
-  ∀ (X Y : V), subsingleton $ subtype { p : path X Y | ¬ p.is_reducible }
+  ∀ {X Y : V}, subsingleton $ subtype { p : path X Y | p.is_irreducible }
+
+lemma is_forest_iff (V) [quiver V] [has_involutive_reverse V] :
+  is_forest V ↔ ∀ {X : V}, subsingleton $ subtype { p : path X X | p.is_irreducible } := sorry
+
+
+def is_connected (V) [quiver V] [has_involutive_reverse V] :=
+  ∀ {X Y : V}, nonempty $ subtype { p : path X Y | p.is_irreducible }
+
+end connected_and_acyclic
 
 end quiver
