@@ -2,6 +2,7 @@ import combinatorics.quiver.basic
 import combinatorics.quiver.path
 import data.sum.basic
 import logic.relation
+import tactic.linarith
 
 universes v u
 
@@ -156,6 +157,25 @@ abbreviation red.symm  {X Y : V}  (p q : path X Y) : Prop := join (red) p q
 
 def path.is_reduced {X Y : V} (p : path X Y) := ∀ (q : path X Y), ¬ red.step p q
 
+def path.shift_cons {X Y : V} (p : path X Y) (e : Y ⟶ X) : path Y Y := e.to_path.comp p
+
+def path.cons_is_cyclically_reduced {X Y : V} (p : path X Y) (e : Y ⟶ X) :=
+  (p.cons e).is_reduced ∧ (path.shift_cons p e).is_reduced
+
+@[simp] def path.is_cyclically_reduced' : Π {X Y : V} (p : path X X) (XY : X = Y), Prop
+| _ _ path.nil _ := true
+| _ _ (path.cons p e) _ := p.cons_is_cyclically_reduced e ∧ p.is_reduced
+
+@[reducible]
+def path.is_cyclically_reduced {X : V} (p : path X X) := p.is_cyclically_reduced' rfl
+
+lemma path.is_reduced_of_is_cyclically_reduced {X : V} (p : path X X)
+  (hp : p.is_cyclically_reduced) : p.is_reduced :=
+begin
+  dsimp [path.is_cyclically_reduced] at hp, cases p,
+  sorry, sorry,
+end
+
 namespace red
 
 lemma atomic_step_iff {X : V} (p q : path X X) :
@@ -179,7 +199,23 @@ begin
     constructor, constructor, },
 end
 
-lemma step_length_lt {X Y : V} (p q : path X Y) : red.step p q → q.length < p.length := sorry
+lemma step_length_lt {X Y : V} (p q : path X Y) : red.step p q → q.length < p.length :=
+begin
+  rintro FS, rw step_iff at FS,
+  obtain ⟨Z,W,pre,f,suf,rfl,rfl⟩ := FS,
+  simp only [path.length_comp, path.comp_cons, path.comp_nil, path.length_cons],
+  linarith only [],
+end
+
+lemma nil_is_reduced {X : V} : (path.nil : path X X).is_reduced :=
+begin
+  rintro p h, rw step_iff at h,
+  obtain ⟨_,_,_,_,_,h',h''⟩ := h,
+  replace h' := congr_arg (path.length) h',
+  simp only [path.length_nil, path.comp_cons, path.comp_nil, path.length_comp,
+             path.length_cons] at h',
+  linarith only [h'],
+end
 
 lemma exists_is_reduced {X Y : V} [∀ p : path X Y, decidable p.is_reduced] :
    ∀ (p : path X Y), ∃ (r : path X Y), (red p r ∧ r.is_reduced)
@@ -201,13 +237,53 @@ variable (V)
 
 def is_forest := ∀ (X Y : V), subsingleton $ subtype { p : path X Y | p.is_reduced }
 
-lemma is_forest_iff :
-  is_forest V ↔ ∀ {X : V}, subsingleton $ subtype { p : path X X | p.is_reduced } := sorry
+lemma no_reduced_circuit_of_no_cyclically_reduced_circuit
+  (h : ∀ {X : V} (p : path X X), p.is_cyclically_reduced → p = path.nil) :
+  ∀ {X : V} (p : path X X), p.is_reduced → p = path.nil := sorry
 
-def is_connected := ∀ {X Y : V}, nonempty $ path X Y
+lemma no_reduced_circuit_iff_no_cyclically_reduced_circuit :
+  (∀ {X : V} (p : path X X), p.is_cyclically_reduced → p = path.nil) ↔
+  (∀ {X : V} (p : path X X), p.is_reduced → p = path.nil) :=
+⟨no_reduced_circuit_of_no_cyclically_reduced_circuit, λ h X p, {}⟩
+
+
+-- ah it's not quite that: we need cyclically reduced for cycles
+lemma is_forest_of_no_reduced_loops
+  (h : ∀ (X : V), subsingleton $ subtype { p : path X X | p.is_reduced }) :
+  ∀ (n : ℕ) {X Y : V} (p q : path X Y) (hp : p.is_reduced) (hq : q.is_reduced)
+    (hl : p.length + q.length = n), p = q
+| 0 X Y p q hp hq hl := by
+  { simp at hl,
+    let hpl := path.nil_of_length_zero _ hl.left,
+    let hql := path.nil_of_length_zero _ hl.right, rw ←hql at hpl, simp at hpl, exact hpl, }
+| (n+1) X Y p q hp hq hl := by sorry
+-- if both p and q are reduced:
+-- if they end with the same bit, one can reduce that bit and apply induction hypothesis
+-- if they sartt with the same bit, one can reduce that bit and apply induction hyp
+-- if neither, then their concatenation is
+
+lemma is_forest_iff :
+  is_forest V ↔ ∀ (X : V), subsingleton $ subtype { p : path X X | p.is_reduced } :=
+begin
+  split,
+  { rintro h X,
+    exact h X X, },
+  { sorry, }
+end
+
+def is_connected := ∀ (X Y : V), nonempty $ path X Y
 
 lemma is_connected_iff :
-  is_connected V ↔ ∀ (X Y : V), nonempty $ subtype { p : path X Y | p.is_reduced } := sorry
+  is_connected V ↔ ∀ (X Y : V), nonempty $ subtype { p : path X Y | p.is_reduced } :=
+begin
+  classical,
+  split,
+  { rintro h X Y,
+    obtain ⟨r,rred⟩ := red.exists_is_reduced (h X Y).some,
+    exact ⟨⟨r,rred.right⟩⟩, },
+  { rintro h X Y,
+    exact ⟨(h X Y).some⟩, },
+end
 
 end connected_and_acyclic
 

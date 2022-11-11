@@ -172,7 +172,7 @@ begin
       simp at h, cases h with h h',
       rw [←path.cast_eq_iff_heq rfl h, path.cast_cons] at h',
       exact (path.cons_ne_nil _ _) h', },
-    { simp at h, cases h with hφy h',
+    { simp only [prefunctor.path_star_apply, prefunctor.map_path_cons] at h, cases h with hφy h',
       rw [←path.cast_eq_iff_heq rfl hφy, path.cast_cons, path.cast_rfl_rfl] at h',
       have hφx := path.obj_eq_of_cons_eq_cons h',
       have hφp := path.heq_of_cons_eq_cons h',
