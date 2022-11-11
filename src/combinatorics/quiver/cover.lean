@@ -165,7 +165,7 @@ begin
     induction p₂ with x₂ y₂ p₂ e₂ hp₂;
     intro h,
     { refl, },
-    { exfalso, 
+    { exfalso,
       simp at h, cases h with h h',
       rw [←path.eq_cast_iff_heq rfl h.symm, path.cast_cons] at h',
       exact (path.nil_ne_cons _ _) h', },
@@ -184,7 +184,19 @@ begin
       have h_star : φ.star x₁ ⟨y₁, e₁⟩ = φ.star x₁ ⟨y₂, e₂⟩,
       { ext, exact hφy, exact hφe, },
       cases (hφ.1 x₁).1 h_star, refl, },  },
-  { sorry, }
+  { rintro ⟨v,p⟩,
+    induction p with v' v'' p' ev ih,
+    { simp only [prefunctor.path_from_apply, path_from_eq, sigma.exists],
+      exact ⟨u,path.nil,rfl,rfl⟩, },
+    { obtain ⟨⟨u',q'⟩,h⟩ := ih,
+      rw path_from_eq at h,
+      obtain ⟨h,h'⟩ := h,
+      cases h, cases h',
+      obtain ⟨⟨u'',eu⟩,⟨h,h'⟩⟩ := (hφ.left u').right ⟨_,ev⟩,
+      cases h, cases h,
+      use ⟨_,q'.cons eu⟩,
+      simp only [prefunctor.path_from_apply, prefunctor.map_path_cons, eq_self_iff_true,
+                 heq_iff_eq, and_self], } }
 end
 
 end quiver
