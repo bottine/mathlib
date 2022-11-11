@@ -1,6 +1,7 @@
 import combinatorics.quiver.basic
 import combinatorics.quiver.path
 import data.sum.basic
+import logic.relation
 
 universes v u
 
@@ -138,6 +139,8 @@ end push
 
 section connected_and_acyclic
 
+open relation
+
 variables {V} [has_involutive_reverse V]
 
 inductive red.atomic_step {X: V} : path X X → path X X → Prop
@@ -147,7 +150,52 @@ inductive red.step {X Y : V} : path X Y → path X Y → Prop
 | zz {Z : V} (pre : path X Z) {f g : path Z Z} (h : red.atomic_step f g) (suf : path Z Y) :
   red.step ((pre.comp f).comp suf) ((pre.comp g).comp suf)
 
+abbreviation red.step_refl {X Y : V} (p q : path X Y) : Prop := refl_gen red.step p q
+abbreviation red  {X Y : V}  (p q : path X Y) : Prop := refl_trans_gen (red.step) p q
+abbreviation red.symm  {X Y : V}  (p q : path X Y) : Prop := join (red) p q
+
 def path.is_reduced {X Y : V} (p : path X Y) := ∀ (q : path X Y), ¬ red.step p q
+
+namespace red
+
+lemma atomic_step_iff {X : V} (p q : path X X) :
+  atomic_step p q ↔ ∃ (Y) (f : X ⟶ Y), p = ((path.nil.cons f).cons (reverse f)) ∧ q = path.nil :=
+begin
+  split,
+  { rintro F, cases F with Y f, exact ⟨Y,f,rfl,rfl⟩, },
+  { rintro ⟨Y,f,rfl,rfl⟩, constructor, },
+end
+
+lemma step_iff {X Y : V} (p q : path X Y) :
+  step p q ↔ ∃ (Z W : V) (pre : path X Z) (f : Z ⟶ W) (suf : path Z Y),
+               p = (pre.comp ((path.nil.cons f).cons (reverse f))).comp suf ∧ q = pre.comp suf :=
+begin
+  split,
+  { rintro FS, cases FS with Z pre p q F suf, rw atomic_step_iff at F,
+    rcases F with ⟨W,f,rfl,rfl⟩, exact ⟨Z,W,pre,f,suf,rfl,rfl⟩, },
+  { rintro ⟨Z,W,pre,f,suf,rfl,rfl⟩,
+    have : pre.comp suf = (pre.comp (path.nil)).comp suf, by simp,
+    rw this,
+    constructor, constructor, },
+end
+
+lemma step_length_lt {X Y : V} (p q : path X Y) : red.step p q → q.length < p.length := sorry
+
+lemma exists_is_reduced {X Y : V} [∀ p : path X Y, decidable p.is_reduced] :
+   ∀ (p : path X Y), ∃ (r : path X Y), (red p r ∧ r.is_reduced)
+| p := if h : p.is_reduced then ⟨p, by {apply refl_trans_gen.refl}, h⟩ else by
+  { dsimp [path.is_reduced] at h, push_neg at h,
+    obtain ⟨q,qp⟩ := h,
+    let : q.length < p.length := step_length_lt p q qp, -- hint for well-foundedness
+    obtain ⟨r, rq, rred⟩ := exists_is_reduced q,
+    refine ⟨r, _, rred⟩,
+    exact refl_trans_gen.trans (refl_trans_gen.single qp) rq, }
+using_well_founded
+{ dec_tac := `[assumption],
+  rel_tac := λ _ _, `[exact ⟨_, measure_wf (λ (p : path X Y), p.length)⟩] }
+
+end red
+
 
 variable (V)
 
