@@ -159,7 +159,7 @@ lemma is_forest_iff :
 def is_connected := ∀ {X Y : V}, nonempty $ path X Y
 
 lemma is_connected_iff :
-  is_connected V ↔ ∀ (X Y : V), nonempty $ subtype { p : path X Y | p.is_reduced }
+  is_connected V ↔ ∀ (X Y : V), nonempty $ subtype { p : path X Y | p.is_reduced } := sorry
 
 end connected_and_acyclic
 
