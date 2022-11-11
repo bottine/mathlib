@@ -158,10 +158,9 @@ lemma prefunctor.path_star_bijective (hφ : φ.is_covering) (u : U) :
   function.bijective (φ.path_star u) :=
 begin
   split,
-  { rw function.injective, intros p₁ p₂,
-    cases p₁ with v₁ p₁, cases p₂ with v₂ p₂, revert v₂ p₂,
-    induction p₁ with  x₁ y₁ p₁ e₁ hp₁; intros v₂ p₂;
-    induction p₂ with x₂ y₂ p₂ e₂ hp₂;
+  { rintro ⟨v₁, p₁⟩,
+    induction p₁ with  x₁ y₁ p₁ e₁ ih;
+    rintro ⟨y₂, p₂⟩; cases p₂ with x₂ _ p₂ e₂;
     intro h,
     { refl, },
     { exfalso,
@@ -179,7 +178,7 @@ begin
       have hφe := heq.trans (hom.cast_heq rfl hφy _).symm (path.hom_heq_of_cons_eq_cons h'),
       have h_path_star : φ.path_star u ⟨x₁, p₁⟩ = φ.path_star u ⟨x₂, p₂⟩,
       { ext, exact hφx, exact hφp },
-      specialize hp₁ x₂ p₂ h_path_star, cases hp₁,
+      specialize ih h_path_star, cases ih,
       have h_star : φ.star x₁ ⟨y₁, e₁⟩ = φ.star x₁ ⟨y₂, e₂⟩,
       { ext, exact hφy, exact hφe, },
       cases (hφ.1 x₁).1 h_star, refl, },  },
