@@ -155,9 +155,6 @@ abbreviation red.step_refl {X Y : V} (p q : path X Y) : Prop := refl_gen red.ste
 abbreviation red  {X Y : V}  (p q : path X Y) : Prop := refl_trans_gen (red.step) p q
 abbreviation red.symm  {X Y : V}  (p q : path X Y) : Prop := join (red) p q
 
-def path.is_reduced {X Y : V} (p : path X Y) := ∀ (q : path X Y), ¬ red.step p q
-
-
 namespace red
 
 lemma atomic_step_iff {X : V} (p q : path X X) :
@@ -199,8 +196,10 @@ begin
   linarith only [h'],
 end
 
-lemma exists_is_reduced {X Y : V} [∀ p : path X Y, decidable p.is_reduced] :
-   ∀ (p : path X Y), ∃ (r : path X Y), (red p r ∧ r.is_reduced)
+-- can get a constructive version of this?
+-- probably, with enough work
+def exists_is_reduced {X Y : V} [∀ p : path X Y, decidable p.is_reduced] :
+   Π (p : path X Y), ∃ (r : path X Y), (red p r ∧ r.is_reduced)
 | p := if h : p.is_reduced then ⟨p, by {apply refl_trans_gen.refl}, h⟩ else by
   { dsimp [path.is_reduced] at h, push_neg at h,
     obtain ⟨q,qp⟩ := h,
@@ -248,21 +247,28 @@ lemma no_reduced_circuit_iff_no_cyclically_reduced_circuit :
 ⟨no_reduced_circuit_of_no_cyclically_reduced_circuit V,
  λ h X p hp, h p (p.is_reduced_of_is_cyclically_reduced hp)⟩
 
-
--- ah it's not quite that: we need cyclically reduced for cycles
 lemma is_forest_of_no_reduced_loops
-  (h : ∀ (X : V), subsingleton $ subtype { p : path X X | p.is_reduced }) :
-  ∀ (n : ℕ) {X Y : V} (p q : path X Y) (hp : p.is_reduced) (hq : q.is_reduced)
-    (hl : p.length + q.length = n), p = q
-| 0 X Y p q hp hq hl := by
-  { simp at hl,
-    let hpl := path.nil_of_length_zero _ hl.left,
-    let hql := path.nil_of_length_zero _ hl.right, rw ←hql at hpl, simp at hpl, exact hpl, }
-| (n+1) X Y p q hp hq hl := by sorry
--- if both p and q are reduced:
--- if they end with the same bit, one can reduce that bit and apply induction hypothesis
--- if they sartt with the same bit, one can reduce that bit and apply induction hyp
--- if neither, then their concatenation is
+  (h : ∀ (X : V) (p : path X X) (hp : p.is_reduced), p = path.nil ) :
+  ∀ {X Y : V} (p q : path X Y) (hp : p.is_reduced) (hq : q.is_reduced), p = q
+| _ _ (path.nil) (path.nil) hp hq := rfl
+| _ _ (path.cons p e) (path.nil) hp hq := h _ _ hp
+| _ _ (path.nil) (path.cons q f) hp hq := (h _ _ hq).symm
+| _ _ (@path.cons _ _ x z y p e) (@path.cons _ _ _ w _  q f) hp hq := by
+  { by_cases zw : z = w,
+    { induction zw,
+      by_cases ef : e = f,
+      { induction ef,
+        have : q.is_reduced := sorry,
+        have : p.is_reduced := sorry,
+        have : p = q, by sorry, -- by induction hypothesis
+        induction this, refl, },
+      { -- `e ≠ f` means `(p.cons e).comp (q.cons f).reverse` is reduced
+        have : ((p.cons e).comp (q.cons f).reverse).is_reduced := sorry,
+
+      } }, }
+
+
+
 
 lemma is_forest_iff :
   is_forest V ↔ ∀ (X : V), subsingleton $ subtype { p : path X X | p.is_reduced } :=
@@ -270,7 +276,10 @@ begin
   split,
   { rintro h X,
     exact h X X, },
-  { sorry, }
+  { rintro h X Y, constructor,
+    rintro ⟨p,pr⟩ ⟨q,qr⟩, ext,
+    apply is_forest_of_no_reduced_loops,
+    exact h, exact pr, exact qr,  }
 end
 
 def is_connected := ∀ (X Y : V), nonempty $ path X Y
