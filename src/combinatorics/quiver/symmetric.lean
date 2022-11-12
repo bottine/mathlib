@@ -155,7 +155,6 @@ abbreviation red.step_refl {X Y : V} (p q : path X Y) : Prop := refl_gen red.ste
 abbreviation red  {X Y : V}  (p q : path X Y) : Prop := refl_trans_gen (red.step) p q
 abbreviation red.symm  {X Y : V}  (p q : path X Y) : Prop := join (red) p q
 
-def path.is_reduced {X Y : V} (p : path X Y) := ∀ q, ¬ red.step p q
 
 namespace red
 
@@ -188,9 +187,28 @@ begin
   linarith only [],
 end
 
+end red
+
+def path.is_reduced {X Y : V} (p : path X Y) := ∀ q, ¬ red.step p q
+
+-- can get a constructive version of this?
+-- probably, with enough work
+def path.exists_is_reduced {X Y : V} [∀ p : path X Y, decidable p.is_reduced] :
+   Π (p : path X Y), ∃ (r : path X Y), (red p r ∧ r.is_reduced)
+| p := if h : p.is_reduced then ⟨p, by {apply refl_trans_gen.refl}, h⟩ else by
+  { dsimp [path.is_reduced] at h, push_neg at h,
+    obtain ⟨q,qp⟩ := h,
+    let : q.length < p.length := red.step_length_lt p q qp, -- hint for well-foundedness
+    obtain ⟨r, rq, rred⟩ := path.exists_is_reduced q,
+    refine ⟨r, _, rred⟩,
+    exact refl_trans_gen.trans (refl_trans_gen.single qp) rq, }
+using_well_founded
+{ dec_tac := `[assumption],
+  rel_tac := λ _ _, `[exact ⟨_, measure_wf (λ (p : path X Y), p.length)⟩] }
+
 lemma nil_is_reduced {X : V} : (path.nil : path X X).is_reduced :=
 begin
-  rintro p h, rw step_iff at h,
+  rintro p h, rw red.step_iff at h,
   obtain ⟨_,_,_,_,_,h',h''⟩ := h,
   replace h' := congr_arg (path.length) h',
   simp only [path.length_nil, path.comp_cons, path.comp_nil, path.length_comp,
@@ -198,22 +216,17 @@ begin
   linarith only [h'],
 end
 
--- can get a constructive version of this?
--- probably, with enough work
-def exists_is_reduced {X Y : V} [∀ p : path X Y, decidable p.is_reduced] :
-   Π (p : path X Y), ∃ (r : path X Y), (red p r ∧ r.is_reduced)
-| p := if h : p.is_reduced then ⟨p, by {apply refl_trans_gen.refl}, h⟩ else by
-  { dsimp [path.is_reduced] at h, push_neg at h,
-    obtain ⟨q,qp⟩ := h,
-    let : q.length < p.length := step_length_lt p q qp, -- hint for well-foundedness
-    obtain ⟨r, rq, rred⟩ := exists_is_reduced q,
-    refine ⟨r, _, rred⟩,
-    exact refl_trans_gen.trans (refl_trans_gen.single qp) rq, }
-using_well_founded
-{ dec_tac := `[assumption],
-  rel_tac := λ _ _, `[exact ⟨_, measure_wf (λ (p : path X Y), p.length)⟩] }
+lemma is_not_reduced_iff {X Y : V} (p : path X Y) : ¬ p.is_reduced ↔
+  ∃ (Z W : V) (pre : path X Z) (f : Z ⟶ W) (suf : path Z Y),
+    p = (pre.comp ((path.nil.cons f).cons (reverse f))).comp suf :=
+begin
+  dsimp [path.is_reduced], push_neg,
+  simp_rw red.step_iff,
+  split,
+  { rintro ⟨_,Z,W,pre,f,suf,rfl, rfl⟩, exact ⟨Z,W,pre,f,suf,rfl⟩, },
+  { rintro ⟨Z,W,pre,f,suf,rfl, rfl⟩, exact ⟨pre.comp suf, Z,W,pre,f,suf,rfl, rfl⟩, },
+end
 
-end red
 
 def path.shift_cons {X Y : V} (p : path X Y) (e : Y ⟶ X) : path Y Y := e.to_path.comp p
 
@@ -231,13 +244,13 @@ lemma path.is_reduced_of_is_cyclically_reduced {X : V} (p : path X X)
   (hp : p.is_cyclically_reduced) : p.is_reduced :=
 begin
   dsimp [path.is_cyclically_reduced] at hp, cases p,
-  { exact red.nil_is_reduced, },
+  { exact nil_is_reduced, },
   { exact hp.left, },
 end
 
 variable (V)
 
-def is_forest := ∀ (X Y : V), subsingleton $ subtype { p : path X Y | p.is_reduced }
+def is_forest := ∀ (X Y : V) (p q : path X Y), p.is_reduced → q.is_reduced → p = q
 
 lemma no_reduced_circuit_of_no_cyclically_reduced_circuit
   (h : ∀ {X : V} (p : path X X), p.is_cyclically_reduced → p = path.nil) :
@@ -269,31 +282,24 @@ lemma is_forest_of_no_reduced_loops
 
       } }, }
 
-
-
-
 lemma is_forest_iff :
-  is_forest V ↔ ∀ (X : V), subsingleton $ subtype { p : path X X | p.is_reduced } :=
+  is_forest V ↔ ∀ (X : V) (p : path X X), p.is_reduced → p = path.nil :=
 begin
   split,
-  { rintro h X,
-    exact h X X, },
-  { rintro h X Y, constructor,
-    rintro ⟨p,pr⟩ ⟨q,qr⟩, ext,
-    apply is_forest_of_no_reduced_loops,
-    exact h, exact pr, exact qr,  }
+  { rintro h X p hp, exact h X X p (path.nil) hp nil_is_reduced, },
+  { sorry  }
 end
 
-def is_connected := ∀ (X Y : V), nonempty $ path X Y
+def is_connected := ∀ (X Y : V), nonempty (path X Y)
 
 lemma is_connected_iff :
-  is_connected V ↔ ∀ (X Y : V), nonempty $ subtype { p : path X Y | p.is_reduced } :=
+  is_connected V ↔ ∀ (X Y : V), ∃ (p : path X Y), p.is_reduced :=
 begin
   classical,
   split,
   { rintro h X Y,
-    obtain ⟨r,rred⟩ := red.exists_is_reduced (h X Y).some,
-    exact ⟨⟨r,rred.right⟩⟩, },
+    obtain ⟨r,rred⟩ := path.exists_is_reduced (h X Y).some,
+    exact ⟨r,rred.right⟩, },
   { rintro h X Y,
     exact ⟨(h X Y).some⟩, },
 end
