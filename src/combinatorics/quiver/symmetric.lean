@@ -155,6 +155,8 @@ abbreviation red.step_refl {X Y : V} (p q : path X Y) : Prop := refl_gen red.ste
 abbreviation red  {X Y : V}  (p q : path X Y) : Prop := refl_trans_gen (red.step) p q
 abbreviation red.symm  {X Y : V}  (p q : path X Y) : Prop := join (red) p q
 
+def path.is_reduced {X Y : V} (p : path X Y) := ∀ q, ¬ red.step p q
+
 namespace red
 
 lemma atomic_step_iff {X : V} (p q : path X X) :
