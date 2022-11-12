@@ -135,6 +135,6 @@ instance [h : quiver.has_involutive_reverse V] : quiver.has_involutive_reverse (
 
 end push
 
-def is_connected [has_involutive_reverse V] := ∀ (X Y : V), nonempty (path X Y)
+def is_connected (V) [quiver.{u+1} V] [has_involutive_reverse V] := ∀ (X Y : V), nonempty (path X Y)
 
 end quiver

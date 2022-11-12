@@ -13,50 +13,23 @@ open relation
 
 variables {V : Type*} [quiver.{v+1} V] [has_involutive_reverse V]
 
-inductive red.atomic_step {X: V} : path X X → path X X → Prop
-| zz {Y : V} (f : X ⟶ Y) : red.atomic_step ((path.nil.cons f).cons (reverse f)) path.nil
-
-inductive red.step {X Y : V} : path X Y → path X Y → Prop
-| zz {Z : V} (pre : path X Z) {f g : path Z Z} (h : red.atomic_step f g) (suf : path Z Y) :
-  red.step ((pre.comp f).comp suf) ((pre.comp g).comp suf)
+def red.step {X Y : V} (p q : path X Y) :=
+  ∃ (Z W : V) (pre : path X Z) (f : Z ⟶ W) (suf : path Z Y),
+               p = (pre.comp ((path.nil.cons f).cons (reverse f))).comp suf ∧
+               q = pre.comp suf
 
 abbreviation red.step_refl {X Y : V} (p q : path X Y) : Prop := refl_gen red.step p q
 abbreviation red  {X Y : V}  (p q : path X Y) : Prop := refl_trans_gen (red.step) p q
 abbreviation red.symm  {X Y : V}  (p q : path X Y) : Prop := join (red) p q
 
-
-namespace red
-
-lemma atomic_step_iff {X : V} (p q : path X X) :
-  atomic_step p q ↔ ∃ (Y) (f : X ⟶ Y), p = ((path.nil.cons f).cons (reverse f)) ∧ q = path.nil :=
+lemma red.step_length_lt {X Y : V} (p q : path X Y) : red.step p q → q.length < p.length :=
 begin
-  split,
-  { rintro F, cases F with Y f, exact ⟨Y,f,rfl,rfl⟩, },
-  { rintro ⟨Y,f,rfl,rfl⟩, constructor, },
-end
-
-lemma step_iff {X Y : V} (p q : path X Y) :
-  step p q ↔ ∃ (Z W : V) (pre : path X Z) (f : Z ⟶ W) (suf : path Z Y),
-               p = (pre.comp ((path.nil.cons f).cons (reverse f))).comp suf ∧ q = pre.comp suf :=
-begin
-  split,
-  { rintro FS, cases FS with Z pre p q F suf, rw atomic_step_iff at F,
-    rcases F with ⟨W,f,rfl,rfl⟩, exact ⟨Z,W,pre,f,suf,rfl,rfl⟩, },
-  { rintro ⟨Z,W,pre,f,suf,rfl,rfl⟩,
-    have : pre.comp suf = (pre.comp (path.nil)).comp suf, by simp,
-    rw this,
-    constructor, constructor, },
-end
-
-lemma step_length_lt {X Y : V} (p q : path X Y) : red.step p q → q.length < p.length :=
-begin
-  rintro FS, rw step_iff at FS,
+  rintro FS,
   obtain ⟨Z,W,pre,f,suf,rfl,rfl⟩ := FS,
   simp only [path.length_comp, path.comp_cons, path.comp_nil, path.length_cons],
   linarith only [],
 end
 
-end red
 
 def path.is_reduced {X Y : V} (p : path X Y) := ∀ q, ¬ red.step p q
 
@@ -77,7 +50,7 @@ using_well_founded
 
 lemma nil_is_reduced {X : V} : (path.nil : path X X).is_reduced :=
 begin
-  rintro p h, rw red.step_iff at h,
+  rintro p h,
   obtain ⟨_,_,_,_,_,h',h''⟩ := h,
   replace h' := congr_arg (path.length) h',
   simp only [path.length_nil, path.comp_cons, path.comp_nil, path.length_comp,
@@ -85,19 +58,34 @@ begin
   linarith only [h'],
 end
 
-lemma is_not_reduced_iff {X Y : V} (p : path X Y) : ¬ p.is_reduced ↔
+lemma path.is_not_reduced_iff {X Y : V} (p : path X Y) : ¬ p.is_reduced ↔
   ∃ (Z W : V) (pre : path X Z) (f : Z ⟶ W) (suf : path Z Y),
     p = (pre.comp ((path.nil.cons f).cons (reverse f))).comp suf :=
 begin
   dsimp [path.is_reduced], push_neg,
-  simp_rw red.step_iff,
   split,
   { rintro ⟨_,Z,W,pre,f,suf,rfl, rfl⟩, exact ⟨Z,W,pre,f,suf,rfl⟩, },
   { rintro ⟨Z,W,pre,f,suf,rfl, rfl⟩, exact ⟨pre.comp suf, Z,W,pre,f,suf,rfl, rfl⟩, },
 end
 
+lemma path.is_reduced_of_cons_is_reduced {X Y Z : V} (p : path X Y) (e : Y ⟶ Z)
+  (h : (p.cons e).is_reduced) : p.is_reduced :=
+begin
+  rintro q ⟨_,_,pre,f,suf,rfl,rfl⟩,
+  exact h (pre.comp (suf.cons e)) ⟨_,_,pre,f,suf.cons e,rfl,rfl⟩,
+end
 
-def path.shift_cons {X Y : V} (p : path X Y) (e : Y ⟶ X) : path Y Y := e.to_path.comp p
+lemma path.comp_reverse_is_reduced {X Y Z W : V}
+  (p : path X Y) (e : Y ⟶ W) (q : path X Z) (f : Z ⟶ W)
+  (hp : (p.cons e).is_reduced) (hq : (q.cons f).is_reduced) (hYZ : Y ≠ Z) :
+  ((p.cons e).comp (q.cons f).reverse).is_reduced := sorry
+
+lemma path.comp_reverse_is_reduced' {X Y W : V}
+  (p : path X Y) (e : Y ⟶ W) (q : path X Y) (f : Y ⟶ W)
+  (hp : (p.cons e).is_reduced) (hq : (q.cons f).is_reduced) (hef : e ≠ f) :
+  ((p.cons e).comp (q.cons f).reverse).is_reduced := sorry
+
+abbreviation path.shift_cons {X Y : V} (p : path X Y) (e : Y ⟶ X) : path Y Y := e.to_path.comp p
 
 def path.cons_is_cyclically_reduced' {X Y : V} (p : path X Y) (e : Y ⟶ X) :=
   (p.cons e).is_reduced ∧ (p.shift_cons e).is_reduced
@@ -119,37 +107,53 @@ end
 
 variable (V)
 
+@[reducible]
 def is_forest := ∀ (X Y : V) (p q : path X Y), p.is_reduced → q.is_reduced → p = q
+@[reducible]
+def no_reduced_circuit := ∀ (X : V) (p : path X X), p.is_reduced → p = path.nil
+@[reducible]
+def no_cyclically_reduced_circuit := ∀ (X : V) (p : path X X),
+  p.is_cyclically_reduced → p = path.nil
 
-lemma no_reduced_circuit_of_no_cyclically_reduced_circuit
-  (h : ∀ {X : V} (p : path X X), p.is_cyclically_reduced → p = path.nil) :
-  ∀ {X : V} (p : path X X), p.is_reduced → p = path.nil := sorry
+lemma no_reduced_circuit_of_no_cyclically_reduced_circuit :
+  no_cyclically_reduced_circuit V → no_reduced_circuit V := sorry
 
 lemma no_reduced_circuit_iff_no_cyclically_reduced_circuit :
-  (∀ {X : V} (p : path X X), p.is_cyclically_reduced → p = path.nil) ↔
-  (∀ {X : V} (p : path X X), p.is_reduced → p = path.nil) :=
-⟨no_reduced_circuit_of_no_cyclically_reduced_circuit V,
- λ h X p hp, h p (p.is_reduced_of_is_cyclically_reduced hp)⟩
+  no_reduced_circuit V ↔ no_cyclically_reduced_circuit V :=
+⟨λ h X p hp, h X p (p.is_reduced_of_is_cyclically_reduced hp),
+ no_reduced_circuit_of_no_cyclically_reduced_circuit V⟩
 
-lemma is_forest_of_no_reduced_loops
-  (h : ∀ (X : V) (p : path X X) (hp : p.is_reduced), p = path.nil ) :
-  ∀ {X Y : V} (p q : path X Y) (hp : p.is_reduced) (hq : q.is_reduced), p = q
+def tuple_len : (Σ' (X Y Z : V) (p : path X Y) (q : path X Z) (h : p.is_reduced), q.is_reduced) → ℕ :=
+λ ⟨X,Y,Z,p,q,pr,qr⟩, p.length
+
+/- This well foundedness trick seems like magic: `tuple_len` here is not actually the same function
+   as the one used to compute well foundedness …
+-/
+lemma is_forest_of_no_reduced_circuit (h : no_reduced_circuit V) : is_forest V
 | _ _ (path.nil) (path.nil) hp hq := rfl
 | _ _ (path.cons p e) (path.nil) hp hq := h _ _ hp
 | _ _ (path.nil) (path.cons q f) hp hq := (h _ _ hq).symm
-| _ _ (@path.cons _ _ x z y p e) (@path.cons _ _ _ w _  q f) hp hq := by
-  { by_cases zw : z = w,
+| _ _ pp@(@path.cons _ _ x z y p e) qq@(@path.cons _ _ _ w _  q f) hp hq := by
+  { have pr : p.is_reduced := p.is_reduced_of_cons_is_reduced e hp,
+    have qr : q.is_reduced := q.is_reduced_of_cons_is_reduced f hq,
+    --have : tuple_len V ⟨_,_,_,p,q,pr,qr⟩ < tuple_len V ⟨_,_,_,p.cons e,q.cons f,hp,hq⟩, by
+    have : tuple_len V ⟨_,_,_,p,q,pr,qr⟩ < tuple_len V ⟨_,_,_,p.cons e,q.cons f,hp,hq⟩, by
+    { dsimp [tuple_len,path.length], linarith, },
+    by_cases zw : z = w,
     { induction zw,
       by_cases ef : e = f,
       { induction ef,
-        have : q.is_reduced := sorry,
-        have : p.is_reduced := sorry,
-        have : p = q, by sorry, -- by induction hypothesis
-        induction this, refl, },
-      { -- `e ≠ f` means `(p.cons e).comp (q.cons f).reverse` is reduced
-        have : ((p.cons e).comp (q.cons f).reverse).is_reduced := sorry,
+        cases is_forest_of_no_reduced_circuit  _ _ p q pr qr,
+        refl, },
+      { simpa using
+          (congr_arg path.length (h _ _ (path.comp_reverse_is_reduced' p e q f hp hq ef))),
+      } },
+    { simpa using
+        (congr_arg path.length (h _ _ (path.comp_reverse_is_reduced p e q f hp hq zw))), }, }
+using_well_founded
+{ dec_tac := `[assumption],
+  rel_tac := λ _ _, `[exact ⟨_, measure_wf $ λ ⟨X,Y,p,q,pr,qr⟩, p.length⟩] }
 
-      } }, }
 
 lemma is_forest_iff :
   is_forest V ↔ ∀ (X : V) (p : path X X), p.is_reduced → p = path.nil :=
@@ -159,7 +163,6 @@ begin
   { sorry  }
 end
 
-def is_connected := ∀ (X Y : V), nonempty (path X Y)
 
 lemma is_connected_iff :
   is_connected V ↔ ∀ (X Y : V), ∃ (p : path X Y), p.is_reduced :=
