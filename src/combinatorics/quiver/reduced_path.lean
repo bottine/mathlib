@@ -123,36 +123,28 @@ lemma no_reduced_circuit_iff_no_cyclically_reduced_circuit :
 ⟨λ h X p hp, h X p (p.is_reduced_of_is_cyclically_reduced hp),
  no_reduced_circuit_of_no_cyclically_reduced_circuit V⟩
 
-def tuple_len : (Σ' (X Y Z : V) (p : path X Y) (q : path X Z) (h : p.is_reduced), q.is_reduced) → ℕ :=
-λ ⟨X,Y,Z,p,q,pr,qr⟩, p.length
-
-/- This well foundedness trick seems like magic: `tuple_len` here is not actually the same function
-   as the one used to compute well foundedness …
--/
-lemma is_forest_of_no_reduced_circuit (h : no_reduced_circuit V) : is_forest V
-| _ _ (path.nil) (path.nil) hp hq := rfl
-| _ _ (path.cons p e) (path.nil) hp hq := h _ _ hp
-| _ _ (path.nil) (path.cons q f) hp hq := (h _ _ hq).symm
-| _ _ pp@(@path.cons _ _ x z y p e) qq@(@path.cons _ _ _ w _  q f) hp hq := by
+lemma is_forest_of_no_reduced_circuit' (h : no_reduced_circuit V) (x : V) :
+  ∀ (y : V) (p q : path x y), p.is_reduced → q.is_reduced → p = q
+| _ (path.nil) (path.nil) hp hq := rfl
+| _ (path.cons p e) (path.nil) hp hq := h _ _ hp
+| _ (path.nil) (path.cons q f) hp hq := (h _ _ hq).symm
+| _ pp@(@path.cons _ _ _ z y p e) qq@(@path.cons _ _ _ w _  q f) hp hq := by
   { have pr : p.is_reduced := p.is_reduced_of_cons_is_reduced e hp,
     have qr : q.is_reduced := q.is_reduced_of_cons_is_reduced f hq,
-    --have : tuple_len V ⟨_,_,_,p,q,pr,qr⟩ < tuple_len V ⟨_,_,_,p.cons e,q.cons f,hp,hq⟩, by
-    have : tuple_len V ⟨_,_,_,p,q,pr,qr⟩ < tuple_len V ⟨_,_,_,p.cons e,q.cons f,hp,hq⟩, by
-    { dsimp [tuple_len,path.length], linarith, },
     by_cases zw : z = w,
     { induction zw,
       by_cases ef : e = f,
       { induction ef,
-        cases is_forest_of_no_reduced_circuit  _ _ p q pr qr,
+        cases is_forest_of_no_reduced_circuit' z p q pr qr,
         refl, },
       { simpa using
           (congr_arg path.length (h _ _ (path.comp_reverse_is_reduced' p e q f hp hq ef))),
       } },
     { simpa using
         (congr_arg path.length (h _ _ (path.comp_reverse_is_reduced p e q f hp hq zw))), }, }
-using_well_founded
-{ dec_tac := `[assumption],
-  rel_tac := λ _ _, `[exact ⟨_, measure_wf $ λ ⟨X,Y,p,q,pr,qr⟩, p.length⟩] }
+
+lemma is_forest_of_no_reduced_circuit (h : no_reduced_circuit V) : is_forest V :=
+is_forest_of_no_reduced_circuit' V h
 
 
 lemma is_forest_iff :
