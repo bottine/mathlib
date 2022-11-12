@@ -237,27 +237,4 @@ lemma hom.eq_cast_iff_heq {u v u' v' : U} (hu : u = u') (hv : v = v')
 
 end cast
 
-def single_obj (α : Type*) : Type := unit
-
-namespace single_obj
-
-variables (α β : Type*)
-
-instance : quiver (single_obj α) := ⟨λ _ _, α⟩
-
-/-- The single object in `single_obj α`. -/
-def star : single_obj α := unit.star
-
-@[simps] def to_hom : α ≃ (star α ⟶ star α) := equiv.refl _
-
-def function_equiv_prefunctor :
-  (α → β) ≃ (single_obj α ⟶q single_obj β) :=
-{ to_fun := λ f, ⟨id, λ _ _, f⟩,
-  inv_fun := λ f a, f.map (to_hom α a),
-  left_inv := λ _, rfl,
-  right_inv :=  λ f, by cases f; obviously }
-
-end single_obj
-
-
 end quiver
