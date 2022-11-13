@@ -85,25 +85,14 @@ lemma path.comp_reverse_is_reduced' {X Y W : V}
   (hp : (p.cons e).is_reduced) (hq : (q.cons f).is_reduced) (hef : e ≠ f) :
   ((p.cons e).comp (q.cons f).reverse).is_reduced := sorry
 
-abbreviation path.shift_cons {X Y : V} (p : path X Y) (e : Y ⟶ X) : path Y Y := e.to_path.comp p
-
-def path.cons_is_cyclically_reduced' {X Y : V} (p : path X Y) (e : Y ⟶ X) :=
-  (p.cons e).is_reduced ∧ (p.shift_cons e).is_reduced
-
-@[simp] def path.is_cyclically_reduced' : Π {X Y : V} (p : path X X) (XY : X = Y), Prop
-| _ _ path.nil _ := true
-| _ _ (path.cons p e) _ := p.cons_is_cyclically_reduced' e
 
 @[reducible]
-def path.is_cyclically_reduced {X : V} (p : path X X) := p.is_cyclically_reduced' rfl
+def path.is_cyclically_reduced {X : V} (p : path X X) :=
+  ∀ {Y : V} (q : path X Y) (r : path Y X), q.comp r = p → (r.comp q).is_reduced
 
 lemma path.is_reduced_of_is_cyclically_reduced {X : V} (p : path X X)
   (hp : p.is_cyclically_reduced) : p.is_reduced :=
-begin
-  dsimp [path.is_cyclically_reduced] at hp, cases p,
-  { exact nil_is_reduced, },
-  { exact hp.left, },
-end
+by { simpa using (hp p path.nil), }
 
 variable (V)
 
