@@ -81,7 +81,7 @@ def prefunctor.symmetrify (φ : U ⟶q V) : (symmetrify U) ⟶q (symmetrify V) :
 { obj := φ.obj,
   map := λ X Y, sum.map φ.map φ.map }
 
-instance prefunctor.symmetrify_preserves_reverse :
+instance prefunctor.symmetrify_preserves_reverse (φ : U ⟶q V) :
   prefunctor.preserves_reverse φ.symmetrify := ⟨λ u v e, by { cases e; refl }⟩
 
 def symmetrify_star (u : U) : star (symmetrify.of.obj u) ≃ star u ⊕ costar u :=
