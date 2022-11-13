@@ -8,6 +8,7 @@ import group_theory.coset
 import group_theory.quotient_group
 import group_theory.group_action.quotient
 import combinatorics.quiver.symmetric
+import combinatorics.quiver.reduced_path
 
 open function
 
@@ -76,19 +77,11 @@ begin
     exact hφψ.right u, },
 end
 
-@[simps]
-def prefunctor.symmetrify (φ : U ⟶q V) : (symmetrify U) ⟶q (symmetrify V) :=
-{ obj := φ.obj,
-  map := λ X Y, sum.map φ.map φ.map }
-
-instance prefunctor.symmetrify_preserves_reverse :
-  prefunctor.preserves_reverse φ.symmetrify := ⟨λ u v e, by { cases e; refl }⟩
-
 def symmetrify_star (u : U) : star (symmetrify.of.obj u) ≃ star u ⊕ costar u :=
 begin
   fsplit,
   { rintro ⟨v,(f|g)⟩, exact sum.inl ⟨v,f⟩, exact sum.inr ⟨v,g⟩, },
-  { rintro (⟨v,f⟩|⟨v,g⟩), exact ⟨v,quiver.hom.to_pos f⟩, exact ⟨v,quiver.hom.to_neg g⟩, },
+  { rintro (⟨v,f⟩|⟨v,g⟩), exact ⟨v,f.to_pos⟩, exact ⟨v,g.to_neg⟩, },
   { rintro ⟨v,(f|g)⟩, simp, },
   { rintro (⟨v,f⟩|⟨v,g⟩), simp, },
 end
@@ -125,7 +118,10 @@ begin
 end
 
 lemma prefunctor.symmetrify_is_reduced_iff {u v : symmetrify U} (p : path u v) :
-  p.is_reduced ↔ (φ.symmetrify.map_path p).is_reduced := sorry
+  p.is_reduced ↔ (φ.symmetrify.map_path p).is_reduced :=
+begin
+  sorry
+end
 
 lemma is_covering.symmetrify (hφ : φ.is_covering) : φ.symmetrify.is_covering :=
 begin
