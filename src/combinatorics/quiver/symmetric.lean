@@ -126,6 +126,14 @@ begin
       convert hΦinv (sum.inl f), }, },
 end
 
+@[simps]
+def _root_.prefunctor.symmetrify (φ : U ⟶q V) : (symmetrify U) ⟶q (symmetrify V) :=
+{ obj := φ.obj,
+  map := λ X Y, sum.map φ.map φ.map }
+
+instance _root_.prefunctor.symmetrify_preserves_reverse  (φ : U ⟶q V) :
+  prefunctor.preserves_reverse φ.symmetrify := ⟨λ u v e, by { cases e; refl }⟩
+
 end symmetrify
 
 namespace push
