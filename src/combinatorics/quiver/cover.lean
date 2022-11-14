@@ -117,11 +117,19 @@ begin
   simp,
 end
 
-lemma prefunctor.symmetrify_is_reduced_iff {u v : symmetrify U} (p : path u v) :
-  p.is_reduced ↔ (φ.symmetrify.map_path p).is_reduced :=
-begin
-  sorry
-end
+lemma prefunctor.symmetrify_is_reduced_iff : Π {u v : symmetrify U} (p : path u v),
+  p.is_reduced ↔ (φ.symmetrify.map_path p).is_reduced
+| _ _ (path.nil) := by simp [path.nil_is_reduced]
+| _ _ (path.cons (path.nil) f) := by
+  { change f.to_path.is_reduced ↔ (φ.symmetrify.map f).to_path.is_reduced,
+    simp only [path.to_path_is_reduced], }
+| _ _ (path.cons (path.cons p f) g) := by
+  { simp only [path.cons_cons_is_reduced, prefunctor.symmetrify_obj, symmetrify_reverse,
+               not_exists, prefunctor.map_path_cons, prefunctor.symmetrify_map],
+    rw prefunctor.symmetrify_is_reduced_iff (p.cons f),
+    congr', apply propext, split,
+    { sorry, },
+    { sorry, }, }
 
 lemma is_covering.symmetrify (hφ : φ.is_covering) : φ.symmetrify.is_covering :=
 begin

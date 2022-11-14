@@ -48,7 +48,7 @@ using_well_founded
 { dec_tac := `[assumption],
   rel_tac := λ _ _, `[exact ⟨_, measure_wf (λ (p : path X Y), p.length)⟩] }
 
-lemma nil_is_reduced {X : V} : (path.nil : path X X).is_reduced :=
+lemma path.nil_is_reduced {X : V} : (path.nil : path X X).is_reduced :=
 begin
   rintro p ⟨_,_,_,_,_,h',h''⟩,
   replace h' := congr_arg (path.length) h',
@@ -57,7 +57,7 @@ begin
   linarith only [h'],
 end
 
-lemma hom.to_path_is_reduced {X Y : V} (f : X ⟶ Y) : f.to_path.is_reduced :=
+lemma path.to_path_is_reduced {X Y : V} (f : X ⟶ Y) : f.to_path.is_reduced :=
 begin
   rintro p ⟨_,_,_,_,_,h',h''⟩,
   replace h' := congr_arg (path.length) h',
@@ -76,7 +76,7 @@ begin
 end
 
 
-lemma cons_cons_is_reduced {X Y Z W : V} (p : path X Y) (f : Y ⟶ Z) (g : Z ⟶ W) :
+lemma path.cons_cons_is_reduced {X Y Z W : V} (p : path X Y) (f : Y ⟶ Z) (g : Z ⟶ W) :
 ((p.cons f).cons g).is_reduced ↔ (p.cons f).is_reduced ∧ ¬ (∃ h : Y = W, h.rec_on f = reverse g) :=
 begin
   classical,
