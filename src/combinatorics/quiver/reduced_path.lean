@@ -50,11 +50,18 @@ using_well_founded
 
 lemma nil_is_reduced {X : V} : (path.nil : path X X).is_reduced :=
 begin
-  rintro p h,
-  obtain ⟨_,_,_,_,_,h',h''⟩ := h,
+  rintro p ⟨_,_,_,_,_,h',h''⟩,
   replace h' := congr_arg (path.length) h',
   simp only [path.length_nil, path.comp_cons, path.comp_nil, path.length_comp,
              path.length_cons] at h',
+  linarith only [h'],
+end
+
+lemma hom.to_path_is_reduced {X Y : V} (f : X ⟶ Y) : f.to_path.is_reduced :=
+begin
+  rintro p ⟨_,_,_,_,_,h',h''⟩,
+  replace h' := congr_arg (path.length) h',
+  simp only [hom.to_path, path.length_cons, path.length_nil, zero_add, path.comp_cons, path.comp_nil, path.length_comp] at h',
   linarith only [h'],
 end
 
@@ -67,6 +74,16 @@ begin
   { rintro ⟨_,Z,W,pre,f,suf,rfl, rfl⟩, exact ⟨Z,W,pre,f,suf,rfl⟩, },
   { rintro ⟨Z,W,pre,f,suf,rfl, rfl⟩, exact ⟨pre.comp suf, Z,W,pre,f,suf,rfl, rfl⟩, },
 end
+
+
+lemma cons_cons_is_reduced {X Y Z W : V} (p : path X Y) (f : Y ⟶ Z) (g : Z ⟶ W) :
+((p.cons f).cons g).is_reduced ↔ (p.cons f).is_reduced ∧ ¬ (∃ h : Y = W, h.rec_on f = reverse g) :=
+begin
+  classical,
+  rw ←decidable.not_iff_not, push_neg,
+  rw path.is_not_reduced_iff, sorry,
+end
+
 
 lemma path.is_reduced_of_cons_is_reduced {X Y Z : V} (p : path X Y) (e : Y ⟶ Z)
   (h : (p.cons e).is_reduced) : p.is_reduced :=
