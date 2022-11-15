@@ -8,7 +8,7 @@ import group_theory.coset
 import group_theory.quotient_group
 import group_theory.group_action.quotient
 import combinatorics.quiver.symmetric
-import combinatorics.quiver.reduced_path
+--import combinatorics.quiver.reduced_path
 
 open function
 
@@ -240,5 +240,22 @@ def prefunctor.is_covering_of_bijective_costar (h : ∀ u, function.bijective (�
   φ.is_covering := ⟨λ u, (φ.bijective_costar_iff_bijective_star u).1 (h u), h⟩
 
 end has_involutive_reverse
+
+section cover_automorphisms
+
+set_option old_structure_cmd true
+structure iso (V W : Type*) [quiver V] [quiver W] :=
+(to_prefunctor : V ⟶q W)
+(inv_prefunctor : W ⟶q V)
+(left_inv : to_prefunctor ≫q inv_prefunctor = 𝟙q V)
+(right_inv : inv_prefunctor ≫q to_prefunctor = 𝟙q W)
+
+structure cover_endo :=
+(to_prefunctor : U ⟶q U)
+(cover : to_prefunctor ≫q φ = φ)
+
+structure cover_auto extends (iso U U), (cover_endo φ)
+
+end cover_automorphisms
 
 end quiver

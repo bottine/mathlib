@@ -80,8 +80,31 @@ lemma path.cons_cons_is_reduced {X Y Z W : V} (p : path X Y) (f : Y ⟶ Z) (g : 
 ((p.cons f).cons g).is_reduced ↔ (p.cons f).is_reduced ∧ ¬ (∃ h : Y = W, h.rec_on f = reverse g) :=
 begin
   classical,
-  rw ←decidable.not_iff_not, push_neg,
-  rw path.is_not_reduced_iff, sorry,
+  rw [←decidable.not_iff_not, not_and_distrib, path.is_not_reduced_iff, path.is_not_reduced_iff],
+  split,
+  { rintro ⟨z,w,pre,h,suf,hl⟩,
+    cases suf,
+    { tidy,
+      right,
+      subst_vars,
+      rw reverse_reverse, },
+    { tidy,
+      rw hl_right_left,
+      left,
+      refine ⟨_,_,pre,h,_,rfl⟩, },
+     },
+  { rintro (⟨z,w,pre,h,suf,hl⟩|hy),
+    { simp only [path.comp_cons, path.comp_nil] at hl ⊢,
+      rw hl,
+      refine ⟨_,_,pre,h,suf.cons g,_⟩,
+      simp only [path.comp_cons, eq_self_iff_true, heq_iff_eq, and_self], },
+    { simp only [not_exists, not_forall, not_not] at hy,
+      obtain ⟨rfl,a⟩ := hy,
+      simp only at a,
+      obtain rfl := a,
+      simp only [path.comp_cons, path.comp_nil],
+      refine ⟨_,_,p,reverse g,path.nil,_⟩,
+      simp only [reverse_reverse, path.comp_nil, eq_self_iff_true, heq_iff_eq, and_self], }, }
 end
 
 
