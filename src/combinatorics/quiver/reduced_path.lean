@@ -173,27 +173,22 @@ lemma path.comp_reverse_is_reduced {X Y Z W : V}
   (p : path X Y) (e : Y ⟶ W) (q : path X Z) (f : Z ⟶ W)
   (hp : (p.cons e).is_reduced) (hq : (q.cons f).is_reduced) (hYZ : Y ≠ Z) :
   ((p.cons e).comp (q.cons f).reverse).is_reduced :=
-begin
-  rw path.comp_reverse_is_reduced'', refine ⟨hp,hq,_⟩,
-  rintro ⟨h,_⟩, exact (hYZ h).elim,
-end
+(path.comp_reverse_is_reduced'' p e q f).mpr ⟨hp,hq, λ ⟨h,_⟩, (hYZ h).elim⟩
+
 
 lemma path.comp_reverse_is_reduced' {X Y W : V}
   (p : path X Y) (e : Y ⟶ W) (q : path X Y) (f : Y ⟶ W)
   (hp : (p.cons e).is_reduced) (hq : (q.cons f).is_reduced) (hef : e ≠ f) :
   ((p.cons e).comp (q.cons f).reverse).is_reduced :=
-begin
-  rw path.comp_reverse_is_reduced'', refine ⟨hp,hq,_⟩,
-  rintro ⟨_,h⟩, exact (hef h).elim,
-end
+(path.comp_reverse_is_reduced'' p e q f).mpr ⟨hp,hq,λ ⟨_,h⟩, (hef h).elim⟩
 
 @[reducible]
 def path.is_cyclically_reduced {X : V} (p : path X X) :=
-  ∀ {Y : V} (q : path X Y) (r : path Y X), q.comp r = p → (r.comp q).is_reduced
+  ∀ (Y : V) (q : path X Y) (r : path Y X), q.comp r = p → (r.comp q).is_reduced
 
 lemma path.is_reduced_of_is_cyclically_reduced {X : V} (p : path X X)
   (hp : p.is_cyclically_reduced) : p.is_reduced :=
-by { simpa using (hp p path.nil), }
+by { simpa using (hp _ p path.nil), }
 
 variable (V)
 
@@ -210,7 +205,7 @@ lemma no_reduced_circuit_of_no_cyclically_reduced_circuit :
 
 lemma no_reduced_circuit_iff_no_cyclically_reduced_circuit :
   no_reduced_circuit V ↔ no_cyclically_reduced_circuit V :=
-⟨λ h X p hp, h X p (p.is_reduced_of_is_cyclically_reduced hp),
+⟨λ h X p hp, h X p (path.is_reduced_of_is_cyclically_reduced p hp),
  no_reduced_circuit_of_no_cyclically_reduced_circuit V⟩
 
 lemma is_forest_of_no_reduced_circuit' (h : no_reduced_circuit V) (x : V) :
@@ -241,7 +236,7 @@ lemma is_forest_iff :
   is_forest V ↔ ∀ (X : V) (p : path X X), p.is_reduced → p = path.nil :=
 begin
   split,
-  { rintro h X p hp, exact h X X p (path.nil) hp nil_is_reduced, },
+  { rintro h X p hp, exact h X X p (path.nil) hp path.nil_is_reduced, },
   { sorry  }
 end
 
