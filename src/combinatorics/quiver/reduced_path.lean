@@ -89,22 +89,21 @@ begin
       subst_vars,
       rw reverse_reverse, },
     { tidy,
-      rw hl_right_left,
+      simp only [*],
       left,
       refine ⟨_,_,pre,h,_,rfl⟩, },
      },
   { rintro (⟨z,w,pre,h,suf,hl⟩|hy),
     { simp only [path.comp_cons, path.comp_nil] at hl ⊢,
-      rw hl,
       refine ⟨_,_,pre,h,suf.cons g,_⟩,
-      simp only [path.comp_cons, eq_self_iff_true, heq_iff_eq, and_self], },
+      simp only [path.comp_cons, eq_self_iff_true, heq_iff_eq, and_self, hl], },
     { simp only [not_exists, not_forall, not_not] at hy,
       obtain ⟨rfl,a⟩ := hy,
       simp only at a,
       obtain rfl := a,
-      simp only [path.comp_cons, path.comp_nil],
       refine ⟨_,_,p,reverse g,path.nil,_⟩,
-      simp only [reverse_reverse, path.comp_nil, eq_self_iff_true, heq_iff_eq, and_self], }, }
+      simp only [path.comp_cons, path.comp_nil, reverse_reverse, path.comp_nil,
+                 eq_self_iff_true, heq_iff_eq, and_self], }, }
 end
 
 
@@ -113,6 +112,30 @@ lemma path.is_reduced_of_cons_is_reduced {X Y Z : V} (p : path X Y) (e : Y ⟶ Z
 begin
   rintro q ⟨_,_,pre,f,suf,rfl,rfl⟩,
   exact h (pre.comp (suf.cons e)) ⟨_,_,pre,f,suf.cons e,rfl,rfl⟩,
+end
+
+lemma path.cons_comp_is_reduced {X Y Z W : V} (p : path X Y) (f : Y ⟶ Z) (q : path Z W) :
+  ((p.cons f).comp q).is_reduced ↔ (p.cons f).is_reduced ∧ (f.to_path.comp q).is_reduced :=
+begin
+  induction q with _ _ q g hi,
+  { simp only [path.comp_nil, iff_self_and],
+    rintro, apply path.to_path_is_reduced, },
+  { induction q with _ _ q h hi',
+    { simp only [quiver.hom.to_path, path.cons_cons_is_reduced, path.comp_cons, path.comp_nil,
+                 not_exists, and.congr_right_iff, iff_and_self],
+      rintros, apply path.to_path_is_reduced, },
+    { simp only [quiver.hom.to_path, path.cons_cons_is_reduced, path.comp_cons] at hi ⊢,
+      simp only [hi],
+      exact ⟨λ ⟨hl,hr⟩, ⟨hl.left,hl.right,hr⟩,λ ⟨hl,hr,hrr⟩, ⟨⟨hl,hr⟩,hrr⟩⟩, }, },
+end
+
+lemma path.reverse_is_reduced {X Y : V} {p : path X Y} (hp : p.is_reduced) : p.reverse.is_reduced :=
+begin
+  induction p with _ _ p f hi,
+  { exact path.nil_is_reduced, },
+  { induction p with _ _ p g hi',
+    { apply path.to_path_is_reduced, },
+    { simp at *, }, },
 end
 
 lemma path.comp_reverse_is_reduced {X Y Z W : V}
