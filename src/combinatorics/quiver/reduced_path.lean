@@ -129,20 +129,25 @@ begin
       exact ⟨λ ⟨hl,hr⟩, ⟨hl.left,hl.right,hr⟩,λ ⟨hl,hr,hrr⟩, ⟨⟨hl,hr⟩,hrr⟩⟩, }, },
 end
 
-lemma path.reverse_is_reduced {X Y : V} {p : path X Y} (hp : p.is_reduced) : p.reverse.is_reduced :=
+lemma path.reverse_is_reduced_of_is_reduced {X Y : V} {p : path X Y} (hp : p.is_reduced) : p.reverse.is_reduced :=
 begin
   induction p with _ _ p f hi,
   { exact path.nil_is_reduced, },
   { induction p with _ _ p g hi',
     { apply path.to_path_is_reduced, },
     { rw [path.reverse, quiver.hom.to_path, path.cons_comp_is_reduced],
-      split, apply path.to_path_is_reduced,
+      refine ⟨path.to_path_is_reduced _, _⟩,
       rintro q ⟨_,_,pre,α,suf,he,rfl⟩,
       replace he := congr_arg (λ (P : path p_c X), P.reverse) he,
       simp [quiver.hom.to_path] at he,
       rw he at hp,
       apply hp (suf.reverse.comp pre.reverse) ⟨_,_,suf.reverse,α,pre.reverse,_,rfl⟩,
       simp_rw [←path.comp_assoc, path.comp_cons, path.comp_nil], }, },
+end
+
+lemma path.reverse_is_reduced {X Y : V} {p : path X Y} : p.reverse.is_reduced ↔ p.is_reduced :=
+begin
+  sorry,
 end
 
 lemma path.comp_reverse_is_reduced {X Y Z W : V}
@@ -154,6 +159,19 @@ lemma path.comp_reverse_is_reduced' {X Y W : V}
   (p : path X Y) (e : Y ⟶ W) (q : path X Y) (f : Y ⟶ W)
   (hp : (p.cons e).is_reduced) (hq : (q.cons f).is_reduced) (hef : e ≠ f) :
   ((p.cons e).comp (q.cons f).reverse).is_reduced := sorry
+
+
+lemma path.comp_reverse_is_reduced'' {X Y Z W : V}
+  (p : path X Y) (e : Y ⟶ W) (q : path X Z) (f : Z ⟶ W) :
+  ((p.cons e).comp (q.cons f).reverse).is_reduced ↔
+  (p.cons e).is_reduced ∧ (q.cons f).is_reduced ∧ ¬ ∃ h : Y = Z, h.rec_on e = f :=
+begin
+  simp only [path.cons_comp_is_reduced, not_exists, and.congr_right_iff],
+  rintro,
+  have : e.to_path.comp (q.cons f).reverse = ((q.cons f).cons (reverse e)).reverse, by sorry,
+  rw [this, path.reverse_is_reduced],
+  
+end
 
 
 @[reducible]
