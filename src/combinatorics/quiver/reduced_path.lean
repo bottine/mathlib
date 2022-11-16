@@ -135,7 +135,14 @@ begin
   { exact path.nil_is_reduced, },
   { induction p with _ _ p g hi',
     { apply path.to_path_is_reduced, },
-    { simp at *, }, },
+    { rw [path.reverse, quiver.hom.to_path, path.cons_comp_is_reduced],
+      split, apply path.to_path_is_reduced,
+      rintro q ⟨_,_,pre,α,suf,he,rfl⟩,
+      replace he := congr_arg (λ (P : path p_c X), P.reverse) he,
+      simp [quiver.hom.to_path] at he,
+      rw he at hp,
+      apply hp (suf.reverse.comp pre.reverse) ⟨_,_,suf.reverse,α,pre.reverse,_,rfl⟩,
+      simp_rw [←path.comp_assoc, path.comp_cons, path.comp_nil], }, },
 end
 
 lemma path.comp_reverse_is_reduced {X Y Z W : V}
