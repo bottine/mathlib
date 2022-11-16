@@ -147,18 +147,11 @@ end
 
 lemma path.reverse_is_reduced {X Y : V} {p : path X Y} : p.reverse.is_reduced ↔ p.is_reduced :=
 begin
-  sorry,
+  split,
+  { rintro h, rw ←path.reverse_reverse p,
+    exact path.reverse_is_reduced_of_is_reduced h, },
+  { exact path.reverse_is_reduced_of_is_reduced, },
 end
-
-lemma path.comp_reverse_is_reduced {X Y Z W : V}
-  (p : path X Y) (e : Y ⟶ W) (q : path X Z) (f : Z ⟶ W)
-  (hp : (p.cons e).is_reduced) (hq : (q.cons f).is_reduced) (hYZ : Y ≠ Z) :
-  ((p.cons e).comp (q.cons f).reverse).is_reduced := sorry
-
-lemma path.comp_reverse_is_reduced' {X Y W : V}
-  (p : path X Y) (e : Y ⟶ W) (q : path X Y) (f : Y ⟶ W)
-  (hp : (p.cons e).is_reduced) (hq : (q.cons f).is_reduced) (hef : e ≠ f) :
-  ((p.cons e).comp (q.cons f).reverse).is_reduced := sorry
 
 
 lemma path.comp_reverse_is_reduced'' {X Y Z W : V}
@@ -168,11 +161,31 @@ lemma path.comp_reverse_is_reduced'' {X Y Z W : V}
 begin
   simp only [path.cons_comp_is_reduced, not_exists, and.congr_right_iff],
   rintro,
-  have : e.to_path.comp (q.cons f).reverse = ((q.cons f).cons (reverse e)).reverse, by sorry,
-  rw [this, path.reverse_is_reduced],
-  
+  have : e.to_path.comp (q.cons f).reverse = ((q.cons f).cons (reverse e)).reverse, by
+    simp only [path.reverse, reverse_reverse],
+  rw [this, path.reverse_is_reduced, path.cons_cons_is_reduced],
+  simp only [reverse_reverse, not_exists, and.congr_right_iff],
+  rintro _,
+  split; rintro h rfl h'; exact h rfl h'.symm,
 end
 
+lemma path.comp_reverse_is_reduced {X Y Z W : V}
+  (p : path X Y) (e : Y ⟶ W) (q : path X Z) (f : Z ⟶ W)
+  (hp : (p.cons e).is_reduced) (hq : (q.cons f).is_reduced) (hYZ : Y ≠ Z) :
+  ((p.cons e).comp (q.cons f).reverse).is_reduced :=
+begin
+  rw path.comp_reverse_is_reduced'', refine ⟨hp,hq,_⟩,
+  rintro ⟨h,_⟩, exact (hYZ h).elim,
+end
+
+lemma path.comp_reverse_is_reduced' {X Y W : V}
+  (p : path X Y) (e : Y ⟶ W) (q : path X Y) (f : Y ⟶ W)
+  (hp : (p.cons e).is_reduced) (hq : (q.cons f).is_reduced) (hef : e ≠ f) :
+  ((p.cons e).comp (q.cons f).reverse).is_reduced :=
+begin
+  rw path.comp_reverse_is_reduced'', refine ⟨hp,hq,_⟩,
+  rintro ⟨_,h⟩, exact (hef h).elim,
+end
 
 @[reducible]
 def path.is_cyclically_reduced {X : V} (p : path X X) :=
