@@ -8,7 +8,7 @@ import group_theory.coset
 import group_theory.quotient_group
 import group_theory.group_action.quotient
 import combinatorics.quiver.symmetric
---import combinatorics.quiver.reduced_path
+import combinatorics.quiver.reduced_path
 
 open function
 
@@ -48,6 +48,16 @@ end
 @[reducible]
 def prefunctor.is_covering :=
   (∀ u, function.bijective (φ.star u)) ∧ (∀ u, function.bijective (φ.costar u))
+
+@[simp]
+lemma prefunctor.map_inj_of_is_covering (hφ : φ.is_covering) {u v : U} :
+  function.injective (λ (f : u ⟶ v), φ.map f) :=
+begin
+  rintro f g he,
+  have : φ.star u (⟨v,f⟩ : star u) = φ.star u (⟨v,g⟩ : star u), by
+  { simp only [prefunctor.star, eq_self_iff_true, heq_iff_eq, true_and], exact he, },
+  simpa only [eq_self_iff_true, heq_iff_eq, true_and] using (hφ.left u).left this,
+end
 
 lemma comp (hφ : φ.is_covering) (hψ : ψ.is_covering) :
   (φ ≫q ψ).is_covering :=
@@ -117,19 +127,6 @@ begin
   simp,
 end
 
-lemma prefunctor.symmetrify_is_reduced_iff : Π {u v : symmetrify U} (p : path u v),
-  p.is_reduced ↔ (φ.symmetrify.map_path p).is_reduced
-| _ _ (path.nil) := by simp [path.nil_is_reduced]
-| _ _ (path.cons (path.nil) f) := by
-  { change f.to_path.is_reduced ↔ (φ.symmetrify.map f).to_path.is_reduced,
-    simp only [path.to_path_is_reduced], }
-| _ _ (path.cons (path.cons p f) g) := by
-  { simp only [path.cons_cons_is_reduced, prefunctor.symmetrify_obj, symmetrify_reverse,
-               not_exists, prefunctor.map_path_cons, prefunctor.symmetrify_map],
-    rw prefunctor.symmetrify_is_reduced_iff (p.cons f),
-    congr', apply propext, split,
-    { sorry, },
-    { sorry, }, }
 
 lemma is_covering.symmetrify (hφ : φ.is_covering) : φ.symmetrify.is_covering :=
 begin
@@ -144,6 +141,34 @@ begin
     exact ⟨function.injective.sum_map (hφ.right u).left (hφ.left u).left,
          function.surjective.sum_map (hφ.right u).right (hφ.left u).right⟩, },
 end
+
+lemma prefunctor.symmetrify_is_reduced_iff (hφ : φ.is_covering) :
+  Π {u v : symmetrify U} (p : path u v),
+  p.is_reduced ↔ (φ.symmetrify.map_path p).is_reduced
+| _ _ (path.nil) := by simp only [path.nil_is_reduced, prefunctor.map_path_nil]
+| _ _ (path.cons (path.nil) f) := by
+  { change f.to_path.is_reduced ↔ (φ.symmetrify.map f).to_path.is_reduced,
+    simp only [path.to_path_is_reduced], }
+| u v (@path.cons _ _ _ z _ (@path.cons _ _ _ w _ p f) g) := by
+  { simp only [path.cons_cons_is_reduced, prefunctor.symmetrify_obj, symmetrify_reverse,
+               not_exists, prefunctor.map_path_cons],
+    rw prefunctor.symmetrify_is_reduced_iff (p.cons f),
+    congr', apply propext, split,
+    { rintro h he,
+      show ¬ hom.cast he rfl (φ.symmetrify.map f) = reverse (φ.symmetrify.map g),
+      change ∀ x : w = v, ¬ hom.cast x rfl f = reverse g at h,
+      rintro he',
+      -- lost here
+      sorry,
+       },
+    { rintro h rfl, let := h rfl, rintro e,
+      simp only at e, subst e,
+      cases g;
+      simp only [sum.swap, sum.map, sum.elim_inl, sum.elim_inr, eq_self_iff_true, not_true,
+                 prefunctor.symmetrify_map] at this;
+      assumption, },
+     }
+
 
 @[reducible] def path_star (u : U) := Σ v : U, path u v
 
@@ -257,5 +282,6 @@ structure cover_endo :=
 structure cover_auto extends (iso U U), (cover_endo φ)
 
 end cover_automorphisms
+
 
 end quiver
