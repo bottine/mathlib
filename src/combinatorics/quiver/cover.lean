@@ -156,6 +156,8 @@ lemma prefunctor.symmetrify_is_reduced_iff (hφ : φ.is_covering) :
     congr', apply propext, split,
     { rintro h he,
       show ¬ hom.cast he rfl (φ.symmetrify.map f) = reverse (φ.symmetrify.map g),
+      have : reverse (φ.symmetrify.map g) = φ.symmetrify.map (reverse g), by { cases g; simp, },
+      rw this, clear this,
       change ∀ x : w = v, ¬ hom.cast x rfl f = reverse g at h,
       rintro he',
       -- lost here
