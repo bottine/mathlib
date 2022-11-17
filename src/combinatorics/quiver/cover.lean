@@ -156,6 +156,7 @@ lemma prefunctor.symmetrify_is_reduced_iff (hφ : φ.is_covering) :
 | u v (@path.cons _ _ _ z _ (@path.cons _ _ _ w _ p f) g) := by
   { simp only [path.cons_cons_is_reduced, prefunctor.symmetrify_obj, symmetrify_reverse,
                not_exists, prefunctor.map_path_cons],
+    have : (p.cons f).length < ((p.cons f).cons g).length, by { simp, },
     rw prefunctor.symmetrify_is_reduced_iff (p.cons f),
     congr', apply propext, split,
     { rintro h he,
@@ -173,7 +174,7 @@ lemma prefunctor.symmetrify_is_reduced_iff (hφ : φ.is_covering) :
                  prefunctor.symmetrify_map] at this;
       assumption, },
      }
-
+using_well_founded {rel_tac := λ _ _, `[exact ⟨_, measure_wf $ λ (P : Σ' (u v : symmetrify U), path u v), P.2.2.length⟩]}
 
 @[reducible] def path_star (u : U) := Σ v : U, path u v
 
