@@ -142,6 +142,10 @@ begin
          function.surjective.sum_map (hφ.right u).right (hφ.left u).right⟩, },
 end
 
+lemma lol (hφ : φ.is_covering) {u v w : U} (f : v ⟶ u) (g : w ⟶ u)
+  (h : φ.obj v = φ.obj w) (h' : hom.cast h rfl (φ.map f) = (φ.map g)) :
+  ∃ (h'' : v = w), hom.cast h'' rfl f = g := sorry
+
 lemma prefunctor.symmetrify_is_reduced_iff (hφ : φ.is_covering) :
   Π {u v : symmetrify U} (p : path u v),
   p.is_reduced ↔ (φ.symmetrify.map_path p).is_reduced
@@ -160,9 +164,8 @@ lemma prefunctor.symmetrify_is_reduced_iff (hφ : φ.is_covering) :
       rw this, clear this,
       change ∀ x : w = v, ¬ hom.cast x rfl f = reverse g at h,
       rintro he',
-      -- lost here
-      sorry,
-       },
+      obtain ⟨vw,fg⟩ := lol φ.symmetrify (is_covering.symmetrify φ hφ) f (reverse g) he he',
+      exact h vw fg, },
     { rintro h rfl, let := h rfl, rintro e,
       simp only at e, subst e,
       cases g;
