@@ -32,6 +32,15 @@ begin
     simp only [eq_self_iff_true, heq_iff_eq, and_self], }
 end
 
+@[simp] lemma costar_eq_iff {u : U} (F G : costar u) :
+  F = G ↔ ∃ h : F.1 = G.1, (F.2).cast h rfl = G.2 :=
+begin
+  split,
+  { rintro ⟨⟩, exact ⟨rfl,rfl⟩, },
+  { induction F, induction G, rintro ⟨h,H⟩, cases h, cases H,
+    simp only [eq_self_iff_true, heq_iff_eq, and_self], }
+end
+
 @[simps] def prefunctor.star (u : U) : star u → star (φ.obj u) := λ F, ⟨(φ.obj F.1), φ.map F.2⟩
 @[simps] def prefunctor.costar (u : U) : costar u → costar (φ.obj u) := λ F, ⟨(φ.obj F.1), φ.map F.2⟩
 
@@ -142,10 +151,6 @@ begin
          function.surjective.sum_map (hφ.right u).right (hφ.left u).right⟩, },
 end
 
-lemma lol (hφ : φ.is_covering) {u v w : U} (f : v ⟶ u) (g : w ⟶ u)
-  (h : φ.obj v = φ.obj w) (h' : hom.cast h rfl (φ.map f) = (φ.map g)) :
-  ∃ (h'' : v = w), hom.cast h'' rfl f = g := sorry
-
 lemma prefunctor.symmetrify_is_reduced_iff (hφ : φ.is_covering) :
   Π {u v : symmetrify U} (p : path u v),
   p.is_reduced ↔ (φ.symmetrify.map_path p).is_reduced
@@ -165,8 +170,12 @@ lemma prefunctor.symmetrify_is_reduced_iff (hφ : φ.is_covering) :
       rw this, clear this,
       change ∀ x : w = v, ¬ hom.cast x rfl f = reverse g at h,
       rintro he',
-      obtain ⟨vw,fg⟩ := lol φ.symmetrify (is_covering.symmetrify φ hφ) f (reverse g) he he',
-      exact h vw fg, },
+      let F : costar _ := ⟨_,f⟩,
+      let G : costar _ := ⟨_,reverse g⟩,
+      suffices : F = G, by { simp at this, exact h this.some this.some_spec, },
+      apply ((is_covering.symmetrify φ hφ).right z).left,
+      rw costar_eq_iff,
+      exact ⟨he,he'⟩, },
     { rintro h rfl, let := h rfl, rintro e,
       simp only at e, subst e,
       cases g;
