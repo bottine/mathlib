@@ -166,7 +166,10 @@ lemma prefunctor.symmetrify_is_reduced_iff (hφ : φ.is_covering) :
     apply and_congr, refl,
     let F : costar _ := ⟨_,f⟩,
     let G : costar _ := ⟨_,reverse g⟩,
-    have : reverse (φ.symmetrify.map g) = φ.symmetrify.map (reverse g), by { cases g; simp, },
+    have : reverse (φ.symmetrify.map g) = φ.symmetrify.map (reverse g), by
+    { cases g;
+      simp only [prefunctor.symmetrify_map, sum.map_inr, symmetrify_reverse, sum.swap_inr,
+                 sum.map_inl, sum.swap_inl], },
     rw this, clear this,
     have : ∀ (F G : costar z), φ.symmetrify.costar _ F = φ.symmetrify.costar _ G ↔ F = G, by
     { rintro F G,
