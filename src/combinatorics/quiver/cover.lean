@@ -159,32 +159,24 @@ lemma prefunctor.symmetrify_is_reduced_iff (hφ : φ.is_covering) :
   { change f.to_path.is_reduced ↔ (φ.symmetrify.map f).to_path.is_reduced,
     simp only [path.to_path_is_reduced], }
 | u v (@path.cons _ _ _ z _ (@path.cons _ _ _ w _ p f) g) := by
-  { simp only [path.cons_cons_is_reduced, prefunctor.symmetrify_obj, symmetrify_reverse,
-               not_exists, prefunctor.map_path_cons],
-    have : (p.cons f).length < ((p.cons f).cons g).length, by { simp, },
-    rw prefunctor.symmetrify_is_reduced_iff (p.cons f),
-    congr', apply propext, split,
-    { rintro h he,
-      show ¬ hom.cast he rfl (φ.symmetrify.map f) = reverse (φ.symmetrify.map g),
-      have : reverse (φ.symmetrify.map g) = φ.symmetrify.map (reverse g), by { cases g; simp, },
-      rw this, clear this,
-      change ∀ x : w = v, ¬ hom.cast x rfl f = reverse g at h,
-      rintro he',
-      let F : costar _ := ⟨_,f⟩,
-      let G : costar _ := ⟨_,reverse g⟩,
-      suffices : F = G, by { simp at this, exact h this.some this.some_spec, },
-      apply ((is_covering.symmetrify φ hφ).right z).left,
-      rw costar_eq_iff,
-      exact ⟨he,he'⟩, },
-    { rintro h rfl, let := h rfl, rintro e,
-      simp only at e, subst e,
-      cases g;
-      simp only [sum.swap, sum.map, sum.elim_inl, sum.elim_inr, eq_self_iff_true, not_true,
-                 prefunctor.symmetrify_map] at this;
-      assumption, },
-     }
+  { have : (p.cons f).length < ((p.cons f).cons g).length, by { simp, },
+    rw [prefunctor.map_path_cons, path.cons_cons_is_reduced,
+        prefunctor.symmetrify_is_reduced_iff (p.cons f),
+        prefunctor.map_path_cons, path.cons_cons_is_reduced],
+    apply and_congr, refl,
+    let F : costar _ := ⟨_,f⟩,
+    let G : costar _ := ⟨_,reverse g⟩,
+    have : reverse (φ.symmetrify.map g) = φ.symmetrify.map (reverse g), by { cases g; simp, },
+    rw this, clear this,
+    have : ∀ (F G : costar z), φ.symmetrify.costar _ F = φ.symmetrify.costar _ G ↔ F = G, by
+    { rintro F G,
+      exact ⟨λ e , ((is_covering.symmetrify φ hφ).right _).left e, λ e, by { cases e, refl, }⟩, },
+    let := (@costar_eq_iff _ _ _ (φ.symmetrify.costar _ F) (φ.symmetrify.costar _ G)).symm.trans
+              ((this F G).trans (@costar_eq_iff _ _ _ F G)),
+    exact (iff.not this).symm, }
 using_well_founded {rel_tac := λ _ _, `[exact ⟨_, measure_wf $ λ (P : Σ' (u v : symmetrify U), path u v), P.2.2.length⟩]}
 
+/-
 @[reducible] def path_star (u : U) := Σ v : U, path u v
 
 @[simp] lemma path_star_eq_iff {u : U} (P Q : path_star u) :
@@ -297,6 +289,6 @@ structure cover_endo :=
 structure cover_auto extends (iso U U), (cover_endo φ)
 
 end cover_automorphisms
-
+-/
 
 end quiver
