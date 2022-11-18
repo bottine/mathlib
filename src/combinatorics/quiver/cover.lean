@@ -136,7 +136,6 @@ begin
   simp,
 end
 
-
 lemma is_covering.symmetrify (hφ : φ.is_covering) : φ.symmetrify.is_covering :=
 begin
   split;
@@ -179,7 +178,6 @@ lemma prefunctor.symmetrify_is_reduced_iff (hφ : φ.is_covering) :
     exact (iff.not this).symm, }
 using_well_founded {rel_tac := λ _ _, `[exact ⟨_, measure_wf $ λ (P : Σ' (u v : symmetrify U), path u v), P.2.2.length⟩]}
 
-/-
 @[reducible] def path_star (u : U) := Σ v : U, path u v
 
 @[simp] lemma path_star_eq_iff {u : U} (P Q : path_star u) :
@@ -292,6 +290,6 @@ structure cover_endo :=
 structure cover_auto extends (iso U U), (cover_endo φ)
 
 end cover_automorphisms
--/
+
 
 end quiver
