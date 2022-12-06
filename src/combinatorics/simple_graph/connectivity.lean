@@ -1465,6 +1465,11 @@ protected def connected_component.lift {β : Sort*} (f : V → β)
   (h : ∀ (v w : V) (p : G.walk v w), p.is_path → f v = f w) : G.connected_component → β :=
 quot.lift f (λ v w (h' : G.reachable v w), h'.elim_path (λ hp, h v w hp hp.2))
 
+protected def connected_component.lift_adj {β : Sort*} (f : V → β)
+  (h : ∀ (v w : V), G.adj v w → f v = f w) : G.connected_component → β :=
+quot.lift f (λ v w (h' : G.reachable v w), h'.elim $ λ vw, by
+  { induction vw, refl, rw ←vw_ih ⟨vw_p⟩, exact h _ _ vw_h, } )
+
 @[simp] protected lemma connected_component.lift_mk {β : Sort*} {f : V → β}
   {h : ∀ (v w : V) (p : G.walk v w), p.is_path → f v = f w} {v : V} :
   connected_component.lift f h (G.connected_component_mk v) = f v := rfl
@@ -1480,6 +1485,23 @@ protected lemma connected_component.«forall» {p : G.connected_component → Pr
 lemma preconnected.subsingleton_connected_component (h : G.preconnected) :
   subsingleton G.connected_component :=
 ⟨connected_component.ind₂ (λ v w, connected_component.sound (h v w))⟩
+
+def connected_component.map {V : Type*} {G : simple_graph V} {V' : Type*} {G' : simple_graph V'}
+  (φ : G →g G') (C : G.connected_component) : G'.connected_component :=
+begin
+  apply connected_component.lift_adj (λ (v : V), connected_component_mk G' (φ v)) _ C,
+  rintro v v' a,
+  simp only [connected_component.eq],
+  apply adj.reachable (φ.map_adj a),
+end
+
+@[simp] def connected_component.map_id (C : connected_component G) : C.map (hom.id) = C := by
+{ refine C.ind _, intro _, refl, }
+
+@[simp] def connected_component.map_comp
+  {V' : Type*} {G' : simple_graph V'} {V'' : Type*} {G'' : simple_graph V''}
+  (C : G.connected_component) (φ : G →g G') (ψ : G' →g G'') :  (C.map φ).map ψ = C.map (ψ.comp φ) :=
+by { refine C.ind _, intro _, refl, }
 
 end connected_component
 

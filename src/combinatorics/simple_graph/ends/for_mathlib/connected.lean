@@ -362,12 +362,11 @@ variables  {V} (G)
 @[ext] lemma eq_of_eq_supp (C D : G.connected_component) : C = D ↔ C.supp = D.supp :=
 begin
   split,
-  { intro h, subst h, },
+  { rintro ⟨⟩, refl, },
   { refine connected_component.ind₂ _ C D,
     intros v w h,
     simp_rw [set.ext_iff] at h,
-    apply (h v).mp, dsimp [connected_component.supp],
-    refl,}
+    exact (h v).mp rfl, }
 end
 
 instance : set_like G.connected_component V := {

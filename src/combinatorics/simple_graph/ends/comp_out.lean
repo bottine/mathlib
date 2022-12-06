@@ -100,7 +100,7 @@ end
 
 @[simp] lemma comp_out.mem_supp_iff {G : simple_graph V} {K : set V}
   {v : V} {C : comp_out G K} :
-(v ∈ C) ↔ connected_component_mk (out G K) v = C := by {refl,}
+(v ∈ C) ↔ connected_component_mk (G.out K) v = C := by refl
 
 
 namespace comp_out
