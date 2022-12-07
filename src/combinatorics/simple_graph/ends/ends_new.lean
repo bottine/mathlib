@@ -70,19 +70,21 @@ instance : set_like (G.comp_out K) V :=
 { coe := comp_out.supp,
   coe_injective' := by {intros C D, apply (comp_out.eq_of_eq_supp _ _).mpr, } }
 
-abbreviation comp_out_of_vertex (G : simple_graph V) {v : V} (vK : v ∈ K ᶜ) : G.comp_out K :=
-  connected_component_mk (G.out K) ⟨v,vK⟩
-
-lemma comp_out_of_vertex_mem (G : simple_graph V) {v : V} (vK : v ∈ K ᶜ) :
-  v ∈ (G.comp_out_of_vertex vK : G.comp_out K) := sorry
-
-lemma comp_out_of_vertex_eq_of_adj (G : simple_graph V) {v w : V} (vK : v ∈ K ᶜ) (wK : w ∈ K ᶜ) :
-  G.adj v w → G.comp_out_of_vertex vK = G.comp_out_of_vertex wK := sorry
-
 namespace comp_out
 
 @[simp] lemma mem_supp_iff {v : V} {C : comp_out G K} :
   v ∈ C ↔ ∃ (vK : v ∈ K ᶜ), connected_component_mk (G.out K) ⟨v,vK⟩ = C := by refl
+
+abbreviation of_vertex (G : simple_graph V) {v : V} (vK : v ∈ K ᶜ) : G.comp_out K :=
+  connected_component_mk (G.out K) ⟨v,vK⟩
+
+lemma of_vertex_mem (G : simple_graph V) {v : V} (vK : v ∈ K ᶜ) :
+  v ∈ (comp_out.of_vertex G vK : G.comp_out K) :=
+by { simp only [set.mem_compl_iff, mem_supp_iff], exact ⟨vK,rfl⟩, }
+
+lemma of_vertex_eq_of_adj (G : simple_graph V) {v w : V} (vK : v ∈ K ᶜ) (wK : w ∈ K ᶜ) :
+  G.adj v w → comp_out.of_vertex G vK = comp_out.of_vertex G wK :=
+by { simp only [connected_component.eq], rintro a, apply adj.reachable, simpa using a, }
 
 @[reducible,protected]
 def subgraph (C : comp_out G K) : G.subgraph := (⊤ : G.subgraph).induce (C : set V)
@@ -120,14 +122,10 @@ lemma not_mem_of_mem {C : G.comp_out K} {c : V} (cC : c ∈ C) : c ∉ K :=
 @[protected]
 lemma disjoint (C D : G.comp_out K) (ne : C ≠ D) : disjoint (C : set V) (D : set V) :=
 begin
-  revert C D,
-  refine connected_component.ind₂ _,
-  rintro ⟨v,vK⟩ ⟨w,wK⟩ ne,
   rw set.disjoint_iff,
-  rintro u ⟨uv, uw⟩,
-  apply ne, clear ne,
-  simp only [connected_component.eq, set.mem_compl_iff, set_like.mem_coe, mem_supp_iff] at uv uw ⊢,
-  exact uv.some_spec.symm.trans uw.some_spec,
+  rintro u ⟨uC, uD⟩,
+  simp only [set.mem_compl_iff, set_like.mem_coe, mem_supp_iff] at uC uD,
+  exact ne (uC.some_spec.symm.trans uD.some_spec),
 end
 
 lemma eq_of_not_disjoint (C D : G.comp_out K) (nd : ¬ disjoint (C : set V) (D : set V)) : C = D :=
@@ -149,11 +147,11 @@ begin
   exact dnC dnK (cC.some_spec.symm.trans cd').symm,
 end
 
-lemma adj [Gc : G.preconnected] [hK : K.nonempty] :
+lemma adj [Gc : G.preconnected] (hK : K.nonempty) :
   ∀ (C : G.comp_out K), ∃ (ck : V × V), ck.1 ∈ C ∧ ck.2 ∈ K ∧ G.adj ck.1 ck.2 :=
 begin
   refine connected_component.ind (λ v, _),
-  let C : G.comp_out K := G.comp_out_of_vertex v.prop,
+  let C : G.comp_out K := comp_out.of_vertex G v.prop,
   let dis := set.disjoint_iff.mp C.outside,
   by_contra' h,
   suffices : set.univ = (C : set V),
@@ -164,9 +162,9 @@ begin
   by_contradiction unC,
   obtain ⟨p⟩ := Gc v u,
   obtain ⟨x,y,xy,xC,ynC⟩ :=
-    p.disagreeing_adj_pair (C : set V) (G.comp_out_of_vertex_mem v.prop) unC,
+    p.disagreeing_adj_pair (C : set V) (comp_out.of_vertex_mem G v.prop) unC,
   refine @nonadj V G K C _,
-  have : (G.out K).connected_component_mk v = G.comp_out_of_vertex v.prop, by simp,
+  have : (G.out K).connected_component_mk v = comp_out.of_vertex G v.prop, by simp,
   rw this at h,
   exact ⟨x,y,xC,ynC,λ (yK : y ∈ K), h ⟨x,y⟩ xC yK xy, xy⟩,
 end
@@ -222,20 +220,19 @@ instance finset_preorder_reverse : preorder (finset V) :=
   le_trans := by obviously,
   lt_iff_le_not_le := by { dsimp only [superset,ssuperset], obviously, } }
 
-/-- The category of finite subsets of `V` with the morphisms being inclusions -/
---instance finset_category : category (finset V) := infer_instance
-
 instance finset_directed : is_directed (finset V) (≥) := {
   directed := λ A B, ⟨A ∪ B, ⟨finset.subset_union_left A B, finset.subset_union_right A B⟩⟩ }
 
-/-- The functor assigning a finite set in `V` to the set of connected components in its complement-/
+/--
+The functor assigning a finite set in `V` to the set of connected components in its complement.
+-/
 def comp_out_functor : finset V ⥤ Type u :=
 { obj := λ K, G.comp_out K,
   map := λ _ _ f C, C.hom (le_of_hom f),
   map_id' := λ K, funext $ λ C, C.hom_refl,
   map_comp' := λ K L M h h', funext $ λ C, C.hom_trans (le_of_hom h) (le_of_hom h') }
 
-/-- The end of a graph, defined as the sections of the functor. -/
+/-- The end of a graph, defined as the sections of the functor `comp_out_functor` . -/
 @[protected]
 def «end» := (comp_out_functor G).sections
 
