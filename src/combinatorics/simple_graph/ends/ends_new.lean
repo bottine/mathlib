@@ -70,6 +70,12 @@ instance : set_like (G.comp_out K) V :=
 { coe := comp_out.supp,
   coe_injective' := by {intros C D, apply (comp_out.eq_of_eq_supp _ _).mpr, } }
 
+abbreviation comp_out_of_vertex (G : simple_graph V) {v : V} (vK : v ∈ K ᶜ) : G.comp_out K :=
+  connected_component_mk (G.out K) ⟨v,vK⟩
+
+lemma comp_out_of_vertex_mem (G : simple_graph V) {v : V} (vK : v ∈ K ᶜ) :
+  v ∈ (G.comp_out_of_vertex vK : G.comp_out K) := sorry
+
 namespace comp_out
 
 @[simp] lemma mem_supp_iff {v : V} {C : comp_out G K} :
@@ -92,15 +98,6 @@ lemma eq_of_eq_set {C D : G.comp_out K} : (C : set V) = (D : set V) ↔ C = D :=
   simp only [set.mem_compl_iff, set_like.mem_coe, mem_supp_iff, connected_component.eq,
              subtype.coe_eta, exists_prop],
   exact ⟨v.prop, reachable.refl _⟩, }
-
-abbreviation of_vertex (G : simple_graph V) {K : set V} {v : V} (vK : v ∈ K ᶜ) : G.comp_out K :=
-  connected_component_mk (out G K) ⟨v,vK⟩
-
-lemma of_vertex_mem (G : simple_graph V) {K : set V} {v : V} (vK : v ∈ K ᶜ) : v ∈ of_vertex G vK :=
-begin
-  simp only [set.mem_compl_iff, mem_supp_iff, connected_component.eq],
-  exact ⟨vK, reachable.refl _⟩,
-end
 
 @[protected]
 lemma outside (C : G.comp_out K) : disjoint K C :=
@@ -145,37 +142,29 @@ begin
   simp only [set.mem_compl_iff, mem_supp_iff, connected_component.eq, not_exists] at cC dnC,
   exact dnC dnK (cC.some_spec.symm.trans cd').symm,
 end
-/-
--- Every connected component disjoint from `K` has a vertex adjacent to it
-lemma adj [Gc : G.preconnected] [hK : K.nonempty] (C : G.comp_out K) (dis : disjoint K C) :
-  ∃ (ck : V × V), ck.1 ∈ C ∧ ck.2 ∈ K ∧ G.adj ck.1 ck.2 :=
+
+lemma adj [Gc : G.preconnected] [hK : K.nonempty] :
+  ∀ (C : G.comp_out K), ∃ (ck : V × V), ck.1 ∈ C ∧ ck.2 ∈ K ∧ G.adj ck.1 ck.2 :=
 begin
-  revert C,
-  refine connected_component.ind _,
-  rintro v dis,
-  let C : G.comp_out K := (G.out K).connected_component_mk v,
-  by_contradiction h,
-  push_neg at h,
-  suffices : set.univ = (C : set V), {
-    let k := hK.some,
-    have kC := (set.mem_univ k), rw this at kC,
-    rw set.disjoint_iff at dis,
-    exact dis ⟨hK.some_spec,kC⟩,
-  },
+  refine connected_component.ind (λ v, _),
+  let C : G.comp_out K := G.comp_out_of_vertex v.prop,
+  let dis := set.disjoint_iff.mp C.outside,
+  by_contra' h,
+  suffices : set.univ = (C : set V),
+  { exact dis ⟨hK.some_spec, this ▸ (set.mem_univ hK.some)⟩, },
   symmetry,
   rw set.eq_univ_iff_forall,
   rintro u,
   by_contradiction unC,
   obtain ⟨p⟩ := Gc v u,
-  obtain ⟨x,y,xy,xC,ynC⟩ := walk.pred_adj_non_pred v u p C (by {simp}) unC,
+  obtain ⟨x,y,xy,xC,ynC⟩ :=
+    p.disagreeing_adj_pair (C : set V) (G.comp_out_of_vertex_mem v.prop) unC,
   refine @nonadj V G K C _,
-  rw set.disjoint_iff at dis,
-  use [x,y,xC,ynC],
-  use (λ xK, dis ⟨xK,xC⟩),
-  use (λ (yK : y ∈ K), h ⟨x,y⟩ xC yK xy),
-  exact xy,
+  have : (G.out K).connected_component_mk v = G.comp_out_of_vertex v.prop, by simp,
+  rw this at h,
+  exact ⟨x,y,xC,ynC,λ (yK : y ∈ K), h ⟨x,y⟩ xC yK xy, xy⟩,
 end
-
+/-
 lemma connected (C : G.comp_out K) : (G.induce (C : set V)).connected :=
 begin
   apply connected.mono,
