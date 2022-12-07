@@ -76,6 +76,9 @@ abbreviation comp_out_of_vertex (G : simple_graph V) {v : V} (vK : v ∈ K ᶜ) 
 lemma comp_out_of_vertex_mem (G : simple_graph V) {v : V} (vK : v ∈ K ᶜ) :
   v ∈ (G.comp_out_of_vertex vK : G.comp_out K) := sorry
 
+lemma comp_out_of_vertex_eq_of_adj (G : simple_graph V) {v w : V} (vK : v ∈ K ᶜ) (wK : w ∈ K ᶜ) :
+  G.adj v w → G.comp_out_of_vertex vK = G.comp_out_of_vertex wK := sorry
+
 namespace comp_out
 
 @[simp] lemma mem_supp_iff {v : V} {C : comp_out G K} :
@@ -168,46 +171,31 @@ begin
   exact ⟨x,y,xC,ynC,λ (yK : y ∈ K), h ⟨x,y⟩ xC yK xy, xy⟩,
 end
 
-lemma connected (C : G.comp_out K) : C.subgraph.connected := sorry
-
--- The unique connected component containing a connected set disjoint from `K`
-def of_connected_disjoint (S : set V)
-  (conn : ((⊤ : G.subgraph).induce S).connected) (dis : disjoint K S) : G.comp_out K :=
-begin
-  cases conn with pre nem,
-  obtain ⟨v,vS⟩ := nem.some,
-  rw set.disjoint_iff at dis,
-  exact G.comp_out_of_vertex (λ (h : v ∈ K), dis ⟨h,vS⟩),
-end
-
-lemma of_connected_disjoint_sub (S : set V)
-  (conn : ((⊤ : G.subgraph).induce S).connected) (dis : disjoint K S) :
-  S ⊆ (of_connected_disjoint S conn dis : set V) :=
-begin
-  have : ∀ s t : S, (G.induce S).adj s t → (G.out K).adj s t, by
-  { rintro ⟨s,sS⟩ ⟨t,tS⟩ a,
-    simp only [subtype.coe_mk, comap_adj, embedding.coe_subtype,out] at a ⊢,
-    exact ⟨(λ sK, (set.disjoint_iff).mp dis ⟨sK,sS⟩),(λ tK, (set.disjoint_iff).mp dis ⟨tK,tS⟩),a⟩,},
-  have : ∀ s t : S, (G.induce S).reachable s t → (G.out K).reachable s t, by {
-    rintro ⟨s,hs⟩ ⟨t,ht⟩ ⟨r⟩,
-    constructor,
-    induction r,
-    { exact nil, },
-    { apply walk.cons (this r_u r_v r_h) r_ih,},},
-  rw connected_iff at conn,
-  rintro s sS,
-  dsimp only [of_connected_disjoint,of_vertex],
-  simp only [set_like.mem_coe, mem_supp_iff, connected_component.eq],
-  exact this ⟨s,sS⟩ conn.right.some (conn.left ⟨s,sS⟩ conn.right.some),
-end
-
-/-
 abbreviation hom (C : G.comp_out L) (h : K ⊆ L) : G.comp_out K := C.map (G.out_hom h)
+
+lemma sub_hom (C : G.comp_out L) (h : K ⊆ L) : (C : set V) ⊆ (C.hom h : set V) :=
+begin
+  rintro c cC,
+  simp only [set.mem_compl_iff, set_like.mem_coe, mem_supp_iff] at cC ⊢,
+  obtain ⟨cL,rfl⟩ := cC,
+  exact ⟨λ h', cL (h h'), rfl⟩,
+end
 
 lemma hom_eq_iff_le (C : G.comp_out L) (h : K ⊆ L) (D : G.comp_out K) :
   C.hom h = D ↔ (C : set V) ⊆ (D : set V) :=
 begin
-  sorry
+  split,
+  { rintro rfl, exact C.sub_hom h, },
+  { revert C, refine connected_component.ind _,
+    rintro ⟨v,vL⟩ vD,
+    -- Here I'm doing needless conversions with `mem_supp_iff` that can probably be golfed away
+    have h₁ : v ∈ ↑D, by
+    { refine set.mem_of_mem_of_subset _ vD,
+      simp only [set.mem_compl_iff, set_like.mem_coe, mem_supp_iff, connected_component.eq],
+      refine ⟨vL,_⟩,
+      refl, },
+    simp only [set.mem_compl_iff, mem_supp_iff, set_like.mem_coe] at h₁,
+    exact h₁.some_spec, },
 end
 
 lemma hom_refl (C : G.comp_out L) : C.hom (subset_refl L) = C :=
@@ -252,5 +240,5 @@ def comp_out_functor : finset V ⥤ Type u :=
 def «end» := (comp_out_functor G).sections
 
 end ends
--/
+
 end simple_graph
