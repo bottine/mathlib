@@ -38,7 +38,7 @@ lemma out_hom_trans {K L M} (h : K ⊆ L) (h' : L ⊆ M) :
   G.out_hom (h.trans h') = (G.out_hom h).comp (G.out_hom h') :=
 by { ext, simp only [rel_hom.coe_fn_mk, hom.coe_comp], }
 
-lemma out_hom.injective {K} {L} (h : K ⊆ L) : function.injective (G.out_hom h) := λ v v' e,
+lemma out_hom_injective {K} {L} (h : K ⊆ L) : function.injective (G.out_hom h) := λ v v' e,
 by { simpa only [subtype.val_eq_coe, rel_hom.coe_fn_mk, subtype.mk_eq_mk,
                  subtype.ext_iff] using e, }
 
@@ -80,6 +80,9 @@ namespace comp_out
 
 @[simp] lemma mem_supp_iff {v : V} {C : comp_out G K} :
   v ∈ C ↔ ∃ (vK : v ∈ K ᶜ), connected_component_mk (G.out K) ⟨v,vK⟩ = C := by refl
+
+@[reducible,protected]
+def subgraph (C : comp_out G K) : G.subgraph := (⊤ : G.subgraph).induce (C : set V)
 
 /-- Infinite connected components -/
 @[reducible]
@@ -164,40 +167,22 @@ begin
   rw this at h,
   exact ⟨x,y,xC,ynC,λ (yK : y ∈ K), h ⟨x,y⟩ xC yK xy, xy⟩,
 end
-/-
-lemma connected (C : G.comp_out K) : (G.induce (C : set V)).connected :=
-begin
-  apply connected.mono,
-  show ((G.out K).induce (C : set V)) ≤ (G.induce (C : set V)), by
-  { rintro x y a, dsimp [out] at a, dsimp, tauto, },
-  show ((G.out K).induce (C : set V)).connected, by apply connected_component.connected,
-end
+
+lemma connected (C : G.comp_out K) : C.subgraph.connected := sorry
 
 -- The unique connected component containing a connected set disjoint from `K`
 def of_connected_disjoint (S : set V)
-  (conn : (G.induce S).connected) (dis : disjoint K S) : G.comp_out K :=
+  (conn : ((⊤ : G.subgraph).induce S).connected) (dis : disjoint K S) : G.comp_out K :=
 begin
-  rw connected_iff at conn,
-  exact of_vertex G K conn.right.some.val,
-end
-
-lemma of_connected_disjoint_dis (S : set V)
-  (conn : (G.induce S).connected) (dis : disjoint K S) : (of_connected_disjoint S conn dis).dis :=
-begin
-  rw connected_iff at conn,
-  by_contra h,
-  rw not_dis_iff_singleton_in at h,
-  obtain ⟨k,kK,e⟩ := h,
-  unfold of_connected_disjoint at e,
-  let sC := @of_vertex_mem V G K conn.right.some.val,
-  rw ←e at sC,
-  simp only [subtype.val_eq_coe, mem_singleton_iff] at sC,
-  rw ←sC at kK,
-  apply dis, exact ⟨kK,conn.right.some.prop⟩,
+  cases conn with pre nem,
+  obtain ⟨v,vS⟩ := nem.some,
+  rw set.disjoint_iff at dis,
+  exact G.comp_out_of_vertex (λ (h : v ∈ K), dis ⟨h,vS⟩),
 end
 
 lemma of_connected_disjoint_sub (S : set V)
-  (conn : (G.induce S).connected) (dis : disjoint K S) : S ⊆ of_connected_disjoint S conn dis :=
+  (conn : ((⊤ : G.subgraph).induce S).connected) (dis : disjoint K S) :
+  S ⊆ (of_connected_disjoint S conn dis : set V) :=
 begin
   have : ∀ s t : S, (G.induce S).adj s t → (G.out K).adj s t, by
   { rintro ⟨s,sS⟩ ⟨t,tS⟩ a,
@@ -216,7 +201,7 @@ begin
   exact this ⟨s,sS⟩ conn.right.some (conn.left ⟨s,sS⟩ conn.right.some),
 end
 
-
+/-
 abbreviation hom (C : G.comp_out L) (h : K ⊆ L) : G.comp_out K := C.map (G.out_hom h)
 
 lemma hom_eq_iff_le (C : G.comp_out L) (h : K ⊆ L) (D : G.comp_out K) :
