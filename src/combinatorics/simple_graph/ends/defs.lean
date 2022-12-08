@@ -11,7 +11,6 @@ import category_theory.filtered
 import topology.category.Top.limits
 
 universes u
-set_option profiler true
 variables {V : Type u} (G : simple_graph V) (K L L' M : set V)
 
 open classical
@@ -62,7 +61,7 @@ begin
   { refine connected_component.ind₂ _ C D,
     rintros ⟨v,hv⟩ ⟨w,hw⟩ h,
     simp only [set.ext_iff, connected_component.eq, set.mem_compl_iff, set.mem_set_of_eq] at h ⊢,
-    exact ((h v).mp ⟨hv,reachable.refl _⟩).some_spec, }
+    exact ((h v).mp ⟨hv, reachable.refl _⟩).some_spec, }
 end
 
 instance : set_like (G.comp_out K) V :=
@@ -197,7 +196,6 @@ end
 
 lemma hom_refl (C : G.comp_out L) : C.hom (subset_refl L) = C :=
 by { change C.map _ = C, rw [G.out_hom_refl L, C.map_id], }
-
 
 lemma hom_trans (C : G.comp_out L) (h : K ⊆ L) (h' : M ⊆ K) :
   C.hom (h'.trans h) = (C.hom h).hom h' :=
