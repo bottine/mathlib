@@ -11,7 +11,7 @@ import category_theory.filtered
 import topology.category.Top.limits
 
 universes u
-
+set_option profiler true
 variables {V : Type u} (G : simple_graph V) (K L L' M : set V)
 
 open classical
@@ -29,7 +29,10 @@ abbreviation out := (G.induce $ K ᶜ)
 /-- Subsetship induces an obvious map on the induced graphs. -/
 abbreviation out_hom {K L} (h : K ⊆ L) : G.out L →g G.out K :=
 { to_fun := λ v, ⟨v.val, set.compl_subset_compl.mpr h v.prop⟩,
-  map_rel' := λ v w, by { cases v, cases w, simp, } }
+  map_rel' := λ v w, by
+  { cases v,
+    cases w,
+    simp only [comap_adj, function.embedding.coe_subtype, subtype.coe_mk, imp_self], } }
 
 lemma out_hom_refl (K) : G.out_hom (subset_refl K) = hom.id :=
 by { ext, simp only [subtype.val_eq_coe, rel_hom.coe_fn_mk, subtype.coe_eta, rel_hom.id_apply], }
@@ -58,12 +61,8 @@ begin
   { rintro ⟨⟩, refl, },
   { refine connected_component.ind₂ _ C D,
     rintros ⟨v,hv⟩ ⟨w,hw⟩ h,
-    simp_rw [set.ext_iff] at h,
-    replace h := (h v).mp,
-    simp only [set.mem_compl_iff, connected_component.eq, set.mem_set_of_eq,
-              forall_exists_index] at h,
-    simp only [connected_component.eq],
-    exact (h hv (reachable.refl _)).some_spec, }
+    simp only [set.ext_iff, connected_component.eq, set.mem_compl_iff, set.mem_set_of_eq] at h ⊢,
+    exact ((h v).mp ⟨hv,reachable.refl _⟩).some_spec, }
 end
 
 instance : set_like (G.comp_out K) V :=
@@ -84,7 +83,7 @@ by { simp only [set.mem_compl_iff, mem_supp_iff], exact ⟨vK,rfl⟩, }
 
 lemma of_vertex_eq_of_adj (G : simple_graph V) {v w : V} (vK : v ∈ K ᶜ) (wK : w ∈ K ᶜ) :
   G.adj v w → comp_out.of_vertex G vK = comp_out.of_vertex G wK :=
-by { simp only [connected_component.eq], rintro a, apply adj.reachable, simpa using a, }
+by { simp only [connected_component.eq], rintro a, apply adj.reachable, simpa only using a, }
 
 @[reducible,protected]
 def subgraph (C : comp_out G K) : G.subgraph := (⊤ : G.subgraph).induce (C : set V)
@@ -100,8 +99,7 @@ def fin (C : G.comp_out K) := (C : set V).finite
 lemma eq_of_eq_set {C D : G.comp_out K} : (C : set V) = (D : set V) ↔ C = D := by simp
 
 @[simp] lemma nempty (C : G.comp_out K) : (C : set V).nonempty := by
-{ refine C.ind _,
-  rintro v,
+{ refine C.ind (λ v, _),
   use v,
   simp only [set.mem_compl_iff, set_like.mem_coe, mem_supp_iff, connected_component.eq,
              subtype.coe_eta, exists_prop],
@@ -142,7 +140,7 @@ begin
   rintro v,
   rintro ⟨c,d,cC,dnC,dnK,cd⟩,
   have cd' : (G.out K).reachable (⟨c,not_mem_of_mem cC⟩) ⟨d,dnK⟩ :=
-    adj.reachable (by simpa using cd),
+    adj.reachable (by simpa only using cd),
   simp only [set.mem_compl_iff, mem_supp_iff, connected_component.eq, not_exists] at cC dnC,
   exact dnC dnK (cC.some_spec.symm.trans cd').symm,
 end
@@ -164,7 +162,8 @@ begin
   obtain ⟨x,y,xy,xC,ynC⟩ :=
     p.disagreeing_adj_pair (C : set V) (comp_out.of_vertex_mem G v.prop) unC,
   refine @nonadj V G K C _,
-  have : (G.out K).connected_component_mk v = comp_out.of_vertex G v.prop, by simp,
+  have : (G.out K).connected_component_mk v = comp_out.of_vertex G v.prop, by
+    simp only [connected_component.eq, subtype.coe_eta],
   rw this at h,
   exact ⟨x,y,xC,ynC,λ (yK : y ∈ K), h ⟨x,y⟩ xC yK xy, xy⟩,
 end
@@ -216,12 +215,14 @@ open category_theory
 instance finset_preorder_reverse : preorder (finset V) :=
 { le := (⊇),
   lt := (⊃),
-  le_refl := by obviously,
-  le_trans := by obviously,
-  lt_iff_le_not_le := by { dsimp only [superset,ssuperset], obviously, } }
+  le_refl := le_refl,
+  le_trans := λ a b c ab bc, by
+  { dsimp only [superset] at *, exact bc.trans ab, },
+  lt_iff_le_not_le := λ a b, by
+  { dsimp only [superset,ssuperset], exact ssubset_iff_subset_not_subset, } }
 
-instance finset_directed : is_directed (finset V) (≥) := {
-  directed := λ A B, ⟨A ∪ B, ⟨finset.subset_union_left A B, finset.subset_union_right A B⟩⟩ }
+instance finset_directed : is_directed (finset V) (≥) :=
+{ directed := λ A B, ⟨A ∪ B, ⟨finset.subset_union_left A B, finset.subset_union_right A B⟩⟩ }
 
 /--
 The functor assigning a finite set in `V` to the set of connected components in its complement.
