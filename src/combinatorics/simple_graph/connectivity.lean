@@ -1535,8 +1535,7 @@ def connected_component.iso {V : Type*} {G : simple_graph V} {V' : Type*} {G' : 
       simp only [connected_component.map_comp, connected_component.map,
                  connected_component.lift_adj, connected_component_mk, hom.coe_comp, comp_app],
       congr,
-      apply equiv.right_inv, },
-   }
+      apply equiv.right_inv, }, }
 
 end connected_component
 
