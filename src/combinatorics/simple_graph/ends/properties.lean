@@ -62,7 +62,7 @@ begin
       rw set.not_disjoint_iff,
       use touch C, split,
       { exact (@comp_out.adj V G K Gpc h C).some_spec.1, },
-      { rw h', exact (@comp_out.adj V G K Gc.preconnected h D).some_spec.1, }, },
+      { rw h', exact (@comp_out.adj V G K Gpc h D).some_spec.1, }, },
 
     haveI : finite (set.range touch), by
     { apply @subtype.finite _ _ _,
