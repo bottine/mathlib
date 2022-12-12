@@ -1524,9 +1524,19 @@ def connected_component.iso {V : Type*} {G : simple_graph V} {V' : Type*} {G' : 
   (φ : G ≃g G') : G.connected_component ≃ G'.connected_component :=
 { to_fun := connected_component.map φ.to_hom,
   inv_fun := connected_component.map φ.symm.to_hom,
-  left_inv := sorry,
-  right_inv := sorry }
-
+  left_inv := by
+    { apply connected_component.ind, rintro,
+      simp only [connected_component.map_comp, connected_component.map,
+                 connected_component.lift_adj, connected_component_mk, hom.coe_comp, comp_app],
+      congr,
+      apply equiv.left_inv, },
+  right_inv := by
+    { apply connected_component.ind, rintro,
+      simp only [connected_component.map_comp, connected_component.map,
+                 connected_component.lift_adj, connected_component_mk, hom.coe_comp, comp_app],
+      congr,
+      apply equiv.right_inv, },
+   }
 
 end connected_component
 

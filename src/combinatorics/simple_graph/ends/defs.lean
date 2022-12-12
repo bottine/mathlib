@@ -157,7 +157,7 @@ end
 Assuming `G` is preconnected and `K` not empty, given any connected component `C` outside of `K`,
 there exists a vertex `k ∈ K` adjacent to a vertex `v ∈ C`.
 -/
-lemma adj [Gc : G.preconnected] (hK : K.nonempty) :
+lemma adj (Gc : G.preconnected) (hK : K.nonempty) :
   ∀ (C : G.comp_out K), ∃ (ck : V × V), ck.1 ∈ C ∧ ck.2 ∈ K ∧ G.adj ck.1 ck.2 :=
 begin
   refine connected_component.ind (λ v, _),
@@ -265,7 +265,7 @@ def inf_comp_out_functor : finset V ⥤ Type u :=
     simp only [set.maps_to.coe_restrict_apply, subtype.coe_mk, types_id_apply],
     apply comp_out.hom_refl, },
   map_comp' := by { intros, ext ⟨_, _⟩,
-    simp only [set.maps_to.coe_restrict_apply, subtype.coe_mk, types_comp_apply], 
+    simp only [set.maps_to.coe_restrict_apply, subtype.coe_mk, types_comp_apply],
     apply comp_out.hom_trans, } }
 
 /--
