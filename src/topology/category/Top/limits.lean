@@ -1108,4 +1108,18 @@ begin
   { exact nonempty_sections_of_fintype_cofiltered_system _, },
 end
 
+/--
+This is an `ᵒᵖ`-less version `nonempty_sections_of_fintype_inverse_system`.
+-/
+theorem nonempty_sections_of_fintype_inverse_system'
+  {J : Type u} [preorder J] [is_directed J (≥)] (F : J ⥤ Type v)
+  [fin : Π (j : J), fintype (F.obj j)] [nempty : ∀ (j : J), nonempty (F.obj j)] :
+  F.sections.nonempty :=
+begin
+  casesI is_empty_or_nonempty J,
+  { exact ⟨is_empty_elim, is_empty_elim⟩, },
+  { exact nonempty_sections_of_fintype_cofiltered_system _, },
+end
+
+
 end fintype_konig
