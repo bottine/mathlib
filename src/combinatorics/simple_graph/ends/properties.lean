@@ -57,12 +57,11 @@ begin
       λ C, let p := @comp_out.adj V G K Gpc h C in
         ⟨p.some.1, p.some.2, p.some_spec.2.1, p.some_spec.2.2.symm⟩,
 
-    have touch_inj : touch.injective, by
-    { rintro C D h', apply comp_out.eq_of_not_disjoint,
-      rw set.not_disjoint_iff,
-      use touch C, split,
-      { exact (@comp_out.adj V G K Gpc h C).some_spec.1, },
-      { rw h', exact (@comp_out.adj V G K Gpc h D).some_spec.1, }, },
+    have touch_inj : touch.injective := λ C D h', comp_out.eq_of_not_disjoint C D (by
+    { rw set.not_disjoint_iff,
+      use touch C,
+      exact ⟨ (comp_out.adj Gpc h C).some_spec.1,
+              h'.symm ▸ (comp_out.adj Gpc h D).some_spec.1⟩, }),
 
     haveI : finite (set.range touch), by
     { apply @subtype.finite _ _ _,
