@@ -98,8 +98,8 @@ lemma nonempty_ends_of_infinite [Glf : locally_finite G] (Gpc : preconnected G) 
   (λ K, @fintype.of_finite _ $ simple_graph.comp_out_finite G Gpc K)
   (simple_graph.comp_out_nonempty_of_infinite G)
 
-lemma comp_out.inf_iff_in_all_ranges [Glf : locally_finite G] (Gpc : preconnected G)
-  {K : finset V} (C : G.comp_out K) : C.inf ↔ ∀ L (h : K ⊆ L), ∃ D : G.comp_out L, C = D.hom h :=
+lemma comp_out.inf_iff_in_all_ranges {K : finset V} (C : G.comp_out K) :
+  C.inf ↔ ∀ L (h : K ⊆ L), ∃ D : G.comp_out L, C = D.hom h :=
 begin
   classical,
   split,
@@ -120,8 +120,7 @@ begin
              set.disjoint_iff] at Ddis,
     obtain ⟨v,vD⟩ := D.nempty,
     replace e := e.symm, rw [comp_out.hom_eq_iff_le] at e,
-    fapply Ddis.right,
-    exact v, exact ⟨e vD, vD⟩, },
+    exact Ddis.right ⟨e vD, vD⟩, },
 end
 
 end simple_graph
