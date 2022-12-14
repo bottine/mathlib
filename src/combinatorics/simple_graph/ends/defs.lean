@@ -239,6 +239,31 @@ by { change C.map _ = (C.map _).map _, rw [G.out_hom_trans, C.map_comp], }
 lemma hom_inf (C : G.comp_out L) (h : K ⊆ L) (Cinf : C.inf) : (C.hom h).inf :=
 set.infinite.mono (C.sub_hom h) Cinf
 
+lemma comp_out.inf_iff_in_all_ranges {K : finset V} (C : G.comp_out K) :
+  C.inf ↔ ∀ L (h : K ⊆ L), ∃ D : G.comp_out L, C = D.hom h :=
+begin
+  classical,
+  split,
+  { rintro Cinf L h,
+    suffices : ((C : set V) \ L).nonempty,
+    { obtain ⟨v,vC,vL⟩ := this,
+      change v ∈ C at vC,
+      rw comp_out.mem_supp_iff at vC,
+      obtain ⟨vK,rfl⟩ := vC,
+      exact ⟨connected_component_mk _ ⟨v,vL⟩, rfl⟩ },
+    apply set.infinite.nonempty,
+    apply set.infinite.diff Cinf,
+    apply finset.finite_to_set, },
+  { rintro h Cfin,
+    obtain ⟨D,e⟩ := h (K ∪ Cfin.to_finset) (finset.subset_union_left K Cfin.to_finset),
+    let Ddis := D.outside,
+    simp_rw [finset.coe_union, set.finite.coe_to_finset, set.disjoint_union_left,
+             set.disjoint_iff] at Ddis,
+    obtain ⟨v,vD⟩ := D.nempty,
+    replace e := e.symm, rw [comp_out.hom_eq_iff_le] at e,
+    exact Ddis.right ⟨e vD, vD⟩, },
+end
+
 end comp_out
 
 section ends
