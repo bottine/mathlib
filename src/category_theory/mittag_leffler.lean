@@ -245,5 +245,98 @@ begin
   refl,
 end
 
+/-- If `F` has all arrows surjective, then it "factors through a poset". -/
+lemma thin_diagram_of_surjective
+  {J : Type u} [category J] [is_cofiltered J] (F : J ⥤ Type v)
+  (Fsur : ∀ (i j : J) (f : i ⟶ j), (F.map f).surjective) :
+  ∀ i j (f g : i ⟶ j), F.map f = F.map g :=
+begin
+  rintro i j f g,
+  let φ := is_cofiltered.eq_hom f g,
+  suffices : F.map φ ≫ F.map f = F.map φ ≫ F.map g,
+  { let φs := Fsur _ _ φ,
+    rw ←category_theory.epi_iff_surjective at φs,
+    exact φs.left_cancellation _ _ this, },
+  simp_rw [←map_comp, is_cofiltered.eq_condition],
+end
+
+/-- If `F` is nonempty at each index and Mittag-Leffler, then so is `F.to_eventual_ranges`. -/
+instance to_eventual_ranges_nonempty
+  {J : Type u} [category J] [is_cofiltered J] (F : J ⥤ Type v) (ml : F.is_mittag_leffler)
+  [∀ (j : J), nonempty (F.obj j)] : ∀ (j : J), nonempty (F.to_eventual_ranges.obj j) :=
+begin
+  intro j, rw is_mittag_leffler_iff_eventual_range at ml,
+  obtain ⟨i,f,h⟩ := ml j,
+  dsimp [to_eventual_ranges], rw h,
+  apply set.nonempty.to_subtype,
+  apply set.range_nonempty,
+end
+
+section sections_of_surjective
+
+parameters {J : Type u} [category J] [is_cofiltered J] (F : J ⥤ Type v)
+  (Fsur : ∀ (i j : J) (f : i ⟶ j), (F.map f).surjective) (j₀ : J) (x₀ : F.obj j₀)
+
+include Fsur j₀ x₀
+
+/-- The set of surjective subfunctors of F with `x₀` below -/
+def S := { G : Π j, set (F.obj j) | ∀ i j (f : i ⟶ j), set.image (F.map f) (G i) ⊆ G j }
+
+def Sle (G G' : S) : Prop := ∀ (j : J), G.val j ⊆ G.val j
+
+def ml (G : S) := ∀ (i : J), ∃ (f : Σ j, j ⟶ i), ∀ (g : Σ j, j ⟶ i),
+                    set.image (F.map f.2) (G.val f.1) ⊆ set.image (F.map g.2) (G.val g.1)
+
+def sur (G : S) := ∀ i j (f : i ⟶ j), set.image (F.map f) (G.val i) = G.val j
+
+def over (G : S) {i₀ : J} (x : F.obj i₀) := x ∈ G.val i₀
+
+lemma all_ml : ∀ G : S, ml G := sorry
+
+def to_sur (G : S) : S :=
+⟨ λ i, ⋂ (f : Σ j, j ⟶ i), set.image (F.map f.2) (G.val f.1), sorry⟩
+lemma to_sur_sur (G : S) : sur $ to_sur G := sorry
+
+
+
+lemma chains_bdd  : ∀ (c : set S), is_chain Sle c → bdd_below c :=
+begin
+  rintro c cchain, fconstructor,
+  { fconstructor,
+    exact λ j, ⋂ (G : c), G.val.val j,
+
+    rintro i j f,
+    refine (set.image_Inter_subset (λ (G : c), G.val.val i) (F.map f)).trans _,
+    apply set.Inter_mono,
+    rintro ⟨⟨G,h⟩,_⟩, exact h _ _ f, },
+  { simp only [lower_bounds, subtype.val_eq_coe, set.Inter_coe_set, subtype.coe_mk,
+               set_coe.forall, set.mem_set_of_eq, subtype.mk_le_mk],
+    rintro _ _ _ _ _,
+    simp only [set.mem_Inter],
+    rintro h, apply h; simp only [*], },
+end
+
+lemma Snempty : S.nonempty :=
+⟨ λ j, @set.univ (F.obj j), λ _ _ _, by { simp, } ⟩
+
+def restrict (G : S) (j : J) (x : F.obj j)
+  (xx₀ : ∀ f : j ⟶ j₀, F.map f x = x₀) (xG : x ∈ G.val j) : S :=
+begin
+  fsplit,
+  { exact λ i, ⋂ (f : i ⟶ j), (G.val i) ∩ (set.preimage (F.map f) {x}), },
+  { rintro i i' ι, simp, rintro f,
+    split,
+    { rintro y hy, simp at hy ⊢,
+      obtain ⟨hl,hr⟩ := hy (ι ≫ f),
+      refine @set.mem_of_mem_of_subset _ _ (set.image (F.map ι) (G.val i)) _ _ _,
+      simp, use y, use hl, use G.prop _ _ ι, },
+    { rintro y hy, simp at hy ⊢,
+      obtain ⟨hl,hr⟩ := hy (ι ≫ f), simp at hr, exact hr, }, },
+end
+
+
+
+end sections_of_surjective
+
 end functor
 end category_theory
