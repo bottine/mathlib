@@ -209,6 +209,26 @@ begin
     exact h₁.some_spec, },
 end
 
+lemma hom_eq_iff_not_disjoint (C : G.comp_out L) (h : K ⊆ L) (D : G.comp_out K) :
+  C.hom h = D ↔ ¬ disjoint (C : set V) (D : set V) :=
+begin
+  split,
+  { rintro rfl,
+    apply quot.induction_on C,
+    rintro ⟨x,xL⟩,
+    rw set.not_disjoint_iff,
+    exact ⟨x, ⟨xL,rfl⟩, ⟨(λ xK, xL (h xK)), rfl⟩⟩, },
+  { revert C, refine connected_component.ind _,
+    simp_rw set.not_disjoint_iff,
+    rintro _ ⟨x,h₁,h₂⟩,
+    change x ∈ ((G.out L).connected_component_mk v) at h₁,
+    change x ∈ D at h₂,
+    rw mem_supp_iff at h₁ h₂,
+    obtain ⟨xL,e₁⟩ := h₁,
+    obtain ⟨xK,rfl⟩ := h₂,
+    rw ←e₁, refl, },
+end
+
 lemma hom_refl (C : G.comp_out L) : C.hom (subset_refl L) = C :=
 by { change C.map _ = C, rw [G.out_hom_refl L, C.map_id], }
 
