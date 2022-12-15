@@ -273,67 +273,75 @@ begin
 end
 
 section sections_of_surjective
+/--
+Start with a surjective finite nonempty cofiltered system `F : J ⥤ Type v`.
+The assumption of surjectivity is cheap in that one can take `eventual_image` anyway, which preserve
+both nonempty and finite.
+
+Fix `j₀ : J` and `x₀ : F.obj j₀`.
+The goal is to exhibit a section `s : F.sections` satisfying `s j₀ = x₀`.
+
+-/
 
 parameters {J : Type u} [category J] [is_cofiltered J] (F : J ⥤ Type v)
-  (Fsur : ∀ (i j : J) (f : i ⟶ j), (F.map f).surjective) (j₀ : J) (x₀ : F.obj j₀)
+  (Fs : ∀ (i j : J) (f : i ⟶ j), (F.map f).surjective)
+  (Fn : ∀ (j : J), nonempty (F.obj j))
+  (Ff : ∀ (j : J), finite (F.obj j))
+  (j₀ : J) (x₀ : F.obj j₀)
 
-include Fsur j₀ x₀
+include Fs Fn Ff j₀ x₀
 
 /-- The set of surjective subfunctors of F with `x₀` below -/
-def S := { G : Π j, set (F.obj j) | ∀ i j (f : i ⟶ j), set.image (F.map f) (G i) ⊆ G j }
+structure sub :=
+  (obj : Π j, set (F.obj j))
+  (sur_sub : ∀ i j (f : i ⟶ j), set.image (F.map f) (obj i) = obj j)
+  (above : ∀ i (f : i ⟶ j₀), ∃ x ∈ obj i, (F.map f) x = x₀)
 
-def Sle (G G' : S) : Prop := ∀ (j : J), G.val j ⊆ G.val j
+lemma sub_nonempty : nonempty sub :=
+⟨ { obj := λ j, set.univ,
+    sur_sub := λ i j f, by
+    { simp only [set.image_univ], rw set.range_iff_surjective, apply Fs, },
+    above := λ i f, by
+    { simp only [set.mem_univ, exists_true_left], apply Fs, } } ⟩
 
-def ml (G : S) := ∀ (i : J), ∃ (f : Σ j, j ⟶ i), ∀ (g : Σ j, j ⟶ i),
-                    set.image (F.map f.2) (G.val f.1) ⊆ set.image (F.map g.2) (G.val g.1)
-
-def sur (G : S) := ∀ i j (f : i ⟶ j), set.image (F.map f) (G.val i) = G.val j
-
-def over (G : S) {i₀ : J} (x : F.obj i₀) := x ∈ G.val i₀
-
-lemma all_ml : ∀ G : S, ml G := sorry
-
-def to_sur (G : S) : S :=
-⟨ λ i, ⋂ (f : Σ j, j ⟶ i), set.image (F.map f.2) (G.val f.1), sorry⟩
-lemma to_sur_sur (G : S) : sur $ to_sur G := sorry
-
-
-
-lemma chains_bdd  : ∀ (c : set S), is_chain Sle c → bdd_below c :=
+@[ext] lemma sub_ext {S T : sub} (h : ∀ j, S.obj j = T.obj j) : S = T :=
 begin
-  rintro c cchain, fconstructor,
-  { fconstructor,
-    exact λ j, ⋂ (G : c), G.val.val j,
-
-    rintro i j f,
-    refine (set.image_Inter_subset (λ (G : c), G.val.val i) (F.map f)).trans _,
-    apply set.Inter_mono,
-    rintro ⟨⟨G,h⟩,_⟩, exact h _ _ f, },
-  { simp only [lower_bounds, subtype.val_eq_coe, set.Inter_coe_set, subtype.coe_mk,
-               set_coe.forall, set.mem_set_of_eq, subtype.mk_le_mk],
-    rintro _ _ _ _ _,
-    simp only [set.mem_Inter],
-    rintro h, apply h; simp only [*], },
+  cases S,
+  cases T,
+  simp only at h ⊢,
+  ext j x, rw h j,
 end
 
-lemma Snempty : S.nonempty :=
-⟨ λ j, @set.univ (F.obj j), λ _ _ _, by { simp, } ⟩
+def sub_le (S T : sub) : Prop := ∀ (j : J), S.obj j ⊆ T.obj j
 
-def restrict (G : S) (j : J) (x : F.obj j)
-  (xx₀ : ∀ f : j ⟶ j₀, F.map f x = x₀) (xG : x ∈ G.val j) : S :=
+instance : partial_order sub :=
 begin
-  fsplit,
-  { exact λ i, ⋂ (f : i ⟶ j), (G.val i) ∩ (set.preimage (F.map f) {x}), },
-  { rintro i i' ι, simp, rintro f,
-    split,
-    { rintro y hy, simp at hy ⊢,
-      obtain ⟨hl,hr⟩ := hy (ι ≫ f),
-      refine @set.mem_of_mem_of_subset _ _ (set.image (F.map ι) (G.val i)) _ _ _,
-      simp, use y, use hl, use G.prop _ _ ι, },
-    { rintro y hy, simp at hy ⊢,
-      obtain ⟨hl,hr⟩ := hy (ι ≫ f), simp at hr, exact hr, }, },
+  fconstructor,
+  { exact λ S T, sub_le F Fs Fn Ff j₀ x₀ S T, },
+  { rintro S j, exact subset_refl (S.obj j), },
+  { rintro R S T RS ST j, exact subset_trans (RS j) (ST j), },
+  { rintro S T ST TS,
+    apply sub_ext,
+    rintro j,
+    apply subset_antisymm (ST j) (TS j), },
 end
 
+lemma chains_bdd  : ∀ (c : set sub), is_chain sub_le c → bdd_below c :=
+begin
+  sorry
+end
+
+
+/--
+Given a subfunctor and a point `x` in the section,
+this is the restriction to elements mapping to `x`
+-/
+@[simp] def sub.restrict (S : sub) {j : J} {x : F.obj j}
+  (xx₀ : ∀ f : j ⟶ j₀, F.map f x = x₀) (xS : x ∈ S.obj j) : sub :=
+{ obj := λ i, S.obj i ∩ ⋂ (f : i ⟶ j), (set.preimage (F.map f) (S.obj j ∩ {x})),
+  sur_sub := λ i i' f, by
+  { ext y, sorry },
+  above := λ i f, by {} }
 
 
 end sections_of_surjective
