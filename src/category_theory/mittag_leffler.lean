@@ -326,22 +326,49 @@ begin
     apply subset_antisymm (ST j) (TS j), },
 end
 
-lemma chains_bdd  : ∀ (c : set sub), is_chain sub_le c → bdd_below c :=
+
+
+def chains_inter  : ∀ (c : set sub), is_chain sub_le c → sub :=
 begin
-  sorry
+  rintro c cchain,
+  have mmin : ∀ j, ∃ (S : c), ∀ (T : c), S.val.obj j ⊆ T.val.obj j := sorry,
+  refine ⟨λ j, ⋂ (S : c), S.val.obj j,_,_⟩,
+  { rintro i j f,
+    obtain ⟨Si,Simin⟩ := mmin i,
+    have : (⋂ (S : c), S.val.obj i) = Si.val.obj i, by
+    { refine subset_antisymm (set.Inter_subset _ _) (set.subset_Inter Simin), },
+    rw this,
+    apply subset_antisymm,
+    apply set.subset_Inter,
+    { rintro S, rw ←S.val.sur_sub _ _ f,
+      apply set.image_subset, apply Simin, },
+    { rw Si.val.sur_sub _ _ f,
+      apply set.Inter_subset, }, },
+  { rintro i f,
+    obtain ⟨Si,Simin⟩ := mmin i,
+    have : (⋂ (S : c), S.val.obj i) = Si.val.obj i, by
+    { refine subset_antisymm (set.Inter_subset _ _) (set.subset_Inter Simin), },
+    rw this,
+    apply Si.val.above, },
+
 end
+
 
 
 /--
 Given a subfunctor and a point `x` in the section,
-this is the restriction to elements mapping to `x`
+this is the best approximation to the restriction to elements mapping to `x`
 -/
 @[simp] def sub.restrict (S : sub) {j : J} {x : F.obj j}
   (xx₀ : ∀ f : j ⟶ j₀, F.map f x = x₀) (xS : x ∈ S.obj j) : sub :=
-{ obj := λ i, S.obj i ∩ ⋂ (f : i ⟶ j), (set.preimage (F.map f) (S.obj j ∩ {x})),
+{ obj := λ i, { y | y ∈ S.obj i ∧ ∀ (k : J) (g : k ⟶ i) (h : k ⟶ j), ∃ (z : F.obj k),
+                                    z ∈ S.obj k ∧ F.map h z = x ∧ F.map g z = y },
   sur_sub := λ i i' f, by
-  { ext y, sorry },
-  above := λ i f, by {} }
+  { ext y, sorry, },
+  above := λ i f, by
+  { let g := is_cofiltered.min_to_left i j,
+    let h := is_cofiltered.min_to_right i j,
+     } }
 
 
 end sections_of_surjective
