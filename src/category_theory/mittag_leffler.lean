@@ -283,9 +283,10 @@ The goal is to exhibit a section `s : F.sections` satisfying `s j₀ = x₀`.
 
 -/
 
-variables {J : Type u} [category J] [is_cofiltered J] (F : J ⥤ Type v)
-  [∀ (j : J), finite (F.obj j)]
+variables
+  {J : Type u} [category J] [is_cofiltered J] (F : J ⥤ Type v) [∀ (j : J), finite (F.obj j)]
   {j₀ : J} (x₀ : F.obj j₀)
+
 include j₀ x₀
 
 /-- The set of surjective subfunctors of F with `x₀` below -/
@@ -299,6 +300,7 @@ def sub_le (S T : F.sub x₀) : Prop := ∀ (j : J), S.obj j ⊆ T.obj j
 @[ext] lemma sub_ext {S T : F.sub x₀} (h : ∀ j, S.obj j = T.obj j) : S = T :=
 by { cases S, cases T, simp only at h ⊢, ext j x, rw h j, }
 
+/-- Careful: we invert the order to make using Zorn that bit easier. -/
 instance : partial_order (F.sub x₀) :=
 begin
   fconstructor,
@@ -308,7 +310,11 @@ begin
   { exact λ S T ST TS, sub_ext F x₀ (λj,subset_antisymm (TS j) (ST j)), },
 end
 
-def chains_inter  : ∀ (c : set $ F.sub x₀), is_chain (≥) c → c.nonempty → F.sub x₀ :=
+/--
+The intersection of a nonempty chain of surjective subfunctors above `x₀`
+is also a subfunctor above `x₀`.
+-/
+def chain_Inter  : ∀ (c : set $ F.sub x₀), is_chain (F.sub_le x₀) c → c.nonempty → F.sub x₀ :=
 begin
   rintro c cchain cnempty,
   have mmin : ∀ j, ∃ (S : c), ∀ (T : c), S.val.obj j ⊆ T.val.obj j, by
@@ -354,6 +360,14 @@ begin
     apply Si.val.above, },
 end
 
+/-- The intersection is contained in any subfunctor in the chain. -/
+lemma chain_Inter_le
+  (c : set $ F.sub x₀) (cchain : is_chain (F.sub_le x₀) c) (cnempty : c.nonempty)
+  (S : F.sub x₀) ( Sc : S ∈ c) : F.sub_le x₀ (chain_Inter F x₀ c cchain cnempty) S :=
+begin
+  simp [upper_bounds, chain_Inter], rintro j, apply set.Inter₂_subset, exact Sc,
+end
+
 variables (Fs : ∀ (i j : J) (f : i ⟶ j), (F.map f).surjective)
 include Fs
 
@@ -367,8 +381,8 @@ def sub_univ : F.sub x₀ :=
 instance : nonempty (F.sub x₀) := ⟨F.sub_univ x₀ Fs⟩
 
 /--
-Given a subfunctor and a point `x` in the section,
-this is the best approximation to the restriction to elements mapping to `x`
+Given a subfunctor and a point `x` in the section, with `x` mapping to `x₀`
+this is the best approximation to the restriction to elements mapping to `x`.
 -/
 def restrict (S : F.sub x₀) {j₁ : J} {x₁ : F.obj j₁}
   (x₁₀ : ∃ f : j₁ ⟶ j₀, F.map f x₁ = x₀) (x₁S : x₁ ∈ S.obj j₁) : F.sub x₀ :=
@@ -408,6 +422,7 @@ def restrict (S : F.sub x₀) {j₁ : J} {x₁ : F.obj j₁}
     apply congr_fun _ z,
     apply thin_diagram_of_surjective F Fs, } }
 
+/-- The restriction, at index `j₁`, contains only `x₁`. -/
 lemma restrict_at (S : F.sub x₀) {j₁ : J} {x₁ : F.obj j₁}
   (x₁₀ : ∃ f : j₁ ⟶ j₀, F.map f x₁ = x₀) (x₁S : x₁ ∈ S.obj j₁) :
   (F.restrict x₀ Fs S x₁₀ x₁S).obj j₁ = {x₁} :=
@@ -464,7 +479,6 @@ begin
   exact x₁S,
 end
 
-
 lemma exists_section_of_singletons (S : F.sub x₀) (hS : ∀ j, ∃ x, S.obj j = {x}) :
   ∃ s : F.sections, s.val j₀ = x₀ :=
 ⟨ ⟨ λ j, (hS j).some, by
@@ -482,8 +496,6 @@ lemma exists_section_of_singletons (S : F.sub x₀) (hS : ∀ j, ∃ x, S.obj j 
        exact this.symm, }
      ⟩
 
--- use  zorn_nonempty_partial_order
-
 lemma exists_section : ∃ s : F.sections, s.val j₀ = x₀ :=
 begin
   suffices : ∃ (S : F.sub x₀), ∀ (T : F.sub x₀), S ≤ T → T = S,
@@ -493,9 +505,8 @@ begin
   haveI : nonempty (F.sub x₀) := ⟨F.sub_univ x₀ Fs⟩,
   apply @zorn_nonempty_partial_order (F.sub x₀),
   rintro c cchain cnempty,
-  refine ⟨F.chains_inter x₀ c _ cnempty,_⟩,
-  { simp [is_chain] at cchain ⊢, convert cchain, funext, apply propext, tauto, },
-  { simp [upper_bounds, chains_inter], rintro S Sc, rintro j, apply set.Inter₂_subset, exact Sc },
+  refine ⟨F.chain_Inter x₀ c _ cnempty, F.chain_Inter_le x₀ c _ cnempty⟩,
+  { simp only [is_chain] at cchain ⊢, convert cchain, funext, apply propext, tauto, },
 end
 
 end sections_of_surjective
