@@ -10,8 +10,10 @@ open_locale classical ennreal
 
 open emetric nnreal set
 
-section length_on
+-- TODO: allow `[emetric_space α]`
+-- TODO: how to deal with paths defined non ICC intervals ?
 
+section length_on
 
 variables {α β : Type*} [metric_space α]
 variables (f : β → α) (l l' : list β) (a b : β)
@@ -58,48 +60,33 @@ begin
 end
 
 lemma function.length_on_destutter :
-  ∀ a b, f.length_on l a b = f.length_on (list.destutter (≠) l) a b :=
+  ∀ l a b, f.length_on l a b = f.length_on (list.destutter (≠) l) a b :=
 begin
   sorry
 end
 
 end length_on
 
-def function.length_on {a b : nnreal} (h : a ≤ b) (f : Icc a b → α) (l : list $ Icc a b) : nnreal :=
-  list.sum (list.map₂ (λ x y, nndist (f x) (f y)) ([⟨a,⟨le_refl a, h⟩⟩] ++ l) (l ++ [⟨b,⟨h,le_refl b⟩⟩]))
+section path_length_on
 
-variables {a b : nnreal} {h : a ≤ b} (f : Icc a b → α) (l : list $ Icc a b)
+variables {α : Type*} [metric_space α] {a b : nnreal} (ab : a ≤ b)
+variables (f : Icc a b → α) (l : list $ Icc a b)
 
-@[simp]
-lemma function.length_on_nil :
-  f.length_on h list.nil = nndist (f ⟨a,⟨le_refl a, h⟩⟩) (f ⟨b,⟨h,le_refl b⟩⟩) :=
-begin
-  dsimp [function.length_on],
-  simp,
-end
+def function.path_length_on  : nnreal :=
+  f.length_on l ⟨a, le_refl a, ab⟩ ⟨b, ab, le_refl b⟩
 
-@[simp]
-lemma function.length_on_le_length_on_cons {x : Icc a b} :
-  f.length_on h l ≤ f.length_on h (x :: l) :=
-begin
-  dsimp [function.length_on],
-  cases l,
-  { simp, apply nndist_triangle, },
-  { simp, rw ←add_assoc, apply add_le_add_right, apply nndist_triangle, }
-end
+/--
+The path length of `f` is the supremum over all strictly increasing partitions `l`
+of the length of `f` for `l`
+-/
+def function.path_length : ennreal :=
+  ⨆ l ∈ {l : list $ Icc a b | l.pairwise (≤)}, f.path_length_on ab l
 
 
 
+end path_length_on
 
 
-
-lemma pairwise_le_destutter_eq_of_pairwise_le {α : Type*} [preorder α] (l : list α) :
-  l.pairwise (≤) → (l.destutter' (≠)).pairwise (≤) := sorry
-
-lemma function.length_destutter' (l₁ : partition h) :
-  f.length l₁ = f.length ⟨(l₁.val).destutter'⟩ := sorry
-
-end
 
 /-
 section Path_Metric
