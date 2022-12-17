@@ -274,29 +274,43 @@ end
 
 section sections_of_surjective
 /--
-Start with a surjective finite nonempty cofiltered system `F : J ⥤ Type v`.
-The assumption of surjectivity is cheap in that one can take `eventual_image` anyway, which preserve
-both nonempty and finite.
+Start with a
+* surjective
+* finite(ly valued)
+* nonempty
+* cofiltered
+system `F : J ⥤ Type v`.
+
+The assumption of surjectivity is cheap, in that one can take `eventual_image` anyway,
+which does not break the other assumptions.
 
 Fix `j₀ : J` and `x₀ : F.obj j₀`.
 The goal is to exhibit a section `s : F.sections` satisfying `s j₀ = x₀`.
-
+This is a bit better than `nonempty_sections_of_fintype_cofiltered_system`, since we can choose
+the value of the section at `j₀`.
 -/
 
 variables
   {J : Type u} [category J] [is_cofiltered J] (F : J ⥤ Type v) [∀ (j : J), finite (F.obj j)]
   {j₀ : J} (x₀ : F.obj j₀)
+-- We don't need the surjectivity assumption for now.
 
 include j₀ x₀
 
-/-- The set of surjective subfunctors of F with `x₀` below -/
+/--
+The set of surjective subfunctors of F "above" `x₀`.
+The `above` field means that they're not incompatible with containing
+a sections `s` with `s j₀ = x`.
+ -/
 structure sub :=
   (obj : Π j, set (F.obj j))
   (sur_sub : ∀ i j (f : i ⟶ j), set.image (F.map f) (obj i) = obj j)
   (above : ∀ i (f : i ⟶ j₀), ∃ x ∈ obj i, (F.map f) x = x₀)
 
+/-- The obvious "subfunctor" ordering. -/
 def sub_le (S T : F.sub x₀) : Prop := ∀ (j : J), S.obj j ⊆ T.obj j
 
+/-- Two such subfunctors are equal when they have the same values… -/
 @[ext] lemma sub_ext {S T : F.sub x₀} (h : ∀ j, S.obj j = T.obj j) : S = T :=
 by { cases S, cases T, simp only at h ⊢, ext j x, rw h j, }
 
@@ -368,17 +382,17 @@ begin
   simp [upper_bounds, chain_Inter], rintro j, apply set.Inter₂_subset, exact Sc,
 end
 
+-- Now we need the surjectivity assumption
 variables (Fs : ∀ (i j : J) (f : i ⟶ j), (F.map f).surjective)
 include Fs
 
+/-- The type of subfunctor "contains" `F` itself. -/
 def sub_univ : F.sub x₀ :=
 { obj := λ j, set.univ,
   sur_sub := λ i j f, by
   { simp only [set.image_univ], rw set.range_iff_surjective, apply Fs, },
   above := λ i f, by
   { simp only [set.mem_univ, exists_true_left], apply Fs, } }
-
-instance : nonempty (F.sub x₀) := ⟨F.sub_univ x₀ Fs⟩
 
 /--
 Given a subfunctor and a point `x` in the section, with `x` mapping to `x₀`
@@ -387,8 +401,8 @@ this is the best approximation to the restriction to elements mapping to `x`.
 def restrict (S : F.sub x₀) {j₁ : J} {x₁ : F.obj j₁}
   (x₁₀ : ∃ f : j₁ ⟶ j₀, F.map f x₁ = x₀) (x₁S : x₁ ∈ S.obj j₁) : F.sub x₀ :=
 { obj := λ i,
-  { y | y ∈ S.obj i ∧ ∃ (k : J) (g : k ⟶ j₁) (h : k ⟶ i),
-                      ∃ (z : F.obj k), z ∈ S.obj k ∧ F.map g z = x₁ ∧ F.map h z = y },
+  { y | y ∈ S.obj i ∧ ∃ (k : J) (g : k ⟶ j₁) (h : k ⟶ i) (z : F.obj k),
+                        z ∈ S.obj k ∧ F.map g z = x₁ ∧ F.map h z = y },
   sur_sub := λ i i' f, by
   { ext y, split,
     { rintro ⟨z,⟨zS,zH⟩,rfl⟩,
@@ -438,10 +452,15 @@ begin
     exact x₁S, }
 end
 
+/-- The restriction is contained in the subfunctor we started with. -/
 lemma restrict_le (S : F.sub x₀) {j₁ : J} {x₁ : F.obj j₁}
   (x₁₀ : ∃ f : j₁ ⟶ j₀, F.map f x₁ = x₀) (x₁S : x₁ ∈ S.obj j₁) :
   F.sub_le x₀ (F.restrict x₀ Fs S x₁₀ x₁S) S := λ j x h, h.1
 
+/--
+If the subfunctor we started with has some other point at `j₁` than `x₁` itself,
+then the restriction is not equal to it.
+-/
 lemma restrict_ne (S : F.sub x₀) {j₁ : J} {x₁ : F.obj j₁}
   (x₁₀ : ∃ f : j₁ ⟶ j₀, F.map f x₁ = x₀) (x₁S : x₁ ∈ S.obj j₁)
   (hne : ∃ y₁ : F.obj j₁, y₁ ∈ S.obj j₁ ∧ y₁ ≠ x₁) : (F.restrict x₀ Fs S x₁₀ x₁S) ≠ S :=
@@ -455,6 +474,10 @@ begin
   exact yS,
 end
 
+/--
+If we take a minimal subfunctor (careful, the `≤` here is reversed!), then all values of the
+subfunctor are singletons.
+-/
 lemma singletons_of_min (S : F.sub x₀) (Smin : ∀ T, S ≤ T → T = S) : ∀ j, ∃ x, S.obj j = {x} :=
 begin
   by_contra' notsing,
@@ -479,6 +502,9 @@ begin
   exact x₁S,
 end
 
+/--
+If all values of a subfunctor are singletons, it defines a section.
+-/
 lemma exists_section_of_singletons (S : F.sub x₀) (hS : ∀ j, ∃ x, S.obj j = {x}) :
   ∃ s : F.sections, s.val j₀ = x₀ :=
 ⟨ ⟨ λ j, (hS j).some, by
@@ -496,6 +522,12 @@ lemma exists_section_of_singletons (S : F.sub x₀) (hS : ∀ j, ∃ x, S.obj j 
        exact this.symm, }
      ⟩
 
+/--
+There exists a section (🎉) :
+* We find a minimal subfunctor using Zorn.
+* This minimal subfunctor has only singletons.
+* Extract a section.
+-/
 lemma exists_section : ∃ s : F.sections, s.val j₀ = x₀ :=
 begin
   suffices : ∃ (S : F.sub x₀), ∀ (T : F.sub x₀), S ≤ T → T = S,
