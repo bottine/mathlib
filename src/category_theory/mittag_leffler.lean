@@ -283,13 +283,10 @@ The goal is to exhibit a section `s : F.sections` satisfying `s j₀ = x₀`.
 
 -/
 
-parameters {J : Type u} [category J] [is_cofiltered J] (F : J ⥤ Type v)
-  (Fs : ∀ (i j : J) (f : i ⟶ j), (F.map f).surjective)
-  (Fn : ∀ (j : J), nonempty (F.obj j))
-  (Ff : ∀ (j : J), finite (F.obj j))
-  (j₀ : J) (x₀ : F.obj j₀)
-
-include Fs Fn Ff j₀ x₀
+variables {J : Type u} [category J] [is_cofiltered J] (F : J ⥤ Type v)
+  [∀ (j : J), finite (F.obj j)]
+  {j₀ : J} (x₀ : F.obj j₀)
+include j₀ x₀
 
 /-- The set of surjective subfunctors of F with `x₀` below -/
 structure sub :=
@@ -297,41 +294,46 @@ structure sub :=
   (sur_sub : ∀ i j (f : i ⟶ j), set.image (F.map f) (obj i) = obj j)
   (above : ∀ i (f : i ⟶ j₀), ∃ x ∈ obj i, (F.map f) x = x₀)
 
-lemma sub_nonempty : nonempty sub :=
-⟨ { obj := λ j, set.univ,
-    sur_sub := λ i j f, by
-    { simp only [set.image_univ], rw set.range_iff_surjective, apply Fs, },
-    above := λ i f, by
-    { simp only [set.mem_univ, exists_true_left], apply Fs, } } ⟩
+def sub_le (S T : F.sub x₀) : Prop := ∀ (j : J), S.obj j ⊆ T.obj j
 
-@[ext] lemma sub_ext {S T : sub} (h : ∀ j, S.obj j = T.obj j) : S = T :=
-begin
-  cases S,
-  cases T,
-  simp only at h ⊢,
-  ext j x, rw h j,
-end
+@[ext] lemma sub_ext {S T : F.sub x₀} (h : ∀ j, S.obj j = T.obj j) : S = T :=
+by { cases S, cases T, simp only at h ⊢, ext j x, rw h j, }
 
-def sub_le (S T : sub) : Prop := ∀ (j : J), S.obj j ⊆ T.obj j
-
-instance : partial_order sub :=
+instance : partial_order (F.sub x₀) :=
 begin
   fconstructor,
-  { exact λ S T, sub_le F Fs Fn Ff j₀ x₀ S T, },
-  { rintro S j, exact subset_refl (S.obj j), },
-  { rintro R S T RS ST j, exact subset_trans (RS j) (ST j), },
-  { rintro S T ST TS,
-    apply sub_ext,
-    rintro j,
-    apply subset_antisymm (ST j) (TS j), },
+  { exact λ S T, sub_le F x₀ T S, },
+  { exact λ S j, subset_refl (S.obj j), },
+  { exact λ R S T RS ST j, subset_trans (ST j) (RS j), },
+  { exact λ S T ST TS, sub_ext F x₀ (λj,subset_antisymm (TS j) (ST j)), },
 end
 
-
-
-def chains_inter  : ∀ (c : set sub), is_chain sub_le c → sub :=
+def chains_inter  : ∀ (c : set $ F.sub x₀), is_chain (≥) c → c.nonempty → F.sub x₀ :=
 begin
-  rintro c cchain,
-  have mmin : ∀ j, ∃ (S : c), ∀ (T : c), S.val.obj j ⊆ T.val.obj j := sorry,
+  rintro c cchain cnempty,
+  have mmin : ∀ j, ∃ (S : c), ∀ (T : c), S.val.obj j ⊆ T.val.obj j, by
+  { rintro j,
+    let mcard : F.sub x₀ → ℕ := by
+    { rintro S,
+      have : (S.obj j).finite, by
+      { apply set.finite.subset,
+        apply set.finite_univ,
+        simp only [set.subset_univ], },
+      exact this.to_finset.card, },
+    let S := function.argmin_on mcard nat.lt_wf c cnempty,
+    let Sc :=mcard.argmin_on_mem nat.lt_wf c cnempty,
+    use ⟨S,Sc⟩,
+    rintro ⟨T,Tc⟩,
+    by_cases SeqT : S = T,
+    { induction SeqT, refl, },
+    { specialize cchain Sc Tc SeqT,
+      cases cchain,
+      { exact cchain j, },
+      { by_contra',
+        apply function.not_lt_argmin_on mcard nat.lt_wf c Tc,
+        apply finset.card_lt_card,
+        rw set.finite.to_finset_ssubset,
+        exact ssubset_iff_subset_not_subset.mpr ⟨cchain j,this⟩, }, }, },
   refine ⟨λ j, ⋂ (S : c), S.val.obj j,_,_⟩,
   { rintro i j f,
     obtain ⟨Si,Simin⟩ := mmin i,
@@ -350,26 +352,151 @@ begin
     { refine subset_antisymm (set.Inter_subset _ _) (set.subset_Inter Simin), },
     rw this,
     apply Si.val.above, },
-
 end
 
+variables (Fs : ∀ (i j : J) (f : i ⟶ j), (F.map f).surjective)
+include Fs
 
+def sub_univ : F.sub x₀ :=
+{ obj := λ j, set.univ,
+  sur_sub := λ i j f, by
+  { simp only [set.image_univ], rw set.range_iff_surjective, apply Fs, },
+  above := λ i f, by
+  { simp only [set.mem_univ, exists_true_left], apply Fs, } }
+
+instance : nonempty (F.sub x₀) := ⟨F.sub_univ x₀ Fs⟩
 
 /--
 Given a subfunctor and a point `x` in the section,
 this is the best approximation to the restriction to elements mapping to `x`
 -/
-@[simp] def sub.restrict (S : sub) {j : J} {x : F.obj j}
-  (xx₀ : ∀ f : j ⟶ j₀, F.map f x = x₀) (xS : x ∈ S.obj j) : sub :=
-{ obj := λ i, { y | y ∈ S.obj i ∧ ∀ (k : J) (g : k ⟶ i) (h : k ⟶ j), ∃ (z : F.obj k),
-                                    z ∈ S.obj k ∧ F.map h z = x ∧ F.map g z = y },
+def restrict (S : F.sub x₀) {j₁ : J} {x₁ : F.obj j₁}
+  (x₁₀ : ∃ f : j₁ ⟶ j₀, F.map f x₁ = x₀) (x₁S : x₁ ∈ S.obj j₁) : F.sub x₀ :=
+{ obj := λ i,
+  { y | y ∈ S.obj i ∧ ∃ (k : J) (g : k ⟶ j₁) (h : k ⟶ i),
+                      ∃ (z : F.obj k), z ∈ S.obj k ∧ F.map g z = x₁ ∧ F.map h z = y },
   sur_sub := λ i i' f, by
-  { ext y, sorry, },
+  { ext y, split,
+    { rintro ⟨z,⟨zS,zH⟩,rfl⟩,
+      simp only [←S.sur_sub _ _ f, set.mem_image, set.mem_set_of_eq],
+      use [z,zS],
+      obtain ⟨k,g,h,z',z'S,rfl,rfl⟩ := zH,
+      use [k,g,h≫f,z',z'S,rfl],
+      rw [←functor_to_types.map_comp_apply], },
+    { rintro ⟨yS,⟨k,g,h,z,zS,rfl,rfl⟩⟩,
+      let k' := is_cofiltered.min i k,
+      let k'k := is_cofiltered.min_to_right i k,
+      let k'i := is_cofiltered.min_to_left i k,
+      rw ←S.sur_sub _ _ k'k at zS,
+      obtain ⟨z',z'S,rfl⟩ := zS,
+      simp only [set.mem_image, set.mem_set_of_eq, ←S.sur_sub _ _ k'i],
+      use [F.map k'i z', z',z'S,k', k'k ≫ g, k'i, z', z'S],
+      { simp, },
+      { simp_rw [←functor_to_types.map_comp_apply],
+        apply congr_fun,
+        apply thin_diagram_of_surjective F Fs, } } },
   above := λ i f, by
-  { let g := is_cofiltered.min_to_left i j,
-    let h := is_cofiltered.min_to_right i j,
-     } }
+  { obtain ⟨j₁₀,rfl⟩ := x₁₀,
+    let k := is_cofiltered.min i j₁,
+    let h := is_cofiltered.min_to_left i j₁,
+    let g := is_cofiltered.min_to_right i j₁,
+    rw ←S.sur_sub _ _ g at x₁S,
+    obtain ⟨z,zS,rfl⟩ := x₁S,
+    simp only [set.mem_set_of_eq, ←S.sur_sub _ _ h, set.mem_image],
+    use [F.map h z, z, zS, k, g, h, z, zS, rfl, rfl],
+    simp_rw [←functor_to_types.map_comp_apply],
+    apply congr_fun _ z,
+    apply thin_diagram_of_surjective F Fs, } }
 
+lemma restrict_at (S : F.sub x₀) {j₁ : J} {x₁ : F.obj j₁}
+  (x₁₀ : ∃ f : j₁ ⟶ j₀, F.map f x₁ = x₀) (x₁S : x₁ ∈ S.obj j₁) :
+  (F.restrict x₀ Fs S x₁₀ x₁S).obj j₁ = {x₁} :=
+begin
+  ext y, split,
+  { rintro ⟨yS,k,g,h,z,zS,rfl,rfl⟩,
+    simp only [set.mem_singleton_iff],
+    apply congr_fun, apply thin_diagram_of_surjective F Fs, },
+  { simp only [set.mem_singleton_iff, set.mem_set_of_eq],
+    rintro rfl,
+    use [x₁S, j₁, 𝟙 j₁, 𝟙 j₁],
+    simp only [functor_to_types.map_id_apply, and_self, exists_eq_right],
+    exact x₁S, }
+end
+
+lemma restrict_le (S : F.sub x₀) {j₁ : J} {x₁ : F.obj j₁}
+  (x₁₀ : ∃ f : j₁ ⟶ j₀, F.map f x₁ = x₀) (x₁S : x₁ ∈ S.obj j₁) :
+  F.sub_le x₀ (F.restrict x₀ Fs S x₁₀ x₁S) S := λ j x h, h.1
+
+lemma restrict_ne (S : F.sub x₀) {j₁ : J} {x₁ : F.obj j₁}
+  (x₁₀ : ∃ f : j₁ ⟶ j₀, F.map f x₁ = x₀) (x₁S : x₁ ∈ S.obj j₁)
+  (hne : ∃ y₁ : F.obj j₁, y₁ ∈ S.obj j₁ ∧ y₁ ≠ x₁) : (F.restrict x₀ Fs S x₁₀ x₁S) ≠ S :=
+begin
+  rintro e,
+  obtain ⟨y,yS,yne⟩ := hne,
+  apply yne,
+  let := F.restrict_at x₀ Fs S x₁₀ x₁S,
+  rw e at this,
+  rw this at yS,
+  exact yS,
+end
+
+lemma singletons_of_min (S : F.sub x₀) (Smin : ∀ T, S ≤ T → T = S) : ∀ j, ∃ x, S.obj j = {x} :=
+begin
+  by_contra' notsing,
+  obtain ⟨j,jnotsing⟩ := notsing,
+  let j₁ := is_cofiltered.min j j₀,
+  let h := is_cofiltered.min_to_left j j₀,
+  let g := is_cofiltered.min_to_right j j₀,
+  have : ∀ x, x ∈ S.obj j₁ → ∃ y, y ∈ S.obj j₁ ∧ y ≠ x, by
+  { rintro x xS, by_contra',
+    apply jnotsing (F.map h x),
+    rw ←S.sur_sub _ _ h,
+    ext y, split,
+    { rintro ⟨z,zS,rfl⟩, simp [this z zS], },
+    { simp only [set.mem_singleton_iff, set.mem_image], rintro rfl, refine ⟨x,xS,rfl⟩,
+       } },
+  obtain ⟨x₁,x₁S,rfl⟩ := S.above _ g,
+  let T := F.restrict _ Fs S ⟨g,rfl⟩ x₁S,
+  apply F.restrict_ne _ Fs S ⟨g,rfl⟩,
+  exact this x₁ x₁S,
+  apply Smin,
+  apply F.restrict_le _ Fs S ⟨g,rfl⟩,
+  exact x₁S,
+end
+
+
+lemma exists_section_of_singletons (S : F.sub x₀) (hS : ∀ j, ∃ x, S.obj j = {x}) :
+  ∃ s : F.sections, s.val j₀ = x₀ :=
+⟨ ⟨ λ j, (hS j).some, by
+    { rintro j j' f,
+      apply set.eq_of_mem_singleton,
+      rw [←(hS j').some_spec, ←(S.sur_sub _ _ f)],
+      refine ⟨(hS j).some, _, rfl⟩,
+      convert set.mem_singleton (hS j).some,
+      exact (hS j).some_spec, } ⟩,
+  by { obtain ⟨x,e⟩ := hS j₀,
+       obtain ⟨x₁,x₁S,h⟩ := S.above j₀ (𝟙 j₀),
+       let := (hS j₀).some_spec,
+       simp only [*, set.singleton_eq_singleton_iff, functor_to_types.map_id_apply,
+                  set.mem_singleton_iff] at *, subst_vars,
+       exact this.symm, }
+     ⟩
+
+-- use  zorn_nonempty_partial_order
+
+lemma exists_section : ∃ s : F.sections, s.val j₀ = x₀ :=
+begin
+  suffices : ∃ (S : F.sub x₀), ∀ (T : F.sub x₀), S ≤ T → T = S,
+  { obtain ⟨S,Smin⟩ := this,
+    apply F.exists_section_of_singletons x₀ Fs S,
+    apply F.singletons_of_min x₀ Fs S Smin, },
+  haveI : nonempty (F.sub x₀) := ⟨F.sub_univ x₀ Fs⟩,
+  apply @zorn_nonempty_partial_order (F.sub x₀),
+  rintro c cchain cnempty,
+  refine ⟨F.chains_inter x₀ c _ cnempty,_⟩,
+  { simp [is_chain] at cchain ⊢, convert cchain, funext, apply propext, tauto, },
+  { simp [upper_bounds, chains_inter], rintro S Sc, rintro j, apply set.Inter₂_subset, exact Sc },
+end
 
 end sections_of_surjective
 
