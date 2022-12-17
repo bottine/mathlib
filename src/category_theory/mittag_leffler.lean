@@ -490,9 +490,10 @@ begin
     apply jnotsing (F.map h x),
     rw ←S.sur_sub _ _ h,
     ext y, split,
-    { rintro ⟨z,zS,rfl⟩, simp [this z zS], },
-    { simp only [set.mem_singleton_iff, set.mem_image], rintro rfl, refine ⟨x,xS,rfl⟩,
-       } },
+    { rintro ⟨z,zS,rfl⟩,
+      simp only [this z zS, set.mem_singleton], },
+    { simp only [set.mem_singleton_iff, set.mem_image],
+      rintro rfl, refine ⟨x,xS,rfl⟩, } },
   obtain ⟨x₁,x₁S,rfl⟩ := S.above _ g,
   let T := F.restrict _ Fs S ⟨g,rfl⟩ x₁S,
   apply F.restrict_ne _ Fs S ⟨g,rfl⟩,
@@ -531,14 +532,12 @@ There exists a section (🎉) :
 lemma exists_section : ∃ s : F.sections, s.val j₀ = x₀ :=
 begin
   suffices : ∃ (S : F.sub x₀), ∀ (T : F.sub x₀), S ≤ T → T = S,
-  { obtain ⟨S,Smin⟩ := this,
-    apply F.exists_section_of_singletons x₀ Fs S,
-    apply F.singletons_of_min x₀ Fs S Smin, },
+  { exact F.exists_section_of_singletons x₀ Fs _ (F.singletons_of_min x₀ Fs _ this.some_spec), },
   haveI : nonempty (F.sub x₀) := ⟨F.sub_univ x₀ Fs⟩,
-  apply @zorn_nonempty_partial_order (F.sub x₀),
+  apply zorn_nonempty_partial_order,
   rintro c cchain cnempty,
   refine ⟨F.chain_Inter x₀ c _ cnempty, F.chain_Inter_le x₀ c _ cnempty⟩,
-  { simp only [is_chain] at cchain ⊢, convert cchain, funext, apply propext, tauto, },
+  { simp only [is_chain] at cchain ⊢, convert cchain, ext, exact ⟨or.swap,or.swap⟩, },
 end
 
 end sections_of_surjective
