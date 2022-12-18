@@ -67,18 +67,63 @@ lemma length_on_cons_list_append_cons : ∀ (a : β) (l : list β) (z : β),
                list.sum_cons, add_right_inj],
     apply length_on_cons_list_append_cons, }
 
-lemma length_on_le_length_on_append_left (l l' : list β) :
-  f.length_on l ≤ f.length_on (l ++ l') := sorry
 
-lemma length_on_le_length_on_append_right (l l' : list β) :
-  f.length_on l' ≤ f.length_on (l ++ l') := sorry
+lemma length_on_le_length_on_append_left :
+  ∀ (l l' : list β), f.length_on l ≤ f.length_on (l ++ l')
+| []            _ := by simp only [length_on_nil, zero_le']
+| [_]           _ := by simp only [length_on_cons_nil, zero_le']
+| (_ :: _ :: _) _ := by
+  { simp only [length_on_cons_cons, list.cons_append, add_le_add_iff_left],
+    rw [←list.cons_append],
+    apply length_on_le_length_on_append_left }
 
+lemma length_on_le_length_on_append_right :
+  ∀ (l l' : list β), f.length_on l' ≤ f.length_on (l ++ l')
+| [] _ := by simp
+| (a :: l) l' := by
+  { transitivity' (f.length_on $ l ++ l'),
+    apply length_on_le_length_on_append_right,
+    apply length_on_le_length_on_cons, }
 
+/-
 lemma length_on_mono : ∀ {l l' : list β} (ll' : l <+ l'),
-  f.length_on l ≤ f.length_on l' := sorry
+  f.length_on l ≤ f.length_on l'
+| _ _ list.sublist.slnil := le_refl _
+| _ _ (list.sublist.cons _ _ _ s) := (length_on_mono s).trans (f.length_on_le_length_on_cons _ _)
+| _ _ (list.sublist.cons2 [] _ x s) := by simp
+| _ _ (list.sublist.cons2 [_] [] x s) := by simpa using s
+| _ _ (list.sublist.cons2 [_] [_] x s) := by
+  { simp only [list.singleton_sublist, list.mem_singleton] at s, cases s, refl, }
+| _ _ (list.sublist.cons2 [a] (b :: l) x s) := by
+  { simp only [list.singleton_sublist, list.mem_singleton] at s, cases s }
+| _ _ (list.sublist.cons2 (a :: b :: l) _ x s) := by {sorry}
+-/
 
-lemma nndist_le_length_on {a b : β} {l : list β} (al : a ∈ l) (bl : b ∈ l):
-  nndist (f a) (f b) ≤ f.length_on l := sorry
+lemma nndist_le_length_on_cons :
+  ∀ (a : β) {b : β} {l : list β} (bl : b ∈ l), nndist (f a) (f b) ≤ f.length_on (a :: l)
+| a b [] hb := by simpa using hb
+| a b [x] hb := by
+  { simp only [length_on_cons_cons, length_on_cons_nil, add_zero, list.mem_singleton] at hb ⊢,
+    cases hb, refl, }
+| a b (x :: y :: l) hb := by
+  { simp only [length_on_cons_cons, list.mem_cons_iff] at hb ⊢,
+    cases hb; cases hb,
+    { simp only [le_add_iff_nonneg_right, zero_le'], },
+    { cases hb, apply (nndist_triangle (f a) (f x) (f b)).trans, simp, },
+    { apply (nndist_le_length_on_cons a hb).trans, }
+
+  }
+
+
+lemma nndist_le_length_on :
+  ∀ {a b : β} {l : list β} (al : a ∈ l) (bl : b ∈ l), nndist (f a) (f b) ≤ f.length_on l
+| a b [] ha hb := by simpa using ha
+| a b (x :: l) ha hb := by
+  { simp at ha hb ⊢,
+    cases ha; cases hb,
+    { subst_vars, simp, },
+    { subst_vars,
+      apply (nndist_le_length_on _ hb).trans, } }
 
 lemma length_on_destutter :
   ∀ l, f.length_on l = f.length_on (list.destutter (≠) l) := sorry
@@ -123,8 +168,7 @@ lemma path_length_glue_split (x : ℝ) (xs : x ∈ s) : f.path_length =
 /--
 A path is rectifiable if any of its restriction to a close interval has finite length
 -/
-def is_rectifiable : Prop :=
-∀ (a b : ℝ), ∃ (h : (Icc a b) ⊆ s), (f ∘ inclusion h).path_length ≠ ⊤
+def is_rectifiable := ∀ (a b : ℝ), ∃ (h : (Icc a b) ⊆ s), (f ∘ inclusion h).path_length ≠ ⊤
 
 
 end path_length
