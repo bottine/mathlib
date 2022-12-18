@@ -21,13 +21,25 @@ section length_on
 variables {α β : Type*} [metric_space α]
 variables (f : β → α)
 
+@[simp] def dist_head : β → list β → nnreal
+| _ [] := 0
+| x (a :: _) := nndist (f x) (f a)
+
+@[simp] lemma dist_head_nil (b : β) : f.dist_head b [] = 0 := rfl
+@[simp] lemma dist_head_cons (b) (a) (l) : f.dist_head b (a::l) = nndist (f b) (f a) := rfl
+
+@[simp] def dist_tail_head : list β → list β → nnreal
+| [] _ := 0
+| [a] l' := f.dist_head a l'
+| (a::l) l' := dist_tail_head l l'
+
 def length_on : list β → nnreal
-| list.nil      := 0
-| [_]           := 0
-| (a :: b :: l) := nndist (f a) (f b) + length_on (b :: l)
+| list.nil := 0
+| (a :: l) := f.dist_head a l + length_on l
 
 @[simp] lemma length_on_nil : f.length_on list.nil = 0 := rfl
-@[simp] lemma length_on_cons_nil (b : β) : f.length_on [b] = 0 := rfl
+@[simp] lemma length_on_cons_nil (b : β) : f.length_on [b] = 0 :=
+by simp only [length_on, dist_head_nil, add_zero]
 @[simp] lemma length_on_cons_cons (a b : β) (l : list β) :
   f.length_on (a :: b :: l) = nndist (f a) (f b) + f.length_on (b :: l) := rfl
 
@@ -50,7 +62,7 @@ lemma length_on_le_length_on_cons (c : β) :
 | list.nil := by simp
 | [a] := by simp
 | (a :: b :: l) := by
-  { simp only [length_on], rw ←add_assoc, apply add_le_add_right, apply le_add_left, refl, }
+  { simp only [length_on_cons_cons], rw ←add_assoc, apply add_le_add_right, apply le_add_left, refl, }
 
 lemma length_on_cons_list_append_cons : ∀ (a : β) (l : list β) (z : β),
   f.length_on ([a] ++ l ++ [z]) = (list.map₂ (λ x y, nndist (f x) (f y)) ([a] ++ l) (l ++ [z])).sum
@@ -67,23 +79,6 @@ lemma length_on_cons_list_append_cons : ∀ (a : β) (l : list β) (z : β),
   { simp only [list.map₂, list.nil_append, list.cons_append, length_on_cons_cons,
                list.sum_cons, add_right_inj],
     apply length_on_cons_list_append_cons, }
-
-lemma length_on_le_length_on_append_left :
-  ∀ (l l' : list β), f.length_on l ≤ f.length_on (l ++ l')
-| []            _ := by simp only [length_on_nil, zero_le']
-| [_]           _ := by simp only [length_on_cons_nil, zero_le']
-| (_ :: _ :: _) _ := by
-  { simp only [length_on_cons_cons, list.cons_append, add_le_add_iff_left],
-    rw [←list.cons_append],
-    apply length_on_le_length_on_append_left }
-
-lemma length_on_le_length_on_append_right :
-  ∀ (l l' : list β), f.length_on l' ≤ f.length_on (l ++ l')
-| [] _ := by simp
-| (a :: l) l' := by
-  { transitivity' (f.length_on $ l ++ l'),
-    apply length_on_le_length_on_append_right,
-    apply length_on_le_length_on_cons, }
 
 lemma length_on_drop_second_cons_le :
   ∀ (a b : β) (l : list β), f.length_on (a :: l) ≤ f.length_on (a :: b :: l)
@@ -123,21 +118,27 @@ lemma length_on_destutter :
   ∀ l, f.length_on l = f.length_on (list.destutter (≠) l)
 | [] := by { simp, }
 | [_] := by { simp, }
-| (a :: b :: l) := by
-  { simp only [list.destutter_cons_cons, ite_not],
-    split_ifs,
-    { subst_vars,
-      rw [length_on_cons_cons, length_on_destutter (b :: l)],
-      simpa only [nndist_self, zero_add], },
-    { cases l with c l,
-      { simp, },
-      { simp only [list.destutter'_cons, length_on_cons_cons, ite_not],
-        split_ifs,
-        { subst_vars,
-          change list.destutter' ne c l with list.destutter ne (c :: l),
-          rw length_on_cons_cons f,
+| [a,b] := by { simp, split_ifs, {subst_vars, simp, }, { simp, }, }
+| (a::b::c::l) := by { sorry }
 
-          rw ←length_on_destutter, } } } }
+lemma length_on_append : ∀ l l', f.length_on l + f.length_on l' ≤ f.length_on (l ++ l')
+| [] l' := by
+  { simp only [list.nil_append, length_on_nil, zero_add], }
+| [a] l' := by
+  { simp only [list.singleton_append, length_on_cons_nil, zero_add],
+    apply length_on_le_length_on_cons, }
+| (a :: b :: l) l' := by
+  { simp only [list.cons_append, length_on_cons_cons, add_assoc],
+    apply add_le_add_left,
+    apply length_on_append, }
+
+lemma length_on_le_length_on_append_left
+  (l l' : list β) : f.length_on l ≤ f.length_on (l ++ l') :=
+le_trans (by { simp only [le_add_iff_nonneg_right, zero_le'], }) (f.length_on_append l l')
+
+lemma length_on_le_length_on_append_right
+  (l l' : list β) : f.length_on l' ≤ f.length_on (l ++ l') :=
+le_trans (by { simp only [le_add_iff_nonneg_left, zero_le'], }) (f.length_on_append l l')
 
 lemma length_on_reverse : ∀ (l : list β), f.length_on l.reverse = f.length_on l
 | [] := rfl
@@ -145,7 +146,13 @@ lemma length_on_reverse : ∀ (l : list β), f.length_on l.reverse = f.length_on
 | (a :: b :: l) := by
   { simp only [list.reverse_cons, list.append_assoc, list.singleton_append,
                length_on_append_cons_cons, length_on_cons_cons],
-    rw ←list.reverse_cons, rw length_on_reverse, rw add_comm, rw nndist_comm, }
+    rw [←list.reverse_cons, length_on_reverse, add_comm, nndist_comm], }
+
+@[simp]
+lemma length_on_map {γ : Type*} (φ : γ → β) :
+  ∀ (l : list γ), f.length_on (l.map φ) = (f ∘ φ).length_on l := sorry
+
+lemma length_on_mono : ∀ l l', l <+ l' → f.length_on l ≤ f.length_on l' := sorry
 
 end length_on
 
@@ -159,15 +166,49 @@ The path length of `f` is the supremum over all strictly increasing partitions `
 of the length of `f` for `l`
 -/
 def path_length : ennreal :=
-  ⨆ l ∈ {l : list s | l.pairwise (≤)}, f.length_on l
+  ⨆ l ∈ {l : list s | l.sorted (≤)}, f.length_on l
 
-lemma path_length_mono (h : t ⊆ s) : (f ∘ inclusion h).path_length ≤ f.path_length := sorry
+lemma path_length_comp (φ : t → s) (mφ : monotone φ) :
+  (f ∘ φ).path_length ≤ f.path_length :=
+begin
+  dsimp [path_length],
+  simp only [supr₂_le_iff],
+  rintro l ls,
+  rw ←f.length_on_map,
+  exact @le_supr₂ _ _ _ _
+    (λ (l : list ↥s) (H : list.sorted (≤) l), (↑(f.length_on l) : ennreal))
+    (l.map φ) (list.pairwise.map φ mφ ls),
+end
 
-lemma path_length_comp (φ : t → s) :
-  (f ∘ φ).path_length ≤ f.path_length := sorry
+lemma path_length_mono (h : t ⊆ s) : (f ∘ inclusion h).path_length ≤ f.path_length :=
+begin
+  apply path_length_comp,
+  rintro ⟨a,ha⟩ ⟨b,hb⟩,
+  exact id,
+end
 
-lemma path_length_reparametrize (φ : t → s) [monotone φ] [surjective φ] :
-  (f ∘ φ).path_length = f.path_length := sorry
+lemma path_length_reparametrize (φ : t → s) (mφ : monotone φ) (sφ : surjective φ) :
+  (f ∘ φ).path_length = f.path_length :=
+begin
+  apply le_antisymm,
+  apply f.path_length_comp φ mφ,
+
+  -- Yael should know a lemma for this
+  obtain ⟨ψ,φψ⟩ := sφ.has_right_inverse,
+  have mψ : monotone ψ := by
+  { rintro x y l,
+    have := le_total (ψ x) (ψ y),
+    cases this,
+    { exact this, },
+    { let := mφ (this),
+      rw [φψ x, φψ y] at this,
+      cases le_antisymm l this, refl, } },
+
+  convert (f ∘ φ).path_length_comp ψ mψ,
+  ext x,
+  simp only [comp_app, φψ x],
+
+end
 
 lemma path_length_reparametrize_anti (φ : t → s) [antitone φ] [surjective φ] :
   (f ∘ φ).path_length = f.path_length := sorry
