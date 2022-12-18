@@ -124,15 +124,20 @@ lemma length_on_destutter :
 | [] := by { simp, }
 | [_] := by { simp, }
 | (a :: b :: l) := by
-  { simp [list.destutter_cons_cons],
+  { simp only [list.destutter_cons_cons, ite_not],
     split_ifs,
-    { subst_vars, rw length_on_destutter (b :: l), simp, refl, },
-    { rw length_on_destutter (b :: l),
-      cases l,
+    { subst_vars,
+      rw [length_on_cons_cons, length_on_destutter (b :: l)],
+      simpa only [nndist_self, zero_add], },
+    { cases l with c l,
       { simp, },
-      { simp [list.destutter_cons_cons],
+      { simp only [list.destutter'_cons, length_on_cons_cons, ite_not],
         split_ifs,
-        { subst_vars, simp, } } } }
+        { subst_vars,
+          change list.destutter' ne c l with list.destutter ne (c :: l),
+          rw length_on_cons_cons f,
+
+          rw ←length_on_destutter, } } } }
 
 lemma length_on_reverse : ∀ (l : list β), f.length_on l.reverse = f.length_on l
 | [] := rfl
