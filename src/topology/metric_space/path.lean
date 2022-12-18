@@ -3,6 +3,7 @@ import data.real.nnreal
 import data.set.intervals.basic
 import topology.metric_space.emetric_space
 import topology.metric_space.basic
+import data.list.destutter
 
 noncomputable theory
 
@@ -67,7 +68,6 @@ lemma length_on_cons_list_append_cons : ∀ (a : β) (l : list β) (z : β),
                list.sum_cons, add_right_inj],
     apply length_on_cons_list_append_cons, }
 
-
 lemma length_on_le_length_on_append_left :
   ∀ (l l' : list β), f.length_on l ≤ f.length_on (l ++ l')
 | []            _ := by simp only [length_on_nil, zero_le']
@@ -85,19 +85,11 @@ lemma length_on_le_length_on_append_right :
     apply length_on_le_length_on_append_right,
     apply length_on_le_length_on_cons, }
 
-/-
-lemma length_on_mono : ∀ {l l' : list β} (ll' : l <+ l'),
-  f.length_on l ≤ f.length_on l'
-| _ _ list.sublist.slnil := le_refl _
-| _ _ (list.sublist.cons _ _ _ s) := (length_on_mono s).trans (f.length_on_le_length_on_cons _ _)
-| _ _ (list.sublist.cons2 [] _ x s) := by simp
-| _ _ (list.sublist.cons2 [_] [] x s) := by simpa using s
-| _ _ (list.sublist.cons2 [_] [_] x s) := by
-  { simp only [list.singleton_sublist, list.mem_singleton] at s, cases s, refl, }
-| _ _ (list.sublist.cons2 [a] (b :: l) x s) := by
-  { simp only [list.singleton_sublist, list.mem_singleton] at s, cases s }
-| _ _ (list.sublist.cons2 (a :: b :: l) _ x s) := by {sorry}
--/
+lemma length_on_drop_second_cons_le :
+  ∀ (a b : β) (l : list β), f.length_on (a :: l) ≤ f.length_on (a :: b :: l)
+| _ _ []  := by { simp only [length_on_cons_nil, zero_le'], }
+| _ _ (c::l) := by
+  { simp only [length_on_cons_cons, ←add_assoc, add_le_add_iff_right], apply nndist_triangle, }
 
 lemma nndist_le_length_on_cons :
   ∀ (a : β) {b : β} {l : list β} (bl : b ∈ l), nndist (f a) (f b) ≤ f.length_on (a :: l)
@@ -109,24 +101,38 @@ lemma nndist_le_length_on_cons :
   { simp only [length_on_cons_cons, list.mem_cons_iff] at hb ⊢,
     cases hb; cases hb,
     { simp only [le_add_iff_nonneg_right, zero_le'], },
-    { cases hb, apply (nndist_triangle (f a) (f x) (f b)).trans, simp, },
-    { apply (nndist_le_length_on_cons a hb).trans, }
-
-  }
+    { cases hb, apply (nndist_triangle (f a) (f x) (f b)).trans,
+      simp only [add_le_add_iff_left, le_add_iff_nonneg_right, zero_le'], },
+    { apply (nndist_le_length_on_cons a hb).trans,
+      apply (f.length_on_drop_second_cons_le a y l).trans,
+      simp only [length_on_cons_cons, ←add_assoc, add_le_add_iff_right, nndist_triangle], } }
 
 
 lemma nndist_le_length_on :
   ∀ {a b : β} {l : list β} (al : a ∈ l) (bl : b ∈ l), nndist (f a) (f b) ≤ f.length_on l
 | a b [] ha hb := by simpa using ha
 | a b (x :: l) ha hb := by
-  { simp at ha hb ⊢,
+  { simp only [list.mem_cons_iff] at ha hb ⊢,
     cases ha; cases hb,
-    { subst_vars, simp, },
-    { subst_vars,
-      apply (nndist_le_length_on _ hb).trans, } }
+    { subst_vars, simp only [nndist_self, zero_le'], },
+    { subst_vars, apply nndist_le_length_on_cons, exact hb, },
+    { subst_vars, rw nndist_comm, apply nndist_le_length_on_cons, exact ha, },
+    { apply (nndist_le_length_on ha hb).trans, apply length_on_le_length_on_cons, }, }
 
 lemma length_on_destutter :
-  ∀ l, f.length_on l = f.length_on (list.destutter (≠) l) := sorry
+  ∀ l, f.length_on l = f.length_on (list.destutter (≠) l)
+| [] := by { simp, }
+| [_] := by { simp, }
+| (a :: b :: l) := by
+  { simp [list.destutter_cons_cons],
+    split_ifs,
+    { subst_vars, rw length_on_destutter (b :: l), simp, refl, },
+    { rw length_on_destutter (b :: l),
+      cases l,
+      { simp, },
+      { simp [list.destutter_cons_cons],
+        split_ifs,
+        { subst_vars, simp, } } } }
 
 lemma length_on_reverse : ∀ (l : list β), f.length_on l.reverse = f.length_on l
 | [] := rfl
