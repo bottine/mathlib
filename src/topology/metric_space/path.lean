@@ -16,54 +16,74 @@ open emetric nnreal set
 section length_on
 
 variables {α β : Type*} [metric_space α]
-variables (f : β → α) (l l' : list β) (a b : β)
+variables (f : β → α)
 
-def function.length_on : nnreal :=
-  list.sum (list.map₂ (λ x y, nndist (f x) (f y)) ([a] ++ l) (l ++ [b]))
+def function.length_on : list β → nnreal
+| list.nil      := 0
+| [_]           := 0
+| (a :: b :: l) := nndist (f a) (f b) + function.length_on (b :: l)
 
-@[simp]
-lemma function.length_on_nil :
-  f.length_on list.nil a b = nndist (f a) (f b) :=
-begin
-  dsimp [function.length_on],
-  simp only [list.sum_cons, list.sum_nil, add_zero],
-end
+@[simp] lemma function.length_on_nil : f.length_on list.nil = 0 := rfl
+@[simp] lemma function.length_on_cons_nil (b : β) : f.length_on [b] = 0 := rfl
+@[simp] lemma function.length_on_cons_cons (a b : β) (l : list β) :
+  f.length_on (a :: b :: l) = nndist (f a) (f b) + f.length_on (b :: l) := rfl
 
-@[simp]
-lemma function.length_on_cons (c : β):
-  f.length_on (c :: l) a b = (nndist (f a) (f c)) + f.length_on l c b :=
-begin
-  dsimp [function.length_on],
-  simp only [list.sum_cons],
-end
 
 lemma function.length_on_le_length_on_cons (c : β) :
-  f.length_on l a b ≤ f.length_on (c :: l) a b :=
+  ∀ (l : list β), f.length_on l ≤ (f.length_on $ c :: l)
+| list.nil := by simp
+| [a] := by simp
+| (a :: b :: l) := by
+  { simp only [function.length_on], rw ←add_assoc, apply add_le_add_right, apply le_add_left, refl, }
+
+lemma function.length_on_le_length_on_append_left (l l' : list β) :
+  f.length_on l ≤ f.length_on (l ++ l') := sorry
+
+lemma function.length_on_le_length_on_append_right (l l' : list β) :
+  f.length_on l' ≤ f.length_on (l ++ l') := sorry
+
+
+lemma function.length_on_mono : ∀ {l l' : list β} (ll' : l <+ l'),
+  f.length_on l ≤ f.length_on l' :=
 begin
-  cases l,
-  { dsimp [function.length_on],
-    simp only [list.sum_cons, list.sum_nil, add_zero],
-    apply nndist_triangle, },
-  { simp_rw [function.length_on_cons, ←add_assoc], apply add_le_add_right, apply nndist_triangle },
+  apply list.sublist.rec,
+  { refl, },
+  { rintro l l' a sub ih,
+    apply ih.trans,
+    apply function.length_on_le_length_on_cons, },
+  { rintro l l' a sub ih,
+    cases l; cases l',
+    { refl, },
+    { simp, },
+    { simpa using sub, },
+    { simp only [function.length_on_cons_cons],
+      induction sub,
+      { simp at ⊢ ih, },
+      { } }
+  }
 end
 
-lemma function.length_on_mono (ll' : l <+ l') :
-  ∀ a b, f.length_on l a b ≤ f.length_on l' a b :=
+lemma function.nndist_le_length_on {a b : β} {l : list β} (al : a ∈ l) (bl : b ∈ l):
+  nndist (f a) (f b) ≤ f.length_on l :=
 begin
-  induction ll' with l l' c ll' ih l l' c ll' ih,
-  { rintro a b, simp only [le_refl], },
-  { rintro a b, apply (ih a b).trans,
-    apply function.length_on_le_length_on_cons, },
-  { rintro a b,
-    simp only [function.length_on_cons, add_le_add_iff_left],
-    exact ih c b, }
+
 end
 
 lemma function.length_on_destutter :
-  ∀ l a b, f.length_on l a b = f.length_on (list.destutter (≠) l) a b :=
-begin
-  sorry
-end
+  ∀ l, f.length_on l = f.length_on (list.destutter (≠) l)
+| list.nil := rfl
+| [a] := rfl
+| [a,b] := by
+  { dsimp [list.destutter, list.destutter'],
+    split_ifs,
+    { subst_vars, simp, },
+    { simp, },  }
+| (a :: b :: c :: l) := by
+  { simp only [list.destutter, list.destutter', ite_not],
+    split_ifs,
+    { subst_vars, simp only [nndist_self, zero_add, function.length_on_cons_cons], apply function.length_on_destutter, },
+    { subst_vars, rw function.length_on_cons_cons, simp only [nndist_self, zero_add], rw function.length_on_destutter, dsimp [list.destutter, list.destutter'], simp only [h_1, not_false_iff, if_true], },
+    { subst_vars, }}
 
 end length_on
 
@@ -72,15 +92,12 @@ section path_length_on
 variables {α : Type*} [metric_space α] {a b : nnreal} (ab : a ≤ b)
 variables (f : Icc a b → α) (l : list $ Icc a b)
 
-def function.path_length_on  : nnreal :=
-  f.length_on l ⟨a, le_refl a, ab⟩ ⟨b, ab, le_refl b⟩
-
 /--
 The path length of `f` is the supremum over all strictly increasing partitions `l`
 of the length of `f` for `l`
 -/
 def function.path_length : ennreal :=
-  ⨆ l ∈ {l : list $ Icc a b | l.pairwise (≤)}, f.path_length_on ab l
+  ⨆ l ∈ {l : list $ Icc a b | l.pairwise (≤)}, f.length_on l
 
 
 
