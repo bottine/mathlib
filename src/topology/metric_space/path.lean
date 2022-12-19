@@ -17,180 +17,157 @@ open emetric nnreal set
 -- TODO: allow `[emetric_space α]`
 -- Add Lipschitz maps
 
-section preliminaries
 
-
-
-end preliminaries
+-- set_option profiler true
 
 namespace function
 
 section length_on
 
-variables {α β : Type*} [metric_space α]
+variables {α β : Type*} [pseudo_emetric_space α]
 variables (f : β → α)
 
-@[simp] def dist_head : β → list β → nnreal
+def dist_head : β → list β → ennreal
 | _ [] := 0
-| x (a :: _) := nndist (f x) (f a)
+| x (a :: _) := edist (f x) (f a)
 
-@[simp] lemma dist_head_nil (b : β) : f.dist_head b [] = 0 := rfl
-@[simp] lemma dist_head_cons (b) (a) (l) : f.dist_head b (a::l) = nndist (f b) (f a) := rfl
+lemma dist_head_nil (b : β) : f.dist_head b [] = 0 := rfl
+lemma dist_head_cons (b) (a) (l) : f.dist_head b (a::l) = edist (f b) (f a) := rfl
 
-@[simp] lemma dist_head_le_append (b) (l l') : f.dist_head b l ≤ f.dist_head b (l ++ l') := sorry
+lemma dist_head_le_append :
+  ∀ (l : list β) (b : β) (l' : list β), f.dist_head b l ≤ f.dist_head b (l ++ l')
+| [] _ _ := zero_le'
+| (_::_) _ _ := le_refl _
 
-lemma dist_head_triangle (a b) (l) :
-  f.dist_head a l ≤ nndist (f a) (f b) + f.dist_head b l :=
-begin
-  induction l,
-  simp only [dist_head_nil, zero_le'],
-  simp only [dist_head_cons], apply nndist_triangle,
-end
+lemma dist_head_triangle :
+  ∀ (a b : β) (l : list β), f.dist_head a l ≤ edist (f a) (f b) + f.dist_head b l
+| _ _ [] := zero_le'
+| _ _ (_::_) := edist_triangle _ _ _
 
-@[simp] def dist_tail_head : list β → list β → nnreal
-| [] _ := 0
-| [a] l' := f.dist_head a l'
-| (a::l) l' := dist_tail_head l l'
 
-def length_on : list β → nnreal
+def length_on : list β → ennreal
 | list.nil := 0
 | (a :: l) := f.dist_head a l + length_on l
 
-@[simp] lemma length_on_nil : f.length_on list.nil = 0 := rfl
-@[simp] lemma length_on_cons_nil (b : β) : f.length_on [b] = 0 :=
-by simp only [length_on, dist_head_nil, add_zero]
-@[simp] lemma length_on_cons_cons (a b : β) (l : list β) :
-  f.length_on (a :: b :: l) = nndist (f a) (f b) + f.length_on (b :: l) := rfl
+lemma length_on_nil : f.length_on list.nil = 0 := rfl
+lemma length_on_cons_nil (b : β) : f.length_on [b] = 0 :=
+by simp_rw [length_on, dist_head_nil, add_zero]
+lemma length_on_cons_cons (a b : β) (l : list β) :
+  f.length_on (a :: b :: l) = edist (f a) (f b) + f.length_on (b :: l) := rfl
 
 lemma length_on_cons_eq_dist_head_add_length_on (a : β) (l : list β) :
   f.length_on (a :: l) = f.dist_head a l + f.length_on l := rfl
 
-@[simp]
 lemma length_on_append_cons_cons :
-  ∀ (l : list β) (a b : β), f.length_on (l ++ [a, b]) = f.length_on (l ++ [a]) + nndist (f a) (f b)
+   ∀ (l : list β) (a b : β), f.length_on (l ++ [a, b]) = f.length_on (l ++ [a]) + edist (f a) (f b)
 | [] a b := by
-  { simp only [list.nil_append, length_on_cons_cons,
-                          length_on_cons_nil, add_zero, zero_add], }
+  { simp_rw [list.nil_append, length_on_cons_cons, length_on_cons_nil, add_zero, zero_add], }
 | [x] a b := by
-  { simp only [list.singleton_append, length_on_cons_cons,
-                           length_on_cons_nil, add_zero], }
+  { simp_rw [list.singleton_append, length_on_cons_cons, length_on_cons_nil, add_zero], }
 | (x :: y :: l) a b := by
-  { simp only [list.cons_append, length_on_cons_cons],
-    change y :: (l ++ [a]) with (y :: l) ++ [a],
+  { change edist (f x) (f y) + length_on f (y :: (l ++ [a, b])) =
+           edist (f x) (f y) + length_on f (y :: l ++ [a]) + edist (f a) (f b),
     rw [add_assoc, ←length_on_append_cons_cons], refl, }
 
-lemma length_on_le_length_on_cons (c : β) :
-  ∀ (l : list β), f.length_on l ≤ (f.length_on $ c :: l)
-| list.nil := by simp
-| [a] := by simp
-| (a :: b :: l) := by
-  { simp only [length_on_cons_cons], rw ←add_assoc, apply add_le_add_right, apply le_add_left, refl, }
-
-lemma length_on_cons_list_append_cons : ∀ (a : β) (l : list β) (z : β),
-  f.length_on ([a] ++ l ++ [z]) = (list.map₂ (λ x y, nndist (f x) (f y)) ([a] ++ l) (l ++ [z])).sum
-| a []  z := by
-  { simp only [list.map₂, list.singleton_append, length_on_cons_cons,
-               length_on_cons_nil, list.nil_append, list.sum_cons, list.sum_nil], }
-| a [b] z := by -- **TODO** a simple simp works, but squeezing it doesn't :(
-  { simp only [list.map₂, list.singleton_append, list.cons_append, length_on_cons_cons,
-               length_on_cons_nil, add_zero, list.sum_cons, list.sum_nil, add_left_inj,
-               eq_self_iff_true],
-    simp only [list.map₂, list.nil_append, list.singleton_append, length_on_cons_cons,
-               length_on_cons_nil, list.sum_cons, list.sum_nil], }
-| a (b :: c :: l) z := by
-  { simp only [list.map₂, list.nil_append, list.cons_append, length_on_cons_cons,
-               list.sum_cons, add_right_inj],
-    apply length_on_cons_list_append_cons, }
-
+lemma length_on_le_length_on_cons (c : β) (l : list β) : f.length_on l ≤ (f.length_on $ c :: l) :=
+self_le_add_left _ _
 lemma length_on_drop_second_cons_le :
   ∀ (a b : β) (l : list β), f.length_on (a :: l) ≤ f.length_on (a :: b :: l)
-| _ _ []  := by { simp only [length_on_cons_nil, zero_le'], }
-| _ _ (c::l) := by
-  { simp only [length_on_cons_cons, ←add_assoc, add_le_add_iff_right], apply nndist_triangle, }
+| _ _ []  := by
+  { simp_rw [length_on_cons_nil, zero_le'], }
+| a b (c::l) := by
+  { simp_rw [length_on_cons_cons, ←add_assoc],
+    apply add_le_add_right _ (f.length_on (c :: l)),
+    apply edist_triangle, }
 
-lemma nndist_le_length_on_cons :
-  ∀ (a : β) {b : β} {l : list β} (bl : b ∈ l), nndist (f a) (f b) ≤ f.length_on (a :: l)
-| a b [] hb := by simpa using hb
+lemma edist_le_length_on_cons :
+  ∀ (a : β) {b : β} {l : list β} (bl : b ∈ l), edist (f a) (f b) ≤ f.length_on (a :: l)
+| a b [] hb := (list.not_mem_nil _ hb).elim
 | a b [x] hb := by
-  { simp only [length_on_cons_cons, length_on_cons_nil, add_zero, list.mem_singleton] at hb ⊢,
-    cases hb, refl, }
+  { simp_rw [length_on_cons_cons, length_on_cons_nil, add_zero, list.mem_singleton] at hb ⊢,
+    cases hb, exact le_refl _, }
 | a b (x :: y :: l) hb := by
-  { simp only [length_on_cons_cons, list.mem_cons_iff] at hb ⊢,
+  { simp_rw [length_on_cons_cons, list.mem_cons_iff] at hb ⊢,
     cases hb; cases hb,
-    { simp only [le_add_iff_nonneg_right, zero_le'], },
-    { cases hb, apply (nndist_triangle (f a) (f x) (f b)).trans,
-      simp only [add_le_add_iff_left, le_add_iff_nonneg_right, zero_le'], },
-    { apply (nndist_le_length_on_cons a hb).trans,
+    { apply self_le_add_right _ _, },
+    { cases hb,
+      apply (edist_triangle (f a) (f x) (f b)).trans,
+      rw ←add_assoc,
+      apply self_le_add_right _ (length_on f (b :: l)), },
+    { apply (edist_le_length_on_cons a hb).trans,
       apply (f.length_on_drop_second_cons_le a y l).trans,
-      simp only [length_on_cons_cons, ←add_assoc, add_le_add_iff_right, nndist_triangle], } }
+      rw [length_on_cons_cons, ←add_assoc],
+      apply add_le_add_right _ (length_on f (y :: l)),
+      apply edist_triangle, } }
 
 
-lemma nndist_le_length_on :
-  ∀ {a b : β} {l : list β} (al : a ∈ l) (bl : b ∈ l), nndist (f a) (f b) ≤ f.length_on l
-| a b [] ha hb := by simpa using ha
+lemma edist_le_length_on :
+  ∀ {a b : β} {l : list β} (al : a ∈ l) (bl : b ∈ l), edist (f a) (f b) ≤ f.length_on l
+| a b [] ha hb := (list.not_mem_nil _ ha).elim
 | a b (x :: l) ha hb := by
   { simp only [list.mem_cons_iff] at ha hb ⊢,
     cases ha; cases hb,
-    { subst_vars, simp only [nndist_self, zero_le'], },
-    { subst_vars, apply nndist_le_length_on_cons, exact hb, },
-    { subst_vars, rw nndist_comm, apply nndist_le_length_on_cons, exact ha, },
-    { apply (nndist_le_length_on ha hb).trans, apply length_on_le_length_on_cons, }, }
-
-lemma length_on_destutter :
-  ∀ l, f.length_on l = f.length_on (list.destutter (≠) l) := sorry
+    { subst_vars, simp only [edist_self, zero_le'], },
+    { subst_vars, apply edist_le_length_on_cons, exact hb, },
+    { subst_vars, rw edist_comm, apply edist_le_length_on_cons, exact ha, },
+    { apply (edist_le_length_on ha hb).trans, apply length_on_le_length_on_cons, }, }
 
 lemma length_on_append : ∀ l l', f.length_on l + f.length_on l' ≤ f.length_on (l ++ l')
 | [] l' := by
-  { simp only [list.nil_append, length_on_nil, zero_add], }
+  { simp only [list.nil_append, length_on_nil, zero_add], exact le_refl _, }
 | [a] l' := by
   { simp only [list.singleton_append, length_on_cons_nil, zero_add],
     apply length_on_le_length_on_cons, }
 | (a :: b :: l) l' := by
   { simp only [list.cons_append, length_on_cons_cons, add_assoc],
-    apply add_le_add_left,
+    refine add_le_add_left _ _,
     apply length_on_append, }
 
 lemma length_on_le_length_on_append_left
   (l l' : list β) : f.length_on l ≤ f.length_on (l ++ l') :=
-le_trans (by { simp only [le_add_iff_nonneg_right, zero_le'], }) (f.length_on_append l l')
+le_trans (self_le_add_right _ _) (f.length_on_append l l')
 
 lemma length_on_le_length_on_append_right
   (l l' : list β) : f.length_on l' ≤ f.length_on (l ++ l') :=
-le_trans (by { simp only [le_add_iff_nonneg_left, zero_le'], }) (f.length_on_append l l')
+le_trans (self_le_add_left _ _) (f.length_on_append l l')
+
 
 lemma length_on_reverse : ∀ (l : list β), f.length_on l.reverse = f.length_on l
 | [] := rfl
 | [a] := rfl
 | (a :: b :: l) := by
-  { simp only [list.reverse_cons, list.append_assoc, list.singleton_append,
-               length_on_append_cons_cons, length_on_cons_cons],
-    rw [←list.reverse_cons, length_on_reverse, add_comm, nndist_comm], }
+  { simp_rw [list.reverse_cons, list.append_assoc, list.singleton_append,
+               length_on_append_cons_cons, length_on_cons_cons,
+               ←list.reverse_cons, length_on_reverse, add_comm, edist_comm], }
 
-@[simp]
 lemma length_on_map {γ : Type*} (φ : γ → β) :
   ∀ (l : list γ), f.length_on (l.map φ) = (f ∘ φ).length_on l
 | [] := by { simp only [list.map_nil, length_on_nil], }
 | [a] := by { simp only [list.map, length_on_cons_nil], }
 | (a :: b :: l)  := by
-  { simp only [list.map, length_on_cons_cons, add_right_inj],
-    rw ←list.map, apply length_on_map, }
+  { simp_rw [list.map, length_on_cons_cons, comp_apply, ←length_on_map, list.map], }
 
 lemma length_on_le_append_singleton_append :
   ∀ (l) (x) (l'), f.length_on (l ++ l') ≤ f.length_on (l ++ [x] ++ l')
-| [] x l' := by { simp only [list.nil_append, list.singleton_append, length_on_le_length_on_cons], }
-| [a] x l' := by
-  { simp only [list.singleton_append, list.cons_append, length_on_cons_cons],
-    simp only [list.nil_append, list.singleton_append, length_on_drop_second_cons_le], }
+| [] x l' := by { apply length_on_le_length_on_cons, }
+| [a] x l' := by { apply length_on_drop_second_cons_le, }
 | (a :: b :: l) x l' := by
-  { sorry, }
+  { change a :: b :: l ++ l' with a :: b :: (l ++ l'),
+    change a :: b :: l ++ [x] ++ l' with a :: b :: (l ++ [x] ++ l'),
+    rw [length_on_cons_cons, length_on_cons_cons],
+    apply add_le_add_left _ (edist (f a) (f b)),
+    exact length_on_le_append_singleton_append (b :: l) x l', }
 
 
 lemma length_on_append_singleton_append :
   ∀ (l) (x) (l'), f.length_on (l ++ [x] ++ l') = f.length_on (l ++ [x]) + f.length_on ([x] ++ l')
 | [] x l' := by { simp only [list.nil_append, length_on_cons_nil, zero_add], }
 | [a] x l' := by
-  { simp only [list.singleton_append, list.cons_append, length_on_cons_cons,
-               length_on_cons_nil, add_zero, add_left_inj, eq_self_iff_true], simp, }
+  { simp_rw [list.singleton_append, list.cons_append],
+    simp only [list.nil_append, list.singleton_append], -- why do I need two rounds ???
+    simp only [length_on_cons_cons, add_assoc],
+    sorry, --refine add_le_add_left _ (edist (f a) (f x)),
+    }
 | (a :: b :: l) x l' := by
   { simp only [list.cons_append, list.append_assoc, list.singleton_append, length_on_cons_cons],
     have : b :: (l ++ x :: l') = (b :: l) ++ [x] ++ l', by simp,
@@ -205,11 +182,12 @@ begin
                implies_true_iff], },
   { rintro x,
     apply (ih x).trans,
-    simp_rw [length_on_cons_eq_dist_head_add_length_on, dist_head_cons, ←add_assoc,
-             add_le_add_iff_right],
+    simp_rw [length_on_cons_eq_dist_head_add_length_on, dist_head_cons, ←add_assoc],
+    refine add_le_add_right _ _,
     apply dist_head_triangle, },
   { rintro x, specialize ih b,
-    simp [length_on_cons_eq_dist_head_add_length_on], exact ih, }
+    simp only [length_on_cons_eq_dist_head_add_length_on, dist_head_cons],
+    refine add_le_add_left _ _, exact ih, }
 end
 
 lemma length_on_mono : ∀ l l', l <+ l' → f.length_on l ≤ f.length_on l' :=
@@ -220,11 +198,9 @@ begin
     cases ll',
     refl, },
   { let := f.length_on_mono' _ _ ll' l'_hd,
-    simp only [dist_head_cons, nndist_self, zero_add] at this,
-    apply le_trans _ this, simp only [le_add_iff_nonneg_left, zero_le'],  }
+    simp only [dist_head_cons, edist_self, zero_add] at this,
+    apply le_trans _ this, refine self_le_add_left _ _, }
 end
-
-
 
 end length_on
 
@@ -332,11 +308,11 @@ lemma path_length_ge_parts (sl sr : set ℝ) (sls : sl ⊆ s) (srs : sr ⊆ s)
 begin
   apply ennreal.bsupr_add_bsupr_le sorted_list_nonempty sorted_list_nonempty,
   rintro left lefts right rights,
-  simp_rw [←length_on_map f (inclusion _), ←ennreal.coe_add],
-  apply (ennreal.coe_mono (f.length_on_append _ _)).trans,
+  simp_rw [←length_on_map f (inclusion _)],
+  apply (f.length_on_append _ _).trans,
+  dsimp [path_length],
   refine @le_supr₂ _ _ _ _
-    (λ (l : list ↥s) (H : list.pairwise (≤) l), (↑(f.length_on l) : ennreal))
-    _ _,
+    (λ (l : list ↥s) (H : list.pairwise (≤) l), f.length_on l) _ _,
   rw list.pairwise_append,
   refine ⟨list.pairwise.map _ (λ a b h, h) lefts,
           list.pairwise.map _ (λ a b h, h) rights,
@@ -366,7 +342,7 @@ begin
     let left := list.take_while (λ a, ↑a<m) l,
     let right := list.drop_while (λ a, ↑a<m) l,
     rw ←list.take_while_append_drop (λ a, ↑a < m ) l,
-    apply (ennreal.coe_mono (length_on_le_append_singleton_append f _ ⟨m,ms⟩ _)).trans,
+    apply (length_on_le_append_singleton_append f _ ⟨m,ms⟩ _).trans,
     rw length_on_append_singleton_append,
     simp only [list.singleton_append, ennreal.coe_add],
     apply _root_.ennreal.add_le_add,
@@ -396,7 +372,7 @@ lemma arc_length_monotone (hs : f.is_rectifiable)
 begin
   rintro x₁ x₂ h,
   dsimp [arc_length],
-  split_ifs,
+  split_ifs with h₁ h₂ h₂ h₁,
   { transitivity'
       (path_length (f ∘ inclusion (set.inter_subset_left s (Icc x₀ x₁)))).to_real +
       (path_length (f ∘ inclusion (set.inter_subset_left s (Icc x₁ x₂)))).to_real,
@@ -405,14 +381,14 @@ begin
     refine ennreal.to_real_mono _ _, apply hs,
     apply path_length_ge_parts, -- Should use specialized version of `path_length_ge_parts`
     { rintro x ⟨xs,⟨x₀x,xx₁⟩⟩, exact ⟨xs,x₀x,xx₁.trans h⟩ },
-    { rintro x ⟨xs,⟨x₁x,xx₂⟩⟩, exact ⟨xs,h_1.trans x₁x,xx₂⟩},
+    { rintro x ⟨xs,⟨x₁x,xx₂⟩⟩, exact ⟨xs,h₁.trans x₁x,xx₂⟩},
     { rintro x ⟨xs,x₀x,xx₁⟩ y ⟨ys,x₁y,yx₂⟩, exact xx₁.trans x₁y, }, },
-  { exfalso, apply h_2 (h_1.trans h), },
+  { exfalso, apply h₂ (h₁.trans h), },
   { transitivity' 0;
     simp only [right.neg_nonpos_iff, ennreal.to_real_nonneg];
     apply ennreal.to_real_nonneg, },
   -- this whole block ↓ is taken from the first. Intelligent tactic management should help ged rid of it
-  { simp only [neg_le_neg_iff, not_le] at h_1 h_2 ⊢,
+  { simp only [neg_le_neg_iff, not_le] at h₁ h₂ ⊢,
     transitivity'
       (path_length (f ∘ inclusion (set.inter_subset_left s (Icc x₁ x₂)))).to_real +
       (path_length (f ∘ inclusion (set.inter_subset_left s (Icc x₂ x₀)))).to_real,
@@ -420,11 +396,12 @@ begin
     rw ←ennreal.to_real_add, rotate, apply hs, apply hs,
     refine ennreal.to_real_mono _ _, apply hs,
     apply path_length_ge_parts,
-    { rintro x ⟨xs,⟨x₁x,xx₂⟩⟩, exact ⟨xs,x₁x,xx₂.trans h_2.le⟩ },
+    { rintro x ⟨xs,⟨x₁x,xx₂⟩⟩, exact ⟨xs,x₁x,xx₂.trans h₂.le⟩ },
     { rintro x ⟨xs,⟨x₂x,xx₀⟩⟩, exact ⟨xs,h.trans x₂x, xx₀⟩},
-    { rintro x ⟨xs,x₀x,xx₁⟩ y ⟨ys,x₁y,yx₂⟩, exact xx₁.trans x₁y, },
-   }
+    { rintro x ⟨xs,x₀x,xx₁⟩ y ⟨ys,x₁y,yx₂⟩, exact xx₁.trans x₁y, }, }
 end
+
+-- TODO: constant speed reparameterization
 
 end path_length
 
@@ -437,3 +414,5 @@ variables {α : Type*} [metric_space α]
 end curve_length
 
 end function
+
+
