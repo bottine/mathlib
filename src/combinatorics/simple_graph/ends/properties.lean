@@ -20,10 +20,11 @@ namespace simple_graph
 lemma ends_of_finite [finite V] : is_empty G.end :=
 begin
   rw is_empty_iff,
-  rintro ⟨s, sec⟩,
-  let K : finset V := set.finite_univ.to_finset,
-  obtain ⟨v, h⟩ := (s K).nempty,
-  exact set.disjoint_iff.mp (s K).outside ⟨by simp only [set.finite.coe_to_finset], h⟩,
+  rintro ⟨s, -⟩,
+  casesI nonempty_fintype V,
+  obtain ⟨v, h⟩ := (s $ opposite.op finset.univ).nonempty,
+  exact set.disjoint_iff.mp (s _).disjoint_right
+    ⟨by simp only [opposite.unop_op, finset.coe_univ], h⟩,
 end
 
 /--!
