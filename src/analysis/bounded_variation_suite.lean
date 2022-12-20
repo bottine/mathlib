@@ -51,7 +51,6 @@ lemma comp_eq (f : α → E) {s : set α} {t : set β} [nonempty β] (φ : β �
   (hφ : monotone_on φ t ) (φst : set.maps_to φ t s) (φsur : set.surj_on φ t s) :
   evariation_on (f∘φ) t = evariation_on f s :=
 begin
-
   apply le_antisymm (comp_mono f φ hφ φst),
 
   let ψ := φ.inv_fun_on t,
@@ -72,5 +71,19 @@ begin
   apply comp_mono _ ψ hψ ψts,
 end
 
-
 end evariation_on
+
+
+section arc_length_parameterization
+
+variables {I : set ℝ} (hI : ∀ (a b c : ℝ), a ≤ c → c ≤ b → a ∈ I → b ∈ I → c ∈ I) (f : I → E)
+
+noncomputable def arc_length (x₀ : ℝ) (x : ℝ) : ereal :=
+if x₀ ≤ x then
+  evariation_on f {y : I | y.val ∈ Icc x₀ x}
+else
+  - evariation_on f {y : I | y.val ∈ Icc x x₀}
+
+lemma arc_length_monotone (x₀ : ℝ) : monotone (arc_length f x₀) := sorry
+
+end arc_length_parameterization
