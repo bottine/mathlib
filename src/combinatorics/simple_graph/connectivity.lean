@@ -1520,13 +1520,13 @@ def connected_component.iso {V : Type*} {G : simple_graph V} {V' : Type*} {G' : 
   left_inv := by
     { apply connected_component.ind, rintro,
       simp only [connected_component.map_comp, connected_component.map,
-                 connected_component.lift_adj, connected_component_mk, hom.coe_comp, comp_app],
+                 connected_component.lift, connected_component_mk, hom.coe_comp, comp_app],
       congr,
       apply equiv.left_inv, },
   right_inv := by
     { apply connected_component.ind, rintro,
       simp only [connected_component.map_comp, connected_component.map,
-                 connected_component.lift_adj, connected_component_mk, hom.coe_comp, comp_app],
+                 connected_component.lift, connected_component_mk, hom.coe_comp, comp_app],
       congr,
       apply equiv.right_inv, }, }
 

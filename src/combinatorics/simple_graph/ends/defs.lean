@@ -145,7 +145,7 @@ end
 Assuming `G` is preconnected and `K` not empty, given any connected component `C` outside of `K`,
 there exists a vertex `k ∈ K` adjacent to a vertex `v ∈ C`.
 -/
-lemma exists_adj_boundary_pair [Gc : G.preconnected] (hK : K.nonempty) :
+lemma exists_adj_boundary_pair (Gc : G.preconnected) (hK : K.nonempty) :
   ∀ (C : G.comp_out K), ∃ (ck : V × V), ck.1 ∈ C ∧ ck.2 ∈ K ∧ G.adj ck.1 ck.2 :=
 begin
   refine connected_component.ind (λ v, _),
@@ -197,6 +197,21 @@ begin
     exact h₁.some_spec, },
 end
 
+lemma hom_eq_iff_not_disjoint (C : G.comp_out L) (h : K ⊆ L) (D : G.comp_out K) :
+  C.hom h = D ↔ ¬ disjoint (C : set V) (D : set V) :=
+begin
+  split,
+  { rintro rfl,
+    apply quot.induction_on C,
+    rintro ⟨x,xL⟩,
+    rw set.not_disjoint_iff,
+    exact ⟨x, ⟨xL,rfl⟩, ⟨(λ xK, xL (h xK)), rfl⟩⟩, },
+  { revert C, refine connected_component.ind _,
+    simp_rw set.not_disjoint_iff,
+    rintro _ ⟨x,⟨xL,e₁⟩,⟨xK,rfl⟩⟩,
+    rw ←e₁, refl, },
+end
+
 lemma hom_refl (C : G.comp_out L) : C.hom (subset_refl L) = C :=
 by { change C.map _ = C, rw [G.out_hom_refl L, C.map_id], }
 
@@ -206,6 +221,28 @@ by { change C.map _ = (C.map _).map _, rw [G.out_hom_trans, C.map_comp], }
 
 lemma hom_inf (C : G.comp_out L) (h : K ⊆ L) (Cinf : (C : set V).infinite) :
   (C.hom h : set V).infinite := set.infinite.mono (C.subset_hom h) Cinf
+
+lemma inf_iff_in_all_ranges {K : finset V} (C : G.comp_out K) :
+  (C : set V).infinite ↔ ∀ L (h : K ⊆ L), ∃ D : G.comp_out L, C = D.hom h :=
+begin
+  classical,
+  split,
+  { rintro Cinf L h,
+    suffices : ((C : set V) \ L).nonempty,
+    { obtain ⟨v,⟨vK,rfl⟩,vL⟩ := this,
+      exact ⟨connected_component_mk _ ⟨v,vL⟩, rfl⟩ },
+    apply set.infinite.nonempty,
+    apply set.infinite.diff Cinf,
+    apply finset.finite_to_set, },
+  { rintro h Cfin,
+    obtain ⟨D,e⟩ := h (K ∪ Cfin.to_finset) (finset.subset_union_left K Cfin.to_finset),
+    let Ddis := D.disjoint_right,
+    simp_rw [finset.coe_union, set.finite.coe_to_finset, set.disjoint_union_left,
+             set.disjoint_iff] at Ddis,
+    obtain ⟨v,vD⟩ := D.nonempty,
+    replace e := e.symm, rw [comp_out.hom_eq_iff_le] at e,
+    exact Ddis.right ⟨e vD, vD⟩, },
+end
 
 end comp_out
 
