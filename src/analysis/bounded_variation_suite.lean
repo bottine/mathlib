@@ -79,11 +79,17 @@ end evariation_on
 
 
 section unit_param
+/--
+Fix:
 
-variables {α β : Type*} [linear_order α] [linear_order β] {E : Type*} [pseudo_emetric_space E]
+* An interval `I : set ℝ`
+-/
+
+variables {E : Type*} [pseudo_emetric_space E]
 variables {I : set ℝ} (f : I → E)
---(hI : ∀ (a b c : ℝ), a ≤ c → c ≤ b → a ∈ I → b ∈ I → c ∈ I)
-variables (x₀ : ℝ)
+          (hI : ∀ (a b c : ℝ), a ≤ c → c ≤ b → a ∈ I → b ∈ I → c ∈ I)
+variables (x₀ : I)
+variables (hf : ∀ x : I, has_bounded_variation_on f (set.interval x₀ x))
 
 /--
 Fixing a basepoint `x₀ : ℝ`, the function `ℝ → [-∞,∞]` sending `x` to the signed variation
@@ -124,8 +130,20 @@ noncomputable def unit_param :
  {y : ℝ // ∃ x : I, ↑y = arc_length f x₀ x} → E :=
 λ yy, f ⟨yy.prop.some, by { obtain ⟨y,h⟩ := yy, simp only [subtype.coe_prop], }⟩ -- TODO: clean this
 
-lemma unit_param_is_parameterization :
-  (unit_param f x₀) ∘ (arc_length f x₀) = f := sorry
+lemma lol (x₁ x₂ : ℝ)
+  (h : evariation_on f {z : I | z.val ∈ interval x₀ x₁} =
+       evariation_on f {z : I | z.val ∈ interval x₀ x₂}) : edist (f x₁) (f x₂) = 0 :=
+begin
+
+end
+
+lemma unit_param_is_parameterization (x : I)
+  (h : has_bounded_variation_on f {y | y.val ∈ set.interval x₀ x})  :
+  (unit_param f x₀) ⟨(arc_length f x₀ x).to_real,sorry⟩ = f x :=
+begin
+  obtain ⟨x,xI⟩ := x,
+  dsimp only [unit_param, arc_length],
+end
 
 
 example {x y : ℝ} (xy : x ≤ y) (xyI : Icc x y ⊆ I)
