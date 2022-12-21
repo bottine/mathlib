@@ -16,6 +16,23 @@ lemma subtype.coe_comp_map_id (α : Type*) (r s : α → Prop)
   coe ∘ (subtype.map id rs) = (coe : (subtype r) → α) :=
 funext (λ _, rfl)
 
+lemma list.pair_mem_list {a b : β} :
+  ∀ (l : list β), a ∈ l → b ∈ l → a = b ∨ [a,b] <+ l ∨ [b,a] <+ l
+| [] al bl := by { simpa only [list.not_mem_nil] using al, }
+| (x::l) al bl := by
+  { simp only [list.mem_cons_iff] at al bl, cases al; cases bl,
+    { left, exact al.trans bl.symm, },
+    { rw al, right, left, apply list.sublist.cons2,
+      simpa only [list.singleton_sublist] using bl, },
+    { rw bl, right,  right, apply list.sublist.cons2,
+      simpa only [list.singleton_sublist] using al, },
+    { rcases _root_.list.pair_mem_list l al bl with h|ab|ba,
+      { left, exact h, },
+      { right, left, constructor, exact ab, },
+      { right, right, constructor, exact ba, }, }, }
+
+
+
 def list.take_while_subtype [preorder α] [decidable_pred (≤x)] (l : list α) : list (subtype (≤x)) :=
 (l.take_while (≤x)).attach.map $ subtype.map id $ λ y, list.mem_take_while_imp
 
