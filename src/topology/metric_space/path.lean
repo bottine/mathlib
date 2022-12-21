@@ -243,7 +243,7 @@ begin
         refine ⟨list.drop_while_subtype_ge_ge_base _ _ _,
                 list.drop_while_subtype_ge_pairwise_le _ _ _⟩, }, }, },
   { apply path_length_ge_parts,
-    rintro x xm y my, apply le_trans, exact xm, exact my, }, -- `xm.trans my` doesn't work
+    rintro x xm y my, apply le_trans xm my, }, -- `xm.trans my` doesn't work
 end
 
 /--
