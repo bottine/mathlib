@@ -19,7 +19,7 @@ section preliminaries
 /--
 Only really need `[total_on (≤) β]` and probably `[antisymm_on (≤) α]` but who cares.
 -/
-lemma monotone_on_of_right_inv_on_of_maps_to_of_monotone
+lemma monotone_on_of_right_inv_on_of_maps_to_of_monotone_on
   {α β : Type*} [partial_order α] [linear_order β] {φ : β → α} {ψ : α → β}
   {t : set β} {s : set α} (φψs : right_inv_on ψ φ s) (ψts : maps_to ψ s t)
   (hφ : monotone_on φ t) : monotone_on ψ s :=
@@ -30,6 +30,22 @@ begin
   { cases le_antisymm l (φψs.eq ys ▸ φψs.eq xs ▸ hφ (ψts ys) (ψts xs) ψyx), refl, },
 end
 
+/--
+Only really need `[total_on (≤) β]` and probably `[antisymm_on (≤) α]` but who cares.
+-/
+lemma antitone_on_of_right_inv_on_of_maps_to_of_antitone_on
+  {α β : Type*} [partial_order α] [linear_order β] {φ : β → α} {ψ : α → β}
+  {t : set β} {s : set α} (φψs : right_inv_on ψ φ s) (ψts : maps_to ψ s t)
+  (hφ : antitone_on φ t) : antitone_on ψ s :=
+begin
+  rintro x xs y ys l,
+  rcases le_total (ψ x) (ψ y) with (ψyx|ψxy),
+  { let := hφ (ψts xs) (ψts ys) ψyx,
+    rw [φψs.eq ys, φψs.eq xs] at this,
+    cases le_antisymm this l, refl, },
+  { exact ψxy, },
+end
+
 end preliminaries
 
 namespace evariation_on
@@ -38,7 +54,7 @@ variables {α β : Type*} [linear_order α] [linear_order β]
 {E F : Type*} [pseudo_emetric_space E] [pseudo_emetric_space F]
 {V : Type*} [normed_add_comm_group V] [normed_space ℝ V] [finite_dimensional ℝ V]
 
-lemma comp_mono (f : α → E) {s : set α} {t : set β} (φ : β → α)
+lemma comp_monotone_mono (f : α → E) {s : set α} {t : set β} (φ : β → α)
   (hφ : monotone_on φ t ) (φst : set.maps_to φ t s) :
   evariation_on (f∘φ) t ≤ evariation_on f s :=
 begin
@@ -47,6 +63,24 @@ begin
   exact le_supr (λ (p : ℕ × {u : ℕ → α // monotone u ∧ ∀ i, u i ∈ s}),
     ∑ i in finset.range p.1, edist (f ((p.2 : ℕ → α) (i+1))) (f ((p.2 : ℕ → α) i)))
     ⟨n, ⟨φ ∘ u, λ x y xy, hφ (ut x) (ut y) (hu xy), λ i, φst (ut i)⟩⟩,
+end
+
+lemma comp_antitone_mono (f : α → E) {s : set α} {t : set β} (φ : β → α)
+  (hφ : antitone_on φ t ) (φst : set.maps_to φ t s) :
+  evariation_on (f∘φ) t ≤ evariation_on f s :=
+begin
+  apply supr_le _,
+  rintros ⟨n, ⟨u, hu, ut⟩⟩,
+  let ru : ℕ → β := λ i, u (n+1-i),
+  have rut : ∀ i : ℕ, ru i ∈ t := λ i, ut (n+1-i),
+  have hru : antitone ru := λ i j l, hu ((n+1).sub_le_sub_left l),
+  have : ∑ i in finset.range n, edist (f∘φ $ u (i+1)) (f∘φ $ u i) =
+         ∑ i in finset.range n, edist (f∘φ $ ru (i+1)) (f∘φ $ ru i) := sorry,
+  change ∑ i in finset.range n, edist (f∘φ $ u (i+1)) (f∘φ $ u i) ≤ evariation_on f s,
+  rw this,
+  exact le_supr (λ (p : ℕ × {u : ℕ → α // monotone u ∧ ∀ i, u i ∈ s}),
+    ∑ i in finset.range p.1, edist (f ((p.2 : ℕ → α) (i+1))) (f ((p.2 : ℕ → α) i)))
+    ⟨n, ⟨φ ∘ ru, λ x y xy, hφ (rut y) (rut x) (hru xy), λ i, φst (rut i)⟩⟩,
 end
 
 lemma eq_of_eq_on {f f' : α → E} {s : set α} (h : set.eq_on f f' s) :
@@ -59,20 +93,20 @@ begin
   exact h (p.2.2.2 _),
 end
 
-lemma comp_eq (f : α → E) {s : set α} {t : set β} [nonempty β] (φ : β → α)
+lemma comp_monotone_eq (f : α → E) {s : set α} {t : set β} [nonempty β] (φ : β → α)
   (hφ : monotone_on φ t ) (φst : set.maps_to φ t s) (φsur : set.surj_on φ t s) :
   evariation_on (f∘φ) t = evariation_on f s :=
 begin
-  apply le_antisymm (comp_mono f φ hφ φst),
+  apply le_antisymm (comp_monotone_mono f φ hφ φst),
 
   let ψ := φ.inv_fun_on t,
   have ψφs : set.eq_on (φ∘ψ) id s := φsur.right_inv_on_inv_fun_on,
   have ψts : set.maps_to ψ s t := φsur.maps_to_inv_fun_on,
-  have hψ : monotone_on ψ s := monotone_on_of_right_inv_on_of_maps_to_of_monotone ψφs ψts hφ,
+  have hψ : monotone_on ψ s := monotone_on_of_right_inv_on_of_maps_to_of_monotone_on ψφs ψts hφ,
 
   change evariation_on (f∘id) s ≤ evariation_on (f ∘ φ) t,
   rw ←eq_of_eq_on (ψφs.comp_left : set.eq_on (f ∘ (φ∘ψ)) (f ∘ id) s),
-  apply comp_mono _ ψ hψ ψts,
+  apply comp_monotone_mono _ ψ hψ ψts,
 end
 
 end evariation_on
