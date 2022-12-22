@@ -5,6 +5,8 @@ import topology.instances.ennreal
 
 open emetric nnreal set ennreal
 
+set_option profiler true
+
 namespace function
 
 section length_on
@@ -18,7 +20,6 @@ variables (f : β → α)
 | (list.cons _ list.nil) := 0
 | (a::b::l) := edist (f a) (f b) + (length_on (b::l))
 -/
-
 -- definition 'length_on' depends on 'ennreal.canonically_ordered_comm_semiring
 -- so says lean
 noncomputable def length_on : list β → ennreal :=
@@ -46,8 +47,9 @@ lemma length_on_append_cons_cons :
     simp only [←list.cons_append],
     apply length_on_append_cons_cons, }
 
-lemma length_on_le_length_on_cons (c : β) (l : list β) : f.length_on l ≤ (f.length_on $ c :: l) :=
-by { cases l, simp only [length_on, le_zero_iff], simp only [length_on], apply self_le_add_left _ _, }
+lemma length_on_le_length_on_cons (c : β) : ∀ (l : list β), f.length_on l ≤ (f.length_on $ c :: l)
+| [] := by { rw [length_on, le_zero_iff], }
+| (a::l) := self_le_add_left _ _
 
 lemma length_on_drop_second_cons_le :
   ∀ (a b : β) (l : list β), f.length_on (a :: l) ≤ f.length_on (a :: b :: l)
@@ -77,45 +79,45 @@ lemma length_on_reverse : ∀ (l : list β), f.length_on l.reverse = f.length_on
 
 lemma length_on_map {γ : Type*} (φ : γ → β) :
   ∀ (l : list γ), f.length_on (l.map φ) = (f ∘ φ).length_on l
-| [] := by { simp only [length_on, list.map_nil], }
-| [a] := by { simp only [length_on, list.map], }
+| [] := by { simp only [length_on_nil, list.map_nil], }
+| [a] := by { simp only [length_on_singleton, list.map], }
 | (a :: b :: l)  := by
   { simp only [length_on_cons_cons, list.map, comp_app, ←length_on_map (b::l)], }
 
 lemma length_on_le_append_singleton_append :
   ∀ (l : list β) (x : β) (l' : list β), f.length_on (l ++ l') ≤ f.length_on (l ++ [x] ++ l')
-| [] x l' := by { apply length_on_le_length_on_cons, }
-| [a] x l' := by { apply length_on_drop_second_cons_le, }
+| [] x l' := f.length_on_le_length_on_cons _ _
+| [a] x l' := f.length_on_drop_second_cons_le _ _ _
 | (a :: b :: l) x l' := by
   { change a :: b :: l ++ l' with a :: b :: (l ++ l'),
     change a :: b :: l ++ [x] ++ l' with a :: b :: (l ++ [x] ++ l'),
-    simp only [length_on],
+    rw [length_on],
     apply add_le_add_left _ (edist (f a) (f b)),
     exact length_on_le_append_singleton_append (b :: l) x l', }
 
 lemma length_on_append_singleton_append :
   ∀ (l : list β) (x : β) (l' : list β),
     f.length_on (l ++ [x] ++ l') = f.length_on (l ++ [x]) + f.length_on ([x] ++ l')
-| [] x l' := by { simp only [length_on, list.nil_append, zero_add]}
+| [] x l' := by { rw [length_on, list.nil_append, zero_add], }
 | [a] x l' := by
   { simp only [length_on, list.singleton_append, list.cons_append, add_zero, eq_self_iff_true,
                list.nil_append], }
 | (a :: b :: l) x l' := by
   { simp only [length_on_cons_cons, list.cons_append, list.append_assoc, list.singleton_append,
-    add_assoc],
+               add_assoc],
     congr,
     simp_rw [←list.cons_append b l, ←@list.singleton_append _ x l',←list.append_assoc],
     exact length_on_append_singleton_append (b::l) x l', }
 
 lemma length_on_mono' :
   ∀ {l l' : list β}, l <+ l' → ∀ x, f.length_on (x::l) ≤ f.length_on (x::l')
-| _ _ list.sublist.slnil             x := by { simp only [length_on, le_zero_iff], }
+| _ _ list.sublist.slnil             x := by { rw [length_on, le_zero_iff], }
 | _ _ (list.sublist.cons  l₁ l₂ a s) x :=
   (f.length_on_drop_second_cons_le x a l₁).trans $ add_le_add_left (length_on_mono' s a) _
 | _ _ (list.sublist.cons2 l₁ l₂ a s) x := add_le_add_left (length_on_mono' s a) _
 
 lemma length_on_mono : ∀ {l l' : list β}, l <+ l' → f.length_on l ≤ f.length_on l'
-| _ _ list.sublist.slnil             := by { simp only [length_on, le_zero_iff], }
+| _ _ list.sublist.slnil             := by { rw [length_on, le_zero_iff], }
 | _ _ (list.sublist.cons  l₁ l₂ a s) :=
   (f.length_on_le_length_on_cons a l₁).trans $ f.length_on_mono' s a
 | _ _ (list.sublist.cons2 l₁ l₂ a s) := f.length_on_mono' s a
@@ -124,7 +126,7 @@ lemma edist_le_length_on_of_mem {a b : β} {l : list β} (al : a ∈ l) (bl : b 
   edist (f a) (f b) ≤ f.length_on l :=
 begin
   rcases l.pair_mem_list al bl with rfl|ab|ba,
-  { simp only [edist_self, zero_le'], },
+  { rw [edist_self (f a)], exact zero_le', },
   { rw [length_on_pair], exact f.length_on_mono ab, },
   { rw [edist_comm, length_on_pair], exact f.length_on_mono ba, }
 end
@@ -226,8 +228,9 @@ begin
     rw length_on_append_singleton_append,
     refine add_le_add _ _,
     { transitivity' (f ∘ coe).length_on (l.take_while_subtype m ++ [⟨m,le_refl m⟩]),
-      { rw [←f.length_on_map coe, list.map_append, list.take_while_subtype_map_coe],
-        simp only [list.map, subtype.coe_mk], exact le_refl _, },
+      { rw [←f.length_on_map coe, list.map_append, list.take_while_subtype_map_coe,
+            list.map, subtype.coe_mk],
+        exact le_refl _, },
       { refine @le_supr₂ _ _ _ _ (λ l H, length_on (f ∘ coe) l) _ _,
         simp only [list.pairwise_append, mem_set_of_eq, list.mem_singleton],
         refine ⟨list.take_while_subtype_pairwise_le _ _, list.pairwise_singleton _ _, _⟩,
@@ -235,8 +238,9 @@ begin
         exact list.take_while_subtype_le_base m l y yl, }, },
     { transitivity' (f ∘ coe).length_on
         ([(⟨m,le_refl m⟩ : {x // m ≤ x})] ++ (l.drop_while_subtype_ge m ls)),
-      { rw [←f.length_on_map coe, list.map_append, list.drop_while_subtype_ge_map_coe],
-        simp only [list.map, subtype.coe_mk], exact le_refl _, },
+      { rw [←f.length_on_map coe, list.map_append, list.drop_while_subtype_ge_map_coe,
+            list.map, subtype.coe_mk],
+        exact le_refl _, },
       { refine @le_supr₂ _ _ _ _ (λ l H, length_on (f ∘ coe) l) _ _,
         simp only [list.singleton_append, mem_set_of_eq, list.pairwise_cons,
                    subtype.mk_le_mk],

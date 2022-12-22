@@ -28,8 +28,8 @@ lemma list.pair_mem_list {a b : β} :
       simpa only [list.singleton_sublist] using al, },
     { rcases list.pair_mem_list l al bl with h|ab|ba,
       { left, exact h, },
-      { right, left, constructor, exact ab, },
-      { right, right, constructor, exact ba, }, }, }
+      { right, left, apply list.sublist.cons, exact ab, },
+      { right, right, apply list.sublist.cons, exact ba, }, }, }
 
 def list.take_while_subtype [preorder α] [decidable_pred (≤x)] (l : list α) : list (subtype (≤x)) :=
 (l.take_while (≤x)).attach.map $ subtype.map id $ λ y, list.mem_take_while_imp
@@ -37,21 +37,20 @@ def list.take_while_subtype [preorder α] [decidable_pred (≤x)] (l : list α) 
 lemma list.take_while_subtype_map_coe [preorder α] [decidable_pred (≤x)] (l : list α) :
   (l.take_while_subtype x).map (coe : subtype (≤x) → α) = l.take_while (≤x) :=
 begin
-  dsimp only [list.take_while_subtype],
-  simp only [list.map_map],
+  simp only [list.take_while_subtype, list.map_map],
   apply list.attach_map_coe,
 end
 
 lemma list.pairwise_le_drop_while_le_not_le  [preorder α] [decidable_pred (≤x)] :
   ∀ (l : list α) (h : l.pairwise (≤)) (y : α), y ∈ l.drop_while (≤x) → ¬y ≤ x
-| [] h y hy := by { simp only [list.drop_while, list.not_mem_nil] at hy, exact hy.elim }
+| [] h y hy := by { simpa only [list.drop_while, list.not_mem_nil] using hy, }
 | (a::l) h y hy := by
   { dsimp only [list.drop_while] at hy,
     simp only [list.pairwise_cons] at h,
     split_ifs at hy with ax nax,
     { exact list.pairwise_le_drop_while_le_not_le l h.right y hy, },
     { cases hy,
-      { cases hy, exact ax},
+      { cases hy, exact ax },
       { exact λ yx, ax ((h.left y hy).trans yx), }, }, }
 
 def list.drop_while_subtype [preorder α] [decidable_pred (≤x)] (l : list α) (h : l.pairwise (≤)) :
@@ -65,13 +64,12 @@ def list.drop_while_subtype_ge [linear_order α]  (l : list α) (h : l.pairwise 
 lemma list.drop_while_subtype_ge_map_coe [linear_order α] (l : list α) (h : l.pairwise (≤)) :
   (l.drop_while_subtype_ge x h).map coe = l.drop_while (≤x) :=
 begin
-  dsimp only [list.drop_while_subtype_ge, list.drop_while_subtype],
-  simp only [list.map_map, subtype.map_id_comp_id, subtype.coe_comp_map_id, list.attach_map_coe],
+  simp only [list.drop_while_subtype_ge, list.drop_while_subtype,
+             list.map_map, subtype.map_id_comp_id, subtype.coe_comp_map_id, list.attach_map_coe],
 end
 
 lemma list.take_while_subtype_pairwise_le [preorder α] [decidable_pred (≤x)] (l : list α) :
   (l.take_while_subtype x).pairwise (≤) := sorry
-
 
 lemma list.take_while_subtype_le_base [preorder α] [decidable_pred (≤x)] (l : list α) :
   ∀ y ∈ l.take_while_subtype x, ↑y ≤ x := sorry
