@@ -12,7 +12,7 @@ import data.real.ereal
 open_locale big_operators nnreal ennreal
 open set measure_theory
 
-
+set_option profiler true
 
 section preliminaries
 
@@ -75,7 +75,14 @@ begin
   have rut : ∀ i : ℕ, ru i ∈ t := λ i, ut (n+1-i),
   have hru : antitone ru := λ i j l, hu ((n+1).sub_le_sub_left l),
   have : ∑ i in finset.range n, edist (f∘φ $ u (i+1)) (f∘φ $ u i) =
-         ∑ i in finset.range n, edist (f∘φ $ ru (i+1)) (f∘φ $ ru i) := sorry,
+         ∑ i in finset.range n, edist (f∘φ $ ru (i+1)) (f∘φ $ ru i), by
+  {
+    induction n with m ih,
+    { simp only [finset.range_zero, finset.sum_empty], },
+    { simp only [function.comp_app],
+    rw [finset.sum_range_succ, finset.sum_range_succ'],
+    sorry, }
+  },
   change ∑ i in finset.range n, edist (f∘φ $ u (i+1)) (f∘φ $ u i) ≤ evariation_on f s,
   rw this,
   exact le_supr (λ (p : ℕ × {u : ℕ → α // monotone u ∧ ∀ i, u i ∈ s}),
