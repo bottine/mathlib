@@ -178,20 +178,17 @@ lemma _root_.has_bounded_variation_on.has_locally_bounded_variation_on {f : α �
 λ x y hx hy, h.mono (inter_subset_left _ _)
 
 lemma constant_on (f : α → E) {s : set α}
-  (hf : ∀ x, x ∈ s → ∀ y, y ∈ s → f x = f y) : evariation_on f s = 0 :=
-begin
-  sorry
-end
-
-@[simp] protected lemma subsingleton (f : α → E) {s : set α} (hs : s.subsingleton) :
-  evariation_on f s = 0 :=
+  (hf : (f '' s).subsingleton) : evariation_on f s = 0 :=
 begin
   apply le_antisymm _ (zero_le _),
   apply supr_le _,
   rintros ⟨n, ⟨u, hu, ut⟩⟩,
-  have : ∀ i, u i = u 0, from λ i, hs (ut _) (ut _),
+  have : ∀ i, f (u i) = f (u 0) := λ i, hf ⟨u i, ut i, rfl⟩ ⟨u 0, ut 0, rfl⟩,
   simp [subtype.coe_mk, le_zero_iff, finset.sum_eq_zero_iff, finset.mem_range, this],
 end
+
+@[simp] protected lemma subsingleton (f : α → E) {s : set α} (hs : s.subsingleton) :
+  evariation_on f s = 0 := constant_on f (hs.image f)
 
 lemma edist_le (f : α → E) {s : set α} {x y : α} (hx : x ∈ s) (hy : y ∈ s) :
   edist (f x) (f y) ≤ evariation_on f s :=

@@ -23,15 +23,14 @@ def fo : length_metric E → E := id
 
 instance : pseudo_emetric_space (length_metric E) :=
 { edist := λ x y, infi (λ (p : path (fo x) (fo y)), p.length),
-  edist_self := by
-  { rintro x,
-    dsimp [edist],
-    change infi path.length = ⊥,
-    rw infi_eq_bot, rintro b hb, use path.refl x,
-    dsimp [path.length],
+  edist_self := λ x, by
+  { dsimp only [edist],
+    refine le_antisymm _ zero_le',
     have : evariation_on ⇑(path.refl (fo x)) set.univ = 0, by
-    { apply evariation_on.subsingleton, },
-     },
+    { apply evariation_on.constant_on,
+      simp only [path.refl_apply, set.image_univ, set.range_const, set.subsingleton_singleton], },
+    rw ←this,
+    refine infi_le _ _, },
   edist_comm := sorry,
   edist_triangle := sorry
 }
