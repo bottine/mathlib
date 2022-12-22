@@ -177,6 +177,12 @@ lemma _root_.has_bounded_variation_on.has_locally_bounded_variation_on {f : α �
   (h : has_bounded_variation_on f s) : has_locally_bounded_variation_on f s :=
 λ x y hx hy, h.mono (inter_subset_left _ _)
 
+lemma constant_on (f : α → E) {s : set α}
+  (hf : ∀ x, x ∈ s → ∀ y, y ∈ s → f x = f y) : evariation_on f s = 0 :=
+begin
+  sorry
+end
+
 @[simp] protected lemma subsingleton (f : α → E) {s : set α} (hs : s.subsingleton) :
   evariation_on f s = 0 :=
 begin
