@@ -32,5 +32,4 @@ instance : pseudo_emetric_space (length_metric E) :=
     rw ←this,
     refine infi_le _ _, },
   edist_comm := sorry,
-  edist_triangle := sorry
-}
+  edist_triangle := sorry }
