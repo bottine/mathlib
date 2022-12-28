@@ -10,6 +10,14 @@ import data.real.ennreal
 
 noncomputable theory
 set_option profiler true
+
+theorem half_nonneg {α : Type*} [linear_ordered_semifield α] {a : α} (h : 0 ≤ a) :
+  0 ≤ a / 2 :=
+begin
+  sorry
+end
+
+
 namespace unit_interval
 
 /-- The midpoint of the unit interval -/
@@ -34,7 +42,7 @@ def expand_bot_half : unit_interval → unit_interval :=
 lemma expand_bot_half_monotone : monotone expand_bot_half := λ ⟨x,xl,xr⟩ ⟨y,yl,yr⟩ h,
 begin
   dsimp only [expand_bot_half],
-  split_ifs,
+  split_ifs with h_1 h_2,
   { simpa only [subtype.mk_le_mk, mul_le_mul_left, zero_lt_bit0, zero_lt_one] using h, },
   { exact le_one' },
   { exfalso, exact h_1 (h.trans h_2), },
@@ -45,8 +53,15 @@ lemma expand_bot_half_maps_to : (set.Icc 0 half).maps_to expand_bot_half (set.Ic
 by { simp only [Icc_zero_one], apply set.maps_to_univ, }
 
 lemma expand_bot_half_surj_on : (set.Icc 0 half).surj_on expand_bot_half (set.Icc 0 1) :=
-begin sorry end
+begin
+  rintros ⟨x,xl,xr⟩ _,
+  dsimp only [expand_bot_half],
+  simp only [set.mem_Icc, subtype.mk_le_mk, subtype.coe_mk, set.mem_image, set_coe.exists],
+  use x/2,
+  refine ⟨⟨half_nonneg xl, (half_le_self xl).trans xr⟩,_⟩,
+  sorry
 
+end
 
 def expand_top_half : unit_interval → unit_interval :=
 λ t, if h : t ≤ half then 0 else
@@ -74,25 +89,27 @@ namespace path
 
 lemma path.trans_eq_on_bot_half
   {X : Type*} [topological_space X] {x y z : X} (γ : path x y) (γ' : path y z):
-  (set.Icc 0 unit_interval.half).eq_on (γ.trans γ') (γ ∘ unit_interval.expand_bot_half) := sorry
+  (set.Icc 0 unit_interval.half).eq_on (γ.trans γ') (γ ∘ unit_interval.expand_bot_half) :=
+begin
+  rintro ⟨t,_,_⟩ ⟨tl,tr⟩,
+  dsimp only [unit_interval.expand_bot_half, path.trans],
+  simp only [subtype.mk_le_mk, subtype.coe_mk, coe_mk, function.comp_app] at tl tr ⊢,
+  split_ifs with h;
+  { rw extend_extends, },
+end
 
 lemma path.trans_eq_on_top_half
   {X : Type*} [topological_space X] {x y z : X} (γ : path x y) (γ' : path y z):
   (set.Icc unit_interval.half 1).eq_on (γ.trans γ') (γ' ∘ unit_interval.expand_top_half) :=
 begin
-  rintro ⟨t,zt,_⟩ ⟨le_t,t_le⟩,
+  rintro ⟨t,_,_⟩ ⟨tl,tr⟩,
   dsimp only [unit_interval.expand_top_half, path.trans],
-  simp,
-  split_ifs,
-  { simp only [le_antisymm h le_t, path.source, coe_mk, function.comp_app, subtype.coe_mk, le_refl,
+  simp only [subtype.mk_le_mk, one_div, subtype.coe_mk, coe_mk, function.comp_app] at tl tr ⊢,
+  split_ifs with h,
+  { simp only [le_antisymm h tl, path.source, coe_mk, function.comp_app, subtype.coe_mk, le_refl,
                set.right_mem_Icc, zero_le_one, mul_inv_cancel_of_invertible, extend_extends,
                set.Icc.mk_one, path.target, if_true], },
-  { have : 2 * t - 1 ∈ unit_interval, by
-    { rw [unit_interval.two_mul_sub_one_mem_iff, one_div],
-      exact ⟨le_t, t_le⟩, },
-    simp,
-    rw extend_extends _ this, },
-
+  { rw extend_extends, },
 end
 
 end path
@@ -159,9 +176,13 @@ def length_metric (E : Type*) [pseudo_emetric_space E] := E
 
 variables {E : Type*} [pseudo_emetric_space E]
 
-def of : E → length_metric E := id
-def fo : length_metric E → E := id
+def to_length_metric : E → length_metric E := id
+def from_length_metric : length_metric E → E := id
 
+@[protected]
+abbreviation of : E → length_metric E := to_length_metric
+@[protected]
+abbreviation fo : length_metric E → E := from_length_metric
 
 instance : pseudo_emetric_space (length_metric E) :=
 { edist := λ x y, infi (λ (p : path (fo x) (fo y)), p.length),
@@ -174,11 +195,16 @@ instance : pseudo_emetric_space (length_metric E) :=
     { refine le_infi (λ p, _),
       rw ←path.length_symm,
       refine infi_le _ _, }, },
-  edist_triangle := sorry }
+  edist_triangle := λ x y z, by
+  { simp_rw [ennreal.infi_add, ennreal.add_infi],
+    apply le_infi₂ (λ p q, _),
+    rw ←path.length_trans p q,
+    exact infi_le _ (p.trans q), } }
 
-lemma of_is_nonexpanding : lipschitz_with 1 (of : E → length_metric E) :=
+lemma from_length_metric_nonexpanding :
+  lipschitz_with 1 (from_length_metric : length_metric E → E) :=
 begin
   rintro x y,
-  dsimp only [edist],
-  sorry,
+  simp only [edist, ennreal.coe_one, one_mul, le_infi_iff],
+  apply path.length_ge,
 end
