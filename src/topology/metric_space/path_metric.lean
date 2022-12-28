@@ -11,12 +11,14 @@ import data.real.ennreal
 noncomputable theory
 set_option profiler true
 
-theorem half_nonneg {α : Type*} [linear_ordered_semifield α] {a : α} (h : 0 ≤ a) :
+lemma half_nonneg {α : Type*} [linear_ordered_semifield α] {a : α} (h : 0 ≤ a) :
   0 ≤ a / 2 :=
 begin
-  sorry
+  by_contra',
+  replace this := mul_lt_mul_of_pos_right this (zero_lt_two),
+  simp only [div_mul_cancel, ne.def, bit0_eq_zero, one_ne_zero, not_false_iff, zero_mul] at this,
+  exact (this.not_le h).elim,
 end
-
 
 namespace unit_interval
 
