@@ -7,6 +7,7 @@ import analysis.bounded_variation
 import topology.metric_space.emetric_space
 import topology.path_connected
 import data.real.ennreal
+import data.real.ereal
 
 noncomputable theory
 set_option profiler true
@@ -37,6 +38,17 @@ subtype.ext $ sub_half 1
 @[simp] lemma Icc_zero_one : set.Icc (0 : unit_interval) (1 : unit_interval) = set.univ :=
 by { simp only [set.Icc, le_one', nonneg', and_self, set.set_of_true,
                 set.univ_inter], }
+
+-- should use data.set.intervals.proj_Icc ?
+-- this is not really the same thing…
+def expand_Icc {a b : unit_interval} (h : a ≤ b) : unit_interval → unit_interval :=
+λ t, if lta : t < a then 0 else if gtb : b < t then 1 else
+  ⟨ (t - a) / (b - a), by
+    { apply div_mem;
+      simp only [sub_nonneg, subtype.coe_le_coe, not_lt, sub_le_sub_iff_right] at *; assumption, } ⟩
+
+def shrink_to_Icc {a b : unit_interval} (h : a ≤ b) : unit_interval → unit_interval :=
+λ t, ⟨a + t * (b - a), sorry⟩
 
 def expand_bot_half : unit_interval → unit_interval :=
 λ t, if h : t ≤ half then ⟨2*t, (mul_pos_mem_iff zero_lt_two).mpr ⟨nonneg',h⟩⟩ else 1
@@ -119,7 +131,99 @@ end path
 namespace path
 variables {E : Type*} [pseudo_emetric_space E]
 
+section length_on
+
+variables {x y : E} (p : path x y) (s t : unit_interval)
+
+def length_on : ereal :=
+if s ≤ t then   evariation_on p.to_fun (set.Icc s t)
+         else - evariation_on p.to_fun (set.Icc t s)
+
+lemma length_on_eq : p.length_on s s = 0 :=
+begin
+  dsimp only [length_on],
+  split_ifs,
+  { simp only [set.Icc_self, evariation_on.subsingleton, set.subsingleton_singleton,
+               ereal.coe_ennreal_zero], },
+  { exact (h (le_refl _)).elim, }
+end
+
+lemma length_on_le (h : s ≤ t) : p.length_on s t ≥ 0 :=
+begin
+  dsimp only [length_on],
+  split_ifs with st,
+  { exact ereal.coe_ennreal_nonneg _, },
+end
+
+lemma length_on_ge (h : t ≤ s) : p.length_on s t ≤ 0 :=
+begin
+  dsimp only [length_on],
+  split_ifs with st ts,
+  { cases le_antisymm h st,
+    simp only [set.Icc_self, evariation_on.subsingleton,
+               set.subsingleton_singleton, ereal.coe_ennreal_zero, le_refl], },
+  { rw [ereal.neg_le, neg_zero], positivity, },
+end
+
+lemma length_on_add (r s t) : p.length_on r s + p.length_on s t = p.length_on r t :=
+begin
+  dsimp only [length_on],
+  split_ifs,
+  { sorry, },
+  { exact (h_2 (h.trans h_1)).elim, },
+  { sorry },
+  { sorry },
+  { sorry },
+  { sorry },
+  { exact (h (h_2.trans (not_le.mp h_1).le)).elim, },
+  { sorry },
+
+end
+
+/--
+If `p` is rectifiable on the segment `[s,t]`, and `ε>0` is given, there exists a partition
+of `[s,t]` such that the length of `p` on each part is less than `ε`.
+Stated in terms of monotone functions for compatibility with `bounded_variation`
+-/
+lemma split_for_small_length_on (st : s ≤ t) (hp : p.length_on s t < ⊤) (ε : nnreal) :
+  -- There exists a natural (say `n`) and a monotone function `u` with values in the interval
+  -- (we only care about `u 0 … u n`)
+  ∃ (q : ℕ × {u : ℕ → unit_interval // monotone u ∧ ∀ i, u i ∈ set.Icc s t}),
+  -- such that `u 0 = s`
+  q.2.1 0 = s ∧
+  -- and `u n = t`
+  q.2.1 q.1 = t ∧
+  -- and the length of `p` on each interval `[u i, u i.succ]` is less than `ε`
+  ∀ i : finset.range q.1, p.length_on (q.2.1 i) (q.2.1 (i+1)) < ε :=
+begin
+  sorry,
+end
+
+lemma length_from_monotone : monotone (p.length_on s) := sorry
+lemma length_to_antitone : antitone (λ s, p.length_on s t) := sorry
+lemma length_on_monotone (s' t') (ss' : s ≤ s') (tt' : t' ≤ t) :
+  p.length_on s' t' ≤ p.length_on s t := sorry
+
+
+lemma length_on_diff {s' t'} :
+  edist (p.length_on s t) (p.length_on s' t') ≤ |(p.length_on s s')| + |(p.length_on t t')| := sorry
+
+lemma length_on_continuous  : continuous (p.length_on) :=
+begin
+  -- Fix s t, and ε.
+  -- Choose a partition of the interval such that the restriction of `p` on those segments is lt ε/2.
+  -- If `s ∈ [u i, u i.succ]` and `t ∈ [u j, u j.succ]`
+  -- let `δ` be the min of `d (u i-1) (u i), d(u i, u i+1), d (u j-1) (u j), d (u j) (u j+1)`.
+  -- Then if `s',t'` are within `δ` of `s,t` respectively, then the rerstiction of `p` on `[s,s']` and
+  -- `[t,t']` will be < `ε`, and we can apply the lemma above.
+  sorry
+end
+
+end length_on
+/-
 def length {x y : E} (p : path x y) : ennreal := evariation_on p.to_fun (set.univ)
+
+lemma length_eq_length_on {x y : E} (p : path x y) : ↑p.length = p.length_on 0 1 := sorry
 
 lemma length_ge (x y : E) (p : path x y) : edist x y ≤ p.length :=
 begin
@@ -144,7 +248,6 @@ begin
   { rw ←set.surjective_iff_surj_on_univ,
     exact unit_interval.symm_surj, }
 end
-
 
 lemma length_trans {x y z : E} (p : path x y) (q : path y z) :
   (p.trans q).length = p.length + q.length :=
@@ -210,3 +313,21 @@ begin
   simp only [edist, ennreal.coe_one, one_mul, le_infi_iff],
   apply path.length_ge,
 end
+
+lemma from_length_metric_continuous : continuous (from_length_metric : length_metric E → E) :=
+from_length_metric_nonexpanding.continuous
+
+/--
+Self note: `path_connected_space_iff_connected_space` and `is_connected_iff_is_path_connected` then
+show that connected and path-connected components agree
+-/
+lemma locally_path_connected [nonempty E] : loc_path_connected_space (length_metric E) := sorry
+
+
+
+lemma path.continuous_of_finite_length {x y : E} (p : path x y) (hpl : p.length < ⊤) :
+  continuous (to_length_metric ∘ p) :=
+begin
+
+end
+-/
