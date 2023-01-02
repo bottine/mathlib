@@ -771,6 +771,72 @@ begin
     apply evariation_on.edist_le f, exact ⟨bs,⟨le_refl _, bc⟩⟩, exact ⟨cs,⟨bc,le_refl _⟩⟩, }
   ...= hf.variation_from_to a c - hf.variation_from_to a b : by
   { simp only [←hf.variation_from_to_add as bs cs, add_tsub_cancel_left], }
+end
+
+noncomputable def arc_length_parameterization {a : α} (as : a ∈ s) :
+  (s.image (hf.variation_from_to a)) → E := λ b, f b.prop.some
+
+/--
+In a metric space, precomposing arc-length parameterization with variation yields the original
+map.
+-/
+lemma arc_length_parameterization_edist_zero {a : α} (as : a ∈ s) {b : α} (bs : b ∈ s) :
+  edist (f b) ((hf.arc_length_parameterization as) ⟨hf.variation_from_to a b, ⟨b, bs, rfl⟩⟩) = 0 :=
+begin
+  dsimp only [arc_length_parameterization, variation_from_to],
+  let cc : hf.variation_from_to a b ∈ s.image (hf.variation_from_to a) := ⟨b, bs, rfl⟩,
+  let c := cc.some,
+  let cs := cc.some_spec.1,
+  let cb := cc.some_spec.2,
+  rw [←hf.variation_from_to_add as bs cs, add_right_eq_self] at cb,
+  rw [←ennreal.bot_eq_zero, eq_bot_iff, ennreal.bot_eq_zero],
+  by_cases h : b ≤ c,
+  { rw [←ennreal.of_real_zero, ←cb, hf.variation_from_to_eq_of_le h,
+        ennreal.of_real_to_real (hf b c bs cs)],
+    apply evariation_on.edist_le f,
+    exact ⟨bs, ⟨le_refl _, h⟩⟩,
+    exact ⟨cs, ⟨h, le_refl _⟩⟩, },
+  { replace h : c ≤ b := (lt_of_not_le h).le,
+    rw [hf.variation_from_to_eq_neg_swap, neg_eq_zero] at cb,
+    rw [edist_comm, ←ennreal.of_real_zero, ←cb, hf.variation_from_to_eq_of_le h,
+        ennreal.of_real_to_real (hf c b cs bs)],
+    apply evariation_on.edist_le f,
+    exact ⟨cs, ⟨le_refl _, h⟩⟩,
+    exact ⟨bs, ⟨h, le_refl _⟩⟩, }
+end
+
+@[nolint unused_arguments]
+noncomputable! def variation_from_to' (a : α) :
+  s → (s.image (hf.variation_from_to a)) :=
+λ b, ⟨hf.variation_from_to a b.val, ⟨b.val, b.prop, rfl⟩⟩
+
+
+lemma arc_length_parameterization_eq {E : Type*} [metric_space E] {f : α → E} {s : set α}
+  (hf : has_locally_bounded_variation_on f s) {a : α} (as : a ∈ s) :
+  (f ∘ coe) = hf.arc_length_parameterization as ∘ hf.variation_from_to' a :=
+begin
+  ext ⟨b,bs⟩,
+  simp only [variation_from_to', subtype.val_eq_coe, subtype.coe_mk, function.comp_app,
+             ←edist_eq_zero],
+  exact hf.arc_length_parameterization_edist_zero as bs,
+end
+
+lemma edist_congr {a b c : E} (hab : edist a b = 0) : edist a c = edist b c := sorry
+lemma edist_congr' {a b c : E} (hab : edist a b = 0) : edist c a = edist c b := sorry
+
+
+lemma arc_length_parameterization_unit_length {a : α} (as : a ∈ s) {x y} (xy : x ≤ y) :
+  evariation_on (hf.arc_length_parameterization as) (Icc x y) = edist x y :=
+begin
+  dsimp only [arc_length_parameterization],
+  obtain ⟨x,hx⟩ := x,
+  obtain ⟨y,hy⟩ := y,
+  let c := hx.some,
+  let cs := hx.some_spec.1,
+  let cx := hx.some_spec.2,
+  let d := hy.some,
+  let ds := hy.some_spec.1,
+  let dy := hy.some_spec.2,
 
 end
 
