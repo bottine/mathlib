@@ -773,18 +773,22 @@ begin
   { simp only [←hf.variation_from_to_add as bs cs, add_tsub_cancel_left], }
 end
 
-noncomputable def arc_length_parameterization {a : α} (as : a ∈ s) :
-  (s.image (hf.variation_from_to a)) → E := λ b, f b.prop.some
+noncomputable def arc_length_parameterization_or {a : α} (as : a ∈ s) (e : E)
+  [∀ x, decidable (∃ (b : α), b ∈ s ∧ x = hf.variation_from_to a b)]: ℝ → E :=
+λ x, if h : ∃ b, b ∈ s ∧ x = hf.variation_from_to a b then f h.some else e
 
 /--
 In a metric space, precomposing arc-length parameterization with variation yields the original
 map.
 -/
-lemma arc_length_parameterization_edist_zero {a : α} (as : a ∈ s) {b : α} (bs : b ∈ s) :
-  edist (f b) ((hf.arc_length_parameterization as) ⟨hf.variation_from_to a b, ⟨b, bs, rfl⟩⟩) = 0 :=
+lemma arc_length_parameterization_edist_zero {a : α} (as : a ∈ s) {b : α} (bs : b ∈ s) (e : E)
+  [∀ (x : ℝ), decidable (∃ (b : α), b ∈ s ∧ x = hf.variation_from_to a b)] :
+  edist (f b) (hf.arc_length_parameterization_or as e (hf.variation_from_to a b)) = 0 :=
 begin
-  dsimp only [arc_length_parameterization, variation_from_to],
-  let cc : hf.variation_from_to a b ∈ s.image (hf.variation_from_to a) := ⟨b, bs, rfl⟩,
+  dsimp only [arc_length_parameterization_or, variation_from_to],
+  --rw [dif_pos], swap, { use b, use bs,},
+  let cc : ∃ (b : α), b ∈ s ∧ hf.variation_from_to a b = hf.variation_from_to a b := ⟨b, bs, rfl⟩,
+  rw [dif_pos cc],
   let c := cc.some,
   let cs := cc.some_spec.1,
   let cb := cc.some_spec.2,
@@ -809,7 +813,6 @@ end
 noncomputable! def variation_from_to' (a : α) :
   s → (s.image (hf.variation_from_to a)) :=
 λ b, ⟨hf.variation_from_to a b.val, ⟨b.val, b.prop, rfl⟩⟩
-
 
 lemma arc_length_parameterization_eq {E : Type*} [metric_space E] {f : α → E} {s : set α}
   (hf : has_locally_bounded_variation_on f s) {a : α} (as : a ∈ s) :
@@ -837,7 +840,7 @@ begin
   let d := hy.some,
   let ds := hy.some_spec.1,
   let dy := hy.some_spec.2,
-
+  sorry,
 end
 
 end has_locally_bounded_variation_on
