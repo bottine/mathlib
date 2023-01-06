@@ -207,6 +207,7 @@ begin
   simp [u, edist_comm],
 end
 
+
 lemma _root_.has_bounded_variation_on.dist_le {E : Type*} [pseudo_metric_space E]
   {f : α → E} {s : set α} (h : has_bounded_variation_on f s) {x y : α} (hx : x ∈ s) (hy : y ∈ s) :
   dist (f x) (f y) ≤ (evariation_on f s).to_real :=
