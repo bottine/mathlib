@@ -42,7 +42,7 @@ lemma comp_out_finite [locally_finite G] (Gpc : preconnected G) :
 begin
   classical,
   rintro K,
-  cases K.eq_empty_or_nonempty,
+  rcases K.eq_empty_or_nonempty with h|h,
   -- If K is empty, then removing K doesn't change the graph, which is connected, hence has a
   -- single connected component
   { cases h, dsimp [comp_out, out],
@@ -54,21 +54,20 @@ begin
       apply connected_component.ind₂,
       simp only [connected_component.eq],
       exact Gpc, },
-    apply finite.of_equiv (G.connected_component),
-    exact (connected_component.iso (induce_univ_iso G)).symm, },
-  -- Otherwise, we consider the function mapping a connected component to one of its vertices
-  -- adjacent to `K`.
-  -- This map is injective and its domain is finite.
+    exact finite.of_equiv (G.connected_component)
+                          (connected_component.iso (induce_univ_iso G)).symm, },
+  -- Otherwise, we consider the function `touch` mapping a connected component to one of its
+  -- vertices adjacent to `K`.
   { let touch : G.comp_out K → {v : V | ∃ k : V, k ∈ K ∧ G.adj k v} :=
       λ C, let p := C.exists_adj_boundary_pair Gpc h in
         ⟨p.some.1, p.some.2, p.some_spec.2.1, p.some_spec.2.2.symm⟩,
-
+    -- `touch` is injective
     have touch_inj : touch.injective := λ C D h', comp_out.eq_of_not_disjoint C D (by
     { rw set.not_disjoint_iff,
       use touch C,
       exact ⟨ (C.exists_adj_boundary_pair Gpc h).some_spec.1,
               h'.symm ▸ (D.exists_adj_boundary_pair Gpc h).some_spec.1⟩, }),
-
+    -- `touch` has finite range
     haveI : finite (set.range touch), by
     { apply @subtype.finite _ _ _,
       apply set.finite.to_subtype,
@@ -78,7 +77,6 @@ begin
                   finset.mem_coe, mem_neighbor_finset], },
       rw this,
       apply finset.finite_to_set, },
-
     apply finite.of_injective_finite_range touch_inj, },
 end
 
@@ -89,19 +87,14 @@ lemma comp_out_nonempty_of_infinite [infinite V] :
   ∀ (K : finset V), nonempty (G.comp_out K) :=
 begin
   rintro K,
-  suffices : ((K : set V)ᶜ).nonempty,
-  { obtain ⟨k,kK⟩ := this,
-    exact ⟨connected_component_mk _ ⟨k,kK⟩⟩, },
-  apply set.infinite.nonempty,
-  apply set.finite.infinite_compl,
-  apply finset.finite_to_set,
+  obtain ⟨k,kK⟩ := set.infinite.nonempty (set.finite.infinite_compl $ K.finite_to_set),
+  exact ⟨connected_component_mk _ ⟨k,kK⟩⟩,
 end
 
 lemma end_has_all_comps_infinite [Glf : locally_finite G] (Gpc : preconnected G) (e : G.end)
   (K : (finset V)ᵒᵖ) : (e.val K).supp.infinite :=
 begin
-  apply (e.val K).inf_iff_in_all_ranges.mpr,
-  rintro L h,
+  apply (e.val K).inf_iff_in_all_ranges.mpr (λ L h, _),
   change opposite.unop K ⊆ opposite.unop (opposite.op L) at h,
   exact  ⟨e.val (opposite.op L), (e.prop (category_theory.op_hom_of_le h)).symm⟩,
 end
@@ -109,14 +102,10 @@ end
 /--
 A locally finite preconnected infinite graph has at least one end.
 -/
-lemma nonempty_ends_of_infinite [Glf : locally_finite G] (Gpc : preconnected G) [Vi : infinite V] :
+lemma nonempty_ends_of_infinite
+  [decidable_eq V] [Glf : locally_finite G] (Gpc : preconnected G) [Vi : infinite V] :
   G.end.nonempty :=
-let
-  findir : is_directed (finset V) has_le.le := sorry
-  -- What's happening? and if I try to build a findir, lean tells me it can't find
-  -- an instance for `has_union (finset V)` ???
-in
-  @nonempty_sections_of_fintype_inverse_system _ _ findir G.comp_out_functor
+  @nonempty_sections_of_fintype_inverse_system _ _ _ G.comp_out_functor
     (λ K, @fintype.of_finite _ $ G.comp_out_finite Gpc K.unop)
     (λ K, G.comp_out_nonempty_of_infinite K.unop)
 
