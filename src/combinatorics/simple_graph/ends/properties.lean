@@ -37,25 +37,17 @@ end
 For a locally finite preconnected graph, the number of components outside of any finite set
 is finite.
 -/
-lemma comp_out_finite [locally_finite G] (Gpc : preconnected G) :
-  ∀ (K : finset V), finite (G.comp_out K) :=
+lemma comp_out_finite [locally_finite G] (Gpc : preconnected G) (K : finset V) :
+  finite (G.comp_out K) :=
 begin
   classical,
-  rintro K,
   rcases K.eq_empty_or_nonempty with h|h,
   -- If K is empty, then removing K doesn't change the graph, which is connected, hence has a
   -- single connected component
   { cases h, dsimp [comp_out, out],
     rw set.compl_empty,
-    -- TODO: lemma : G.connected ↔ is_singleton G.connected_component
-    haveI : finite G.connected_component, by
-    { apply @finite.of_subsingleton _ _,
-      constructor,
-      apply connected_component.ind₂,
-      simp only [connected_component.eq],
-      exact Gpc, },
-    exact finite.of_equiv (G.connected_component)
-                          (connected_component.iso (induce_univ_iso G)).symm, },
+    haveI := @finite.of_subsingleton _ Gpc.subsingleton_connected_component,
+    exact finite.of_equiv _ (connected_component.iso (induce_univ_iso G)).symm, },
   -- Otherwise, we consider the function `touch` mapping a connected component to one of its
   -- vertices adjacent to `K`.
   { let touch : G.comp_out K → {v : V | ∃ k : V, k ∈ K ∧ G.adj k v} :=
@@ -83,15 +75,17 @@ end
 /--
 In an infinite graph, the set of components out of a finite set is nonempty.
 -/
-lemma comp_out_nonempty_of_infinite [infinite V] :
-  ∀ (K : finset V), nonempty (G.comp_out K) :=
+lemma comp_out_nonempty_of_infinite [infinite V] (K : finset V) : nonempty (G.comp_out K) :=
 begin
-  rintro K,
   obtain ⟨k,kK⟩ := set.infinite.nonempty (set.finite.infinite_compl $ K.finite_to_set),
   exact ⟨connected_component_mk _ ⟨k,kK⟩⟩,
 end
 
-lemma end_has_all_comps_infinite [Glf : locally_finite G] (Gpc : preconnected G) (e : G.end)
+/--
+In a locally finite preconnected graph, the `comp_out` chosen by an end are all infinite.
+-/
+lemma end_comp_out_infinite_of_locally_finite_preconnected
+  [Glf : locally_finite G] (Gpc : preconnected G) (e : G.end)
   (K : (finset V)ᵒᵖ) : (e.val K).supp.infinite :=
 begin
   apply (e.val K).inf_iff_in_all_ranges.mpr (λ L h, _),
