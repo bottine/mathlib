@@ -9,8 +9,8 @@ import data.finset.basic
 /-!
 # Properties of the ends of graphs
 
-This file is meant to contain results about the ends of (locally finite connected) graphs.
-
+This file is meant to contain results about the ends of
+(usually locally finite and connected) graphs.
 -/
 
 variables {V : Type} (G : simple_graph V)
@@ -82,10 +82,10 @@ begin
 end
 
 /--
-In a locally finite preconnected graph, the `comp_out` chosen by an end are all infinite.
+The `comp_out`s chosen by an end are all infinite.
 -/
 lemma end_comp_out_infinite_of_locally_finite_preconnected
-  [Glf : locally_finite G] (Gpc : preconnected G) (e : G.end)
+  (e : G.end)
   (K : (finset V)ᵒᵖ) : (e.val K).supp.infinite :=
 begin
   apply (e.val K).inf_iff_in_all_ranges.mpr (λ L h, _),
@@ -96,11 +96,13 @@ end
 /--
 A locally finite preconnected infinite graph has at least one end.
 -/
-lemma nonempty_ends_of_infinite
-  [decidable_eq V] [Glf : locally_finite G] (Gpc : preconnected G) [Vi : infinite V] :
+lemma nonempty_ends_of_infinite [Glf : locally_finite G] (Gpc : preconnected G) [Vi : infinite V] :
   G.end.nonempty :=
-  @nonempty_sections_of_fintype_inverse_system _ _ _ G.comp_out_functor
+begin
+  classical,
+  exact @nonempty_sections_of_fintype_inverse_system _ _ _ G.comp_out_functor
     (λ K, @fintype.of_finite _ $ G.comp_out_finite Gpc K.unop)
     (λ K, G.comp_out_nonempty_of_infinite K.unop)
+end
 
 end simple_graph
