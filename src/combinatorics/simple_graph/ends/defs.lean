@@ -181,6 +181,10 @@ begin
   exact ⟨λ h', cL (h h'), rfl⟩,
 end
 
+lemma _root_.simple_graph.comp_out_mk_mem_hom (G : simple_graph V) {v : V} (vK : v ∈ Kᶜ)
+  (h : L ⊆ K) : v ∈ (G.comp_out_mk vK).hom h :=
+subset_hom (G.comp_out_mk vK) h (G.comp_out_mk_mem vK)
+
 lemma hom_eq_iff_le (C : G.comp_out L) (h : K ⊆ L) (D : G.comp_out K) :
   C.hom h = D ↔ (C : set V) ⊆ (D : set V) :=
 begin

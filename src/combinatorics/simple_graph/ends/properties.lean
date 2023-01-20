@@ -107,110 +107,90 @@ begin
     (λ K, G.comp_out_nonempty_of_infinite K.unop)
 end
 
-noncomputable def end_to_local_end  [decidable_eq V] (K : (finset V)ᵒᵖ) (s : G.end) :
+noncomputable def end_to_local_end [decidable_eq V] (K : (finset V)ᵒᵖ) (s : G.end) :
   (s.val K).subgraph.coe.end :=
-begin
-  fsplit,
-  { rintro L,
-    let L' := L.unop.image (subtype.val),
-    refine @comp_out_mk _ _ ((s.val K).subgraph.coe)
-             ⟨(s.val (opposite.op (L' ∪ K.unop))).nonempty.some, _⟩ _,
-    { let vvLK := (s.val (opposite.op (L' ∪ K.unop))).nonempty,
-      let v := vvLK.some,
-      let hvLK := vvLK.some_spec,
-      have vsK : v ∈ (s.val K).supp, by {
-        refine set.mem_of_mem_of_subset hvLK _,
-        refine (comp_out.hom_eq_iff_le _ _ _).mp (s.prop (category_theory.op_hom_of_le _)),
-        refine finset.subset_union_right _ _, },
-      exact vsK, },
-    { let vvLK := (s.val (opposite.op (L' ∪ K.unop))).nonempty,
-      let v := vvLK.some,
-      let hvLK := vvLK.some_spec,
-      have vsK : v ∈ (s.val K).supp, by
-      { refine set.mem_of_mem_of_subset hvLK _,
-        refine (comp_out.hom_eq_iff_le _ _ _).mp (s.prop (category_theory.op_hom_of_le _)),
-        refine finset.subset_union_right _ _, },
+⟨ λ L,
+  let
+    L' := L.unop.image (subtype.val),
+    vvLK := (s.val (opposite.op (L' ∪ K.unop))).nonempty,
+    v := vvLK.some,
+    hvLK := vvLK.some_spec,
+    vsK : v ∈ (s.val K).supp :=
+      set.mem_of_mem_of_subset hvLK
+        ((comp_out.hom_eq_iff_le _ _ _).mp
+          (s.prop (category_theory.op_hom_of_le (finset.subset_union_right _ _))))
+  in
+    @comp_out_mk _ _ ((s.val K).subgraph.coe)
+                     ⟨(s.val (opposite.op (L' ∪ K.unop))).nonempty.some, vsK⟩ $ by
+    begin
       let := comp_out.not_mem_of_mem hvLK,
       simp_rw [opposite.unop_op, finset.mem_coe, finset.mem_union, not_or_distrib,
                finset.mem_image] at this,
-      rw set.mem_compl_iff,
       exact λ h, this.left ⟨⟨v,vsK⟩, ⟨h,rfl⟩⟩,
-     },
-  },
-
+    end,
+  by
   { rintro L L' LL',
     simp, apply comp_out.eq_of_not_disjoint,
-    rw set.not_disjoint_iff, sorry, },
-end
+    rw set.not_disjoint_iff, sorry, } ⟩
+
 
 noncomputable def end_of_local_end [decidable_eq V] {K : (finset V)ᵒᵖ} {C : G.comp_out K.unop}
   (s : C.subgraph.coe.end) : G.end :=
-begin
-  fsplit,
-  { rintro L,
-    let L' := L.unop.preimage (subtype.val : C.subgraph.verts → V) (subtype.val_injective.inj_on _),
-    let CL':= s.val (opposite.op L'),
-    let vCL' := CL'.nonempty,
-    refine @comp_out_mk _ _ G vCL'.some.val _,
-     --let vvC := vCL'.some,
-    let vh := vCL'.some_spec,
-    let vnL := comp_out.not_mem_of_mem vh,
-    convert vnL,
-    simp only [set.mem_compl_iff, finset.mem_coe, opposite.unop_op, finset.mem_preimage,
-               subtype.val_eq_coe], refl, },
-  { rintro L L₂ hL, simp,
-    apply comp_out.eq_of_not_disjoint,
-    rw set.not_disjoint_iff,
-    sorry
-
-   }
-
-end
+⟨ λ L,
+    let
+      L' := L.unop.preimage (subtype.val : C.subgraph.verts → V) (subtype.val_injective.inj_on _),
+      CL':= s.val (opposite.op L'),
+      vCL' := CL'.nonempty
+    in
+      @comp_out_mk _ _ G vCL'.some.val $ by
+      begin
+        convert comp_out.not_mem_of_mem vCL'.some_spec,
+        simp only [set.mem_compl_iff, finset.mem_coe, opposite.unop_op, finset.mem_preimage,
+                   subtype.val_eq_coe], refl
+      end,
+  λ L M LM, by
+    begin
+      /-simp only [subtype.val_eq_coe],
+      apply comp_out.eq_of_not_disjoint,
+      rw set.not_disjoint_iff,
+      let L' := L.unop.preimage (subtype.val : C.subgraph.verts → V) (subtype.val_injective.inj_on _),
+      let CL':= s.val (opposite.op L'),
+      let vCL' := CL'.nonempty,
+      let M' := M.unop.preimage (subtype.val : C.subgraph.verts → V) (subtype.val_injective.inj_on _),
+      let CM':= s.val (opposite.op M'),
+      let vCM' := CM'.nonempty,
+      have LM' : M' ≤ L', by {
+        apply finset.monotone_preimage,
+        exact category_theory.le_of_op_hom LM,},
+      rw ←opposite.unop_op M' at LM',
+      rw ←opposite.unop_op L' at LM',
+      have := s.prop (category_theory.op_hom_of_le LM'),
+      dsimp only [comp_out_functor] at this,
+      rw comp_out.hom_eq_iff_le at this,
+      use vCL'.some.val,
+      --rw comp_out.mem_supp_iff.mp vCM'.some_spec at this,-/
+      sorry,
+    end ⟩
 
 lemma  end_of_local_end_agree [decidable_eq V] {K : (finset V)ᵒᵖ} {C : G.comp_out K.unop}
   (s : C.subgraph.coe.end) : (end_of_local_end G s).val K = C := sorry
 
-/-
 noncomputable def end_comp_out_equiv [decidable_eq V] (K : (finset V)ᵒᵖ) (C : G.comp_out K.unop) :
   {s : G.end // s.val K = C} ≃ C.subgraph.coe.end :=
-begin
-  classical,
-  fsplit,
-  { rintro ⟨⟨s,sec⟩,rfl⟩, fsplit,
-    let C : G.comp_out K.unop := s K,
-    have Cverts : (C : set V) = C.subgraph.verts := rfl,
-    rintro L, dsimp only [comp_out_functor],
-
-    let L' := L.unop.image (subtype.val),
-    let vvLK := (s (opposite.op (L' ∪ K.unop))).nonempty,
-    let v := vvLK.some,
-    let hvLK := vvLK.some_spec,
-    have vsK : v ∈ (s K).supp, by {
-      apply set.mem_of_mem_of_subset hvLK _,
-      apply (comp_out.hom_eq_iff_le _ _ _).mp (sec (category_theory.op_hom_of_le _)),
-      apply finset.subset_union_right _ _, },
-    refine comp_out_mk _ _,
-    refine ⟨v,_⟩,
-    change v ∈ (s K).supp,
-    exact vsK,
-
-    let := comp_out.not_mem_of_mem hvLK,
-    simp_rw [opposite.unop_op, finset.mem_coe, finset.mem_union, not_or_distrib] at this,
-    let thisl := this.left,
-    rw finset.mem_image at thisl,
-    simp only [set.mem_compl_iff, finset.mem_coe, subgraph.induce_verts, set_like.mem_coe, comp_out.mem_supp_iff, opposite.unop_op,
-  finset.mem_union, finset.mem_image, subtype.val_eq_coe, exists_prop, subtype.exists, set_like.coe_mk,
-  exists_and_distrib_right, exists_eq_right, not_exists, forall_exists_index] at thisl ⊢,
-  rintro h,
-  apply thisl,
-  exact h,
-    --simp at this,
-
-    sorry, sorry, },
-  sorry,
-  sorry,
-  sorry,
-end
--/
+{ to_fun := λ s, by { rw ←s.prop, exact (end_to_local_end G K s.val), },
+  inv_fun := λ s, ⟨end_of_local_end G s, end_of_local_end_agree G s⟩,
+  left_inv := λ s, by
+  begin
+    ext L,
+    obtain ⟨⟨s, sec⟩,h⟩ := s,
+    simp [end_of_local_end, end_to_local_end],
+    apply comp_out.eq_of_not_disjoint,
+    rw set.not_disjoint_iff,
+    let L' := L.unop.preimage (subtype.val : C.subgraph.verts → V) (subtype.val_injective.inj_on _),
+    cases h,
+    let CL':= s (opposite.op L'),
+    let vCL' := CL'.nonempty,
+  end
+ }
 
 end simple_graph
