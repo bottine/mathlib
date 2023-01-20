@@ -13,6 +13,8 @@ This file is meant to contain results about the ends of
 (usually locally finite and connected) graphs.
 -/
 
+set_option profiler true
+
 variables {V : Type} (G : simple_graph V)
 
 namespace simple_graph
@@ -84,7 +86,7 @@ end
 /--
 The `comp_out`s chosen by an end are all infinite.
 -/
-lemma end_comp_out_infinite_of_locally_finite_preconnected
+lemma end_comp_out_infinite
   (e : G.end)
   (K : (finset V)ᵒᵖ) : (e.val K).supp.infinite :=
 begin
@@ -104,5 +106,111 @@ begin
     (λ K, @fintype.of_finite _ $ G.comp_out_finite Gpc K.unop)
     (λ K, G.comp_out_nonempty_of_infinite K.unop)
 end
+
+noncomputable def end_to_local_end  [decidable_eq V] (K : (finset V)ᵒᵖ) (s : G.end) :
+  (s.val K).subgraph.coe.end :=
+begin
+  fsplit,
+  { rintro L,
+    let L' := L.unop.image (subtype.val),
+    refine @comp_out_mk _ _ ((s.val K).subgraph.coe)
+             ⟨(s.val (opposite.op (L' ∪ K.unop))).nonempty.some, _⟩ _,
+    { let vvLK := (s.val (opposite.op (L' ∪ K.unop))).nonempty,
+      let v := vvLK.some,
+      let hvLK := vvLK.some_spec,
+      have vsK : v ∈ (s.val K).supp, by {
+        refine set.mem_of_mem_of_subset hvLK _,
+        refine (comp_out.hom_eq_iff_le _ _ _).mp (s.prop (category_theory.op_hom_of_le _)),
+        refine finset.subset_union_right _ _, },
+      exact vsK, },
+    { let vvLK := (s.val (opposite.op (L' ∪ K.unop))).nonempty,
+      let v := vvLK.some,
+      let hvLK := vvLK.some_spec,
+      have vsK : v ∈ (s.val K).supp, by
+      { refine set.mem_of_mem_of_subset hvLK _,
+        refine (comp_out.hom_eq_iff_le _ _ _).mp (s.prop (category_theory.op_hom_of_le _)),
+        refine finset.subset_union_right _ _, },
+      let := comp_out.not_mem_of_mem hvLK,
+      simp_rw [opposite.unop_op, finset.mem_coe, finset.mem_union, not_or_distrib,
+               finset.mem_image] at this,
+      rw set.mem_compl_iff,
+      exact λ h, this.left ⟨⟨v,vsK⟩, ⟨h,rfl⟩⟩,
+     },
+  },
+
+  { rintro L L' LL',
+    simp, apply comp_out.eq_of_not_disjoint,
+    rw set.not_disjoint_iff, sorry, },
+end
+
+noncomputable def end_of_local_end [decidable_eq V] {K : (finset V)ᵒᵖ} {C : G.comp_out K.unop}
+  (s : C.subgraph.coe.end) : G.end :=
+begin
+  fsplit,
+  { rintro L,
+    let L' := L.unop.preimage (subtype.val : C.subgraph.verts → V) (subtype.val_injective.inj_on _),
+    let CL':= s.val (opposite.op L'),
+    let vCL' := CL'.nonempty,
+    refine @comp_out_mk _ _ G vCL'.some.val _,
+     --let vvC := vCL'.some,
+    let vh := vCL'.some_spec,
+    let vnL := comp_out.not_mem_of_mem vh,
+    convert vnL,
+    simp only [set.mem_compl_iff, finset.mem_coe, opposite.unop_op, finset.mem_preimage,
+               subtype.val_eq_coe], refl, },
+  { rintro L L₂ hL, simp,
+    apply comp_out.eq_of_not_disjoint,
+    rw set.not_disjoint_iff,
+    sorry
+
+   }
+
+end
+
+lemma  end_of_local_end_agree [decidable_eq V] {K : (finset V)ᵒᵖ} {C : G.comp_out K.unop}
+  (s : C.subgraph.coe.end) : (end_of_local_end G s).val K = C := sorry
+
+/-
+noncomputable def end_comp_out_equiv [decidable_eq V] (K : (finset V)ᵒᵖ) (C : G.comp_out K.unop) :
+  {s : G.end // s.val K = C} ≃ C.subgraph.coe.end :=
+begin
+  classical,
+  fsplit,
+  { rintro ⟨⟨s,sec⟩,rfl⟩, fsplit,
+    let C : G.comp_out K.unop := s K,
+    have Cverts : (C : set V) = C.subgraph.verts := rfl,
+    rintro L, dsimp only [comp_out_functor],
+
+    let L' := L.unop.image (subtype.val),
+    let vvLK := (s (opposite.op (L' ∪ K.unop))).nonempty,
+    let v := vvLK.some,
+    let hvLK := vvLK.some_spec,
+    have vsK : v ∈ (s K).supp, by {
+      apply set.mem_of_mem_of_subset hvLK _,
+      apply (comp_out.hom_eq_iff_le _ _ _).mp (sec (category_theory.op_hom_of_le _)),
+      apply finset.subset_union_right _ _, },
+    refine comp_out_mk _ _,
+    refine ⟨v,_⟩,
+    change v ∈ (s K).supp,
+    exact vsK,
+
+    let := comp_out.not_mem_of_mem hvLK,
+    simp_rw [opposite.unop_op, finset.mem_coe, finset.mem_union, not_or_distrib] at this,
+    let thisl := this.left,
+    rw finset.mem_image at thisl,
+    simp only [set.mem_compl_iff, finset.mem_coe, subgraph.induce_verts, set_like.mem_coe, comp_out.mem_supp_iff, opposite.unop_op,
+  finset.mem_union, finset.mem_image, subtype.val_eq_coe, exists_prop, subtype.exists, set_like.coe_mk,
+  exists_and_distrib_right, exists_eq_right, not_exists, forall_exists_index] at thisl ⊢,
+  rintro h,
+  apply thisl,
+  exact h,
+    --simp at this,
+
+    sorry, sorry, },
+  sorry,
+  sorry,
+  sorry,
+end
+-/
 
 end simple_graph
