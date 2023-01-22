@@ -24,55 +24,47 @@ protected def connected_component.lift_adj {β : Sort*} (f : V → β)
 quot.lift f (λ v w (h' : G.reachable v w), h'.elim $ λ vw, by
   { induction vw, refl, rw ←vw_ih ⟨vw_p⟩, exact h _ _ vw_h, } )
 
-lemma connected_component_adj_walk (f : V → V → Prop) (ht : ∀ u v w, f u v → f v w → f u w)
-  (hr : ∀ v, f v v) (ha : ∀ (v w : V), G.adj v w → f v w) : ∀ v w, G.reachable v w → f v w :=
+
+protected def rec' {β : G.connected_component → Sort*}
+  (f : Π a, β (G.connected_component_mk a))
+  (h : ∀ (a b : V) (p : G.reachable a b),
+         ( (quot.sound p).rec_on (f a) : β (quot.mk G.reachable b)) = f b)
+  (q : G.connected_component) : β q :=
+eq.rec_on (quot.lift_indep_pr1 f h q) ((quot.lift (quot.indep f) (quot.indep_coherent f h) q).2)
+
+
+protected def rec'' {β : G.connected_component → Sort*}
+  (f : Π a, β (G.connected_component_mk a))
+  (h : ∀ (a b : V) (p : G.adj a b),
+         ((quot.sound p.reachable).rec_on (f a) : β (quot.mk G.reachable b)) = f b)
+  (q : G.connected_component) : β q :=
 begin
-  rintro v w ⟨p⟩,
+  fapply simple_graph.rec',
+  exact f,
+  rintro a b ⟨p⟩,
   induction p,
-  { apply hr, },
-  { apply ht,
-    apply ha,
-    apply p_h,
-    apply p_ih, }
-end
-
-variable {G}
-
-def vD_to_C [decidable_eq V] {K : set V} {C : G.comp_out K}
-  {L : set $ subtype C.subgraph.verts} {D : G.comp_out ((L.image subtype.val) ∪ K)}
-  (CD : D.supp ⊆ C) {v : V} (vD : v ∈ D) : C := ⟨v, CD vD⟩
-
-lemma vD_to_C_mem_Lc [decidable_eq V] {K : set V} {C : G.comp_out K}
-  {L : set $ subtype C.subgraph.verts} {D : G.comp_out ((L.image subtype.val) ∪ K)}
-  (CD : D.supp ⊆ C) {v : V} (vD : v ∈ D) : vD_to_C CD vD ∈ Lᶜ :=
-begin
-  let := comp_out.not_mem_of_mem vD,
-  simp_rw [set.mem_union, not_or_distrib, set.mem_image] at this,
-  exact λ h, this.left ⟨⟨v,_⟩, ⟨h,rfl⟩⟩,
-end
-
-lemma comp_out_mk_eq_vD_to_C [decidable_eq V] {K : set V} {C : G.comp_out K}
-  {L : set $ subtype C.subgraph.verts} {D : G.comp_out ((L.image subtype.val) ∪ K)}
-  (CD : D.supp ⊆ C) {v w : V} (vD : v ∈ D) (wD : w ∈ D) :
-  comp_out_mk C.subgraph.coe (vD_to_C_mem_Lc CD vD) =
-  comp_out_mk C.subgraph.coe (vD_to_C_mem_Lc CD wD) :=
-begin
-  rw comp_out.mem_supp_iff at vD wD,
-  have := wD.some_spec.trans vD.some_spec.symm,
-  simp only [connected_component.eq] at this,
-  obtain ⟨p⟩ := this,
-  generalize hv : (⟨v,vD.some⟩ : (subtype.val '' L ∪ K)ᶜ) = vv,
-  generalize hw : (⟨w,wD.some⟩ : (subtype.val '' L ∪ K)ᶜ) = ww,
-  rw [hv,hw] at p,
-  induction p with u w' u' v' wu' q ih,
-  { cases u, simp only at hv hw, subst_vars, },
-  { cases hv, cases hw, simp at hv hw, subst_vars, simp at p_ih, },
+  { refl, },
+  { specialize h _ _ p_h,
+    rw [←p_ih, ←h],
+    --rw eq_rec_compose _ _ (f p_u),
+    finish, /- magic -/ },
 end
 
 noncomputable def comp_out_to_local_comp_out [decidable_eq V] (K : set V) (C : G.comp_out K)
-  (L : set $ subtype C.subgraph.verts)
-  (D : G.comp_out ((L.image subtype.val) ∪ K)) (CD : D.supp ⊆ C) : C.subgraph.coe.comp_out L :=
-comp_out_mk (C.subgraph.coe) (vD_to_C_mem_Lc CD D.nonempty.some_spec)
+  (L : set $ subtype C.subgraph.verts) :
+  ∀ (D : G.comp_out ((L.image subtype.val) ∪ K)), D.supp ⊆ C → C.subgraph.coe.comp_out L :=
+begin
+  refine simple_graph.rec'' _ _ _,
+  { rintro v vC,
+    fapply comp_out_mk,
+    use v,
+    apply vC,
+    simp, sorry, sorry, },
+  { rintro u v uv,
+    let h := (quot.sound uv.reachable),
+
+   }
+end
 
 lemma comp_out_to_local_comp_out_hom [decidable_eq V] (K : set V) (C : G.comp_out K)
   (L L' : set $ subtype C.subgraph.verts) (LL' : L' ⊆ L) (D : G.comp_out ((L.image subtype.val) ∪ K))
