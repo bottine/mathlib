@@ -24,22 +24,61 @@ protected def connected_component.lift_adj {β : Sort*} (f : V → β)
 quot.lift f (λ v w (h' : G.reachable v w), h'.elim $ λ vw, by
   { induction vw, refl, rw ←vw_ih ⟨vw_p⟩, exact h _ _ vw_h, } )
 
+lemma connected_component_adj_walk (f : V → V → Prop) (ht : ∀ u v w, f u v → f v w → f u w)
+  (hr : ∀ v, f v v) (ha : ∀ (v w : V), G.adj v w → f v w) : ∀ v w, G.reachable v w → f v w :=
+begin
+  rintro v w ⟨p⟩,
+  induction p,
+  { apply hr, },
+  { apply ht,
+    apply ha,
+    apply p_h,
+    apply p_ih, }
+end
+
+variable {G}
+
+def vD_to_C [decidable_eq V] {K : set V} {C : G.comp_out K}
+  {L : set $ subtype C.subgraph.verts} {D : G.comp_out ((L.image subtype.val) ∪ K)}
+  (CD : D.supp ⊆ C) {v : V} (vD : v ∈ D) : C := ⟨v, CD vD⟩
+
+lemma vD_to_C_mem_Lc [decidable_eq V] {K : set V} {C : G.comp_out K}
+  {L : set $ subtype C.subgraph.verts} {D : G.comp_out ((L.image subtype.val) ∪ K)}
+  (CD : D.supp ⊆ C) {v : V} (vD : v ∈ D) : vD_to_C CD vD ∈ Lᶜ :=
+begin
+  let := comp_out.not_mem_of_mem vD,
+  simp_rw [set.mem_union, not_or_distrib, set.mem_image] at this,
+  exact λ h, this.left ⟨⟨v,_⟩, ⟨h,rfl⟩⟩,
+end
+
+lemma comp_out_mk_eq_vD_to_C [decidable_eq V] {K : set V} {C : G.comp_out K}
+  {L : set $ subtype C.subgraph.verts} {D : G.comp_out ((L.image subtype.val) ∪ K)}
+  (CD : D.supp ⊆ C) {v w : V} (vD : v ∈ D) (wD : w ∈ D) :
+  comp_out_mk C.subgraph.coe (vD_to_C_mem_Lc CD vD) =
+  comp_out_mk C.subgraph.coe (vD_to_C_mem_Lc CD wD) :=
+begin
+  rw comp_out.mem_supp_iff at vD wD,
+  have := wD.some_spec.trans vD.some_spec.symm,
+  simp only [connected_component.eq] at this,
+  obtain ⟨p⟩ := this,
+  generalize hv : (⟨v,vD.some⟩ : (subtype.val '' L ∪ K)ᶜ) = vv,
+  generalize hw : (⟨w,wD.some⟩ : (subtype.val '' L ∪ K)ᶜ) = ww,
+  rw [hv,hw] at p,
+  induction p with u w' u' v' wu' q ih,
+  { cases u, simp only at hv hw, subst_vars, },
+  { cases hv, cases hw, simp at hv hw, subst_vars, simp at p_ih, },
+end
+
 noncomputable def comp_out_to_local_comp_out [decidable_eq V] (K : set V) (C : G.comp_out K)
   (L : set $ subtype C.subgraph.verts)
   (D : G.comp_out ((L.image subtype.val) ∪ K)) (CD : D.supp ⊆ C) : C.subgraph.coe.comp_out L :=
-  @comp_out_mk _ _ (C.subgraph.coe)
-                    ⟨D.nonempty.some, CD D.nonempty.some_spec⟩ $ by
-  begin
-    let := comp_out.not_mem_of_mem D.nonempty.some_spec,
-    simp_rw [set.mem_union, not_or_distrib, set.mem_image] at this,
-    exact λ h, this.left ⟨⟨D.nonempty.some,_⟩, ⟨h,rfl⟩⟩,
-  end
+comp_out_mk (C.subgraph.coe) (vD_to_C_mem_Lc CD D.nonempty.some_spec)
 
 lemma comp_out_to_local_comp_out_hom [decidable_eq V] (K : set V) (C : G.comp_out K)
   (L L' : set $ subtype C.subgraph.verts) (LL' : L' ⊆ L) (D : G.comp_out ((L.image subtype.val) ∪ K))
   (KLL' : (L'.image subtype.val) ∪ K ⊆ (L.image subtype.val) ∪ K) (CD : (D.hom KLL').supp ⊆ C) :
-  (comp_out_to_local_comp_out G K C L D $ (D.subset_hom KLL').trans CD).hom LL' =
-  comp_out_to_local_comp_out G K C L' (D.hom $ KLL') CD :=
+  (comp_out_to_local_comp_out K C L D $ (D.subset_hom KLL').trans CD).hom LL' =
+  comp_out_to_local_comp_out K C L' (D.hom $ KLL') CD :=
 begin
   apply comp_out.eq_of_not_disjoint,
   rw set.not_disjoint_iff,
@@ -48,7 +87,7 @@ begin
   have vC : v ∈ C.supp := CD ((comp_out.subset_hom _ _) vD),
   use ⟨v, vC⟩,
   split,
-  show_term { apply set.mem_of_mem_of_subset _ (comp_out.subset_hom _ _),
+  { apply set.mem_of_mem_of_subset _ (comp_out.subset_hom _ _),
     apply comp_out_mk_mem, },
   { let D' := D.hom KLL',
     apply comp_out.mem_supp_iff.mpr,
@@ -56,10 +95,19 @@ begin
     fsplit,
     { sorry, },
     { let v' := D'.nonempty.some,
-      let vD' := D'.nonempty.some_spec,
+      let vD' : v' ∈ D' := D'.nonempty.some_spec,
       dsimp [comp_out_mk],
-      simp,
+      simp only [connected_component.eq],
       change (C.subgraph.coe.out L').reachable ⟨⟨v, vC⟩, _⟩ ⟨⟨v', _⟩, _⟩,
+      have : v ∈ D'.supp := set.mem_of_mem_of_subset vD (D.subset_hom KLL'),
+      change v ∈ D' at this, rw comp_out.mem_supp_iff at this,
+      rw comp_out.mem_supp_iff at vD',
+      have lol := this.some_spec.trans vD'.some_spec.symm,
+      simp only [connected_component.eq] at lol,
+      obtain ⟨p⟩ := lol,
+      revert v v',
+      induction p,
+      { simp at *, },
       }
 
    },
