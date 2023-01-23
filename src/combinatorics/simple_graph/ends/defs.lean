@@ -32,6 +32,19 @@ section out
 /-- The graph induced by removing `K` -/
 @[reducible] def out := G.induce $ Kᶜ
 
+/-- The graph obtained by successively removing two sets is isomorphic to
+    the graph obtained by removing the union of the sets. -/
+def out_out : (G.out K).out (set.preimage has_coe.coe L) ≃g G.out (K ∪ L) :=
+  {
+   to_fun := λ ⟨⟨v, hvKc⟩, hvLc⟩, ⟨v,
+    by {have : v ∈ Lᶜ := hvLc, rw [set.compl_union, set.mem_inter_iff], split ; assumption,}⟩,
+   inv_fun := λ ⟨v, hvKuLc⟩, ⟨⟨v, by {rw [set.compl_union, set.mem_inter_iff] at hvKuLc, exact hvKuLc.left}⟩,
+    by {show v ∈ Lᶜ, rw [set.compl_union, set.mem_inter_iff] at hvKuLc, exact hvKuLc.right}⟩,
+   left_inv := by {simp only [function.left_inverse, set_coe.forall, eq_self_iff_true, implies_true_iff],},
+   right_inv := by {simp only [function.right_inverse, function.left_inverse, set_coe.forall, eq_self_iff_true, implies_true_iff],},
+   map_rel_iff' := by {simp only [set_coe.forall, implies_true_iff, equiv.coe_fn_mk, comap_adj, function.embedding.coe_subtype, subtype.coe_mk, iff_self],}
+  }
+
 /-- Subsetship induces an obvious map on the induced graphs. -/
 @[reducible] def out_hom {K L} (h : K ⊆ L) : G.out L →g G.out K :=
 { to_fun := λ ⟨v, hvK⟩, ⟨v, set.compl_subset_compl.mpr h hvK⟩,
