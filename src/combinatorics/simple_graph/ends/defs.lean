@@ -35,7 +35,7 @@ section out
 /-- The graph obtained by successively removing two sets is isomorphic to
     the graph obtained by removing the union of the sets. -/
 -- TODO Eventually change this to a `def` and fix the errors.
-theorem out_out : (G.out K).out (set.preimage has_coe.coe L) ≃g G.out (K ∪ L) :=
+theorem out_out : (G.out K).out (subtype.val⁻¹' L) ≃g G.out (K ∪ L) :=
   {
    to_fun := λ ⟨⟨v, hvKc⟩, hvLc⟩, ⟨v,
     by {have : v ∈ Lᶜ := hvLc, rw [set.compl_union, set.mem_inter_iff], split ; assumption,}⟩,
@@ -45,6 +45,13 @@ theorem out_out : (G.out K).out (set.preimage has_coe.coe L) ≃g G.out (K ∪ L
    right_inv := by {simp only [function.right_inverse, function.left_inverse, set_coe.forall, eq_self_iff_true, implies_true_iff],},
    map_rel_iff' := by {simp only [set_coe.forall, implies_true_iff, equiv.coe_fn_mk, comap_adj, function.embedding.coe_subtype, subtype.coe_mk, iff_self],}
   }
+
+/-- A variant of `out_out` that instead considers subsets of `Kᶜ`. -/
+theorem out_out' (A : set ↥Kᶜ) : (G.out K).out A ≃g G.out (K ∪ (subtype.val '' A)) := by {
+  let L := subtype.val '' A,
+  have : subtype.val⁻¹' L = A := set.preimage_image_eq A subtype.val_injective,
+  suffices h : (G.out K).out (subtype.val⁻¹' L) ≃g G.out (K ∪ L), from by {rw [this] at h, exact h},
+  apply out_out, }
 
 /-- Subsetship induces an obvious map on the induced graphs. -/
 @[reducible] def out_hom {K L} (h : K ⊆ L) : G.out L →g G.out K :=
