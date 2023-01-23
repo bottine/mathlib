@@ -34,7 +34,8 @@ section out
 
 /-- The graph obtained by successively removing two sets is isomorphic to
     the graph obtained by removing the union of the sets. -/
-def out_out : (G.out K).out (set.preimage has_coe.coe L) ≃g G.out (K ∪ L) :=
+-- TODO Eventually change this to a `def` and fix the errors.
+theorem out_out : (G.out K).out (set.preimage has_coe.coe L) ≃g G.out (K ∪ L) :=
   {
    to_fun := λ ⟨⟨v, hvKc⟩, hvLc⟩, ⟨v,
     by {have : v ∈ Lᶜ := hvLc, rw [set.compl_union, set.mem_inter_iff], split ; assumption,}⟩,
