@@ -54,25 +54,23 @@ end
 def comp_out_to_local_comp_out [decidable_eq V] {G : simple_graph V} (K : set V) (C : G.comp_out K)
   (L : set $ subtype C.subgraph.verts) :
   ∀ (D : G.comp_out ((L.image subtype.val) ∪ K)), D.supp ⊆ C → C.subgraph.coe.comp_out L :=
+  --  simple_graph.rec'' C.subgraph.coe
+  --   (λ v, _)
+  --   _
 begin
   refine simple_graph.rec'' _ _ _,
   { rintro v vC,
-    fapply comp_out_mk,
-    {
-      refine ⟨v, vC _⟩,
-      use v.property,
-      congr,
-      apply subtype.ext_val,
-      refl,
+    let v' : ↥(C.subgraph.verts) := ⟨v, vC ⟨v.property, congr_arg _ (subtype.ext_val (eq.refl v.val))⟩⟩,
+    have : v' ∈ Lᶜ := by {
+      intro h,
+      apply v.property,
+      left,
+      exact set.mem_image_of_mem subtype.val h,
     },
-    intro h,
-    apply v.property,
-    left,
-    exact set.mem_image_of_mem subtype.val h,
+    exact comp_out_mk C.subgraph.coe this,
   },
-  { rintro ⟨u, hu⟩ ⟨v, hv⟩ uv,
+  { rintro u v uv,
     let h := (quot.sound uv.reachable),
-
     sorry
    }
 end
