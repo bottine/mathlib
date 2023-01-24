@@ -13,7 +13,7 @@ This file is meant to contain results about the ends of
 (usually locally finite and connected) graphs.
 -/
 
-set_option profiler true
+-- set_option profiler true
 
 variables {V : Type} (G : simple_graph V)
 
@@ -46,26 +46,38 @@ begin
   { refl, },
   { specialize h _ _ p_h,
     rw [←p_ih, ←h],
-    --rw eq_rec_compose _ _ (f p_u),
-    finish, /- magic -/ },
+    -- rw eq_rec_compose _ _ (f p_u),
+    finish, /- magic -/
+    },
 end
 
-noncomputable def comp_out_to_local_comp_out [decidable_eq V] (K : set V) (C : G.comp_out K)
+def comp_out_to_local_comp_out [decidable_eq V] {G : simple_graph V} (K : set V) (C : G.comp_out K)
   (L : set $ subtype C.subgraph.verts) :
   ∀ (D : G.comp_out ((L.image subtype.val) ∪ K)), D.supp ⊆ C → C.subgraph.coe.comp_out L :=
 begin
   refine simple_graph.rec'' _ _ _,
   { rintro v vC,
     fapply comp_out_mk,
-    use v,
-    apply vC,
-    simp, sorry, sorry, },
-  { rintro u v uv,
+    {
+      refine ⟨v, vC _⟩,
+      use v.property,
+      congr,
+      apply subtype.ext_val,
+      refl,
+    },
+    intro h,
+    apply v.property,
+    left,
+    exact set.mem_image_of_mem subtype.val h,
+  },
+  { rintro ⟨u, hu⟩ ⟨v, hv⟩ uv,
     let h := (quot.sound uv.reachable),
 
+    sorry
    }
 end
 
+/-
 lemma comp_out_to_local_comp_out_hom [decidable_eq V] (K : set V) (C : G.comp_out K)
   (L L' : set $ subtype C.subgraph.verts) (LL' : L' ⊆ L) (D : G.comp_out ((L.image subtype.val) ∪ K))
   (KLL' : (L'.image subtype.val) ∪ K ⊆ (L.image subtype.val) ∪ K) (CD : (D.hom KLL').supp ⊆ C) :
@@ -80,16 +92,19 @@ begin
   use ⟨v, vC⟩,
   split,
   { apply set.mem_of_mem_of_subset _ (comp_out.subset_hom _ _),
-    apply comp_out_mk_mem, },
+    -- TODO: Debug
+    -- apply comp_out_mk_mem,
+    sorry
+     },
   { let D' := D.hom KLL',
     apply comp_out.mem_supp_iff.mpr,
     dsimp [comp_out_to_local_comp_out],
     fsplit,
     { sorry, },
-    { let v' := D'.nonempty.some,
+    { sorry {let v' := D'.nonempty.some,
       let vD' : v' ∈ D' := D'.nonempty.some_spec,
       dsimp [comp_out_mk],
-      simp only [connected_component.eq],
+      -- simp only [connected_component.eq],
       change (C.subgraph.coe.out L').reachable ⟨⟨v, vC⟩, _⟩ ⟨⟨v', _⟩, _⟩,
       have : v ∈ D'.supp := set.mem_of_mem_of_subset vD (D.subset_hom KLL'),
       change v ∈ D' at this, rw comp_out.mem_supp_iff at this,
@@ -101,7 +116,7 @@ begin
       induction p,
       { simp at *, },
       }
-
+    }
    },
 
 
@@ -114,13 +129,15 @@ begin
   rintro ⟨⟨v,vC⟩,hv⟩,
   fapply comp_out_mk,
   { exact v, },
-  { simpa using hv, }
+  { simpa using hv, },
+  sorry
 end
 
 lemma local_comp_out_to_comp_out_hom [decidable_eq V] (K : set V) (C : G.comp_out K)
   (L L' : set V) (h : L' ⊆ L) (D):
   (local_comp_out_to_comp_out G K C L D).hom h =
   local_comp_out_to_comp_out G K C L' (D.hom $ set.preimage_mono h) := sorry
+-/
 
 /-
 noncomputable def end_to_local_end₀ [decidable_eq V] (K : (finset V)ᵒᵖ) (s : G.end)
