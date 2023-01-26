@@ -18,12 +18,22 @@ assigning, to each finite set of vertices, the connected components of its compl
 -/
 
 universes u
-variables {V : Type u} (G : simple_graph V) (K L L' M : set V)
+variables {V V' : Type u} (G : simple_graph V) (G' : simple_graph V') (K L L' M : set V)
 
 open classical
 
 noncomputable theory
 local attribute [instance] prop_decidable
+
+def induce_out (f : V → V')
+  {K : set V} {L : set V'} (h : f⁻¹' L ⊆ K) :
+  Kᶜ → Lᶜ :=
+    λ ⟨v, hKc⟩, ⟨f v, λ hfvL, hKc (h hfvL)⟩
+
+@[simp] lemma induce_out_eq (f : V → V')
+  {K : set V} {L : set V'} (h : f⁻¹' L ⊆ K) :
+  ∀ v : Kᶜ, ↑(induce_out f h v) = f ↑v :=
+  λ ⟨_, _⟩, rfl
 
 namespace simple_graph
 
@@ -54,6 +64,16 @@ begin
   convert (G.out_out K (subtype.val '' A));
   exact (set.preimage_image_eq A subtype.val_injective).symm,
 end
+
+def induce_out_hom
+  {G : simple_graph V} {G' : simple_graph V'} (φ : G →g G')
+  {K : set V} {L : set V'} (h : φ⁻¹' L ⊆ K) :
+    G.out K →g G'.out L :=
+    ⟨induce_out φ h, by {
+      intros _ _ hadj,
+      simp at hadj ⊢,
+      apply φ.map_rel,
+      assumption, }⟩
 
 /-- Subsetship induces an obvious map on the induced graphs. -/
 @[reducible] def out_hom {K L} (h : K ⊆ L) : G.out L →g G.out K :=
