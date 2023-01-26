@@ -117,130 +117,41 @@ def local_comp_out_to_comp_out [decidable_eq V] (K : set V) (C : G.comp_out K) (
   C.subgraph.coe.comp_out (L.preimage subtype.val) → G.comp_out L :=
 begin
   fapply connected_component.lift_adj,
-  rintro ⟨⟨v,vC⟩,hv⟩,
-  fapply comp_out_mk,
-  { exact v, },
-  { simpa using hv, }
+  { rintro vv,
+    fapply comp_out_mk,
+    { exact vv.val.val, },
+    { simpa using vv.prop, }, },
+  { rintro ⟨⟨v,vC⟩,hv⟩ ⟨⟨w,wC⟩,hw⟩ a,
+    simp only [connected_component.eq],
+    simp only [set.mem_compl_iff, comap_adj, function.embedding.coe_subtype, subtype.coe_mk,
+                subgraph.coe_adj, subgraph.induce_adj, set_like.mem_coe, comp_out.mem_supp_iff,
+                subgraph.top_adj_iff] at a,
+    apply adj.reachable,
+    simp only [comap_adj, function.embedding.coe_subtype, subtype.coe_mk],
+    exact a.2.2, },
 end
 
 lemma local_comp_out_to_comp_out_hom [decidable_eq V] (K : set V) (C : G.comp_out K)
-  (L L' : set V) (h : L' ⊆ L) (D):
+  (L L' : set V) (h : L' ⊆ L) (D : C.subgraph.coe.comp_out (subtype.val ⁻¹' L)) :
   (local_comp_out_to_comp_out G K C L D).hom h =
-  local_comp_out_to_comp_out G K C L' (D.hom $ set.preimage_mono h) := sorry
-
-/-
-noncomputable def end_to_local_end₀ [decidable_eq V] (K : (finset V)ᵒᵖ) (s : G.end)
-  (L : finset $ subtype (s.val K).subgraph.verts) : (s.val K).subgraph.coe.comp_out L :=
-let
-  L' := L.image (subtype.val),
-  vvLK := (s.val (opposite.op (L' ∪ K.unop))).nonempty,
-  v := vvLK.some,
-  hvLK := vvLK.some_spec,
-  vsK : v ∈ (s.val K).supp :=
-    set.mem_of_mem_of_subset hvLK
-      ((comp_out.hom_eq_iff_le _ _ _).mp
-        (s.prop (category_theory.op_hom_of_le (finset.subset_union_right _ _))))
-in
-  @comp_out_mk _ _ ((s.val K).subgraph.coe)
-                    ⟨(s.val (opposite.op (L' ∪ K.unop))).nonempty.some, vsK⟩ $ by
-  begin
-    let := comp_out.not_mem_of_mem hvLK,
-    simp_rw [opposite.unop_op, finset.mem_coe, finset.mem_union, not_or_distrib,
-              finset.mem_image] at this,
-    exact λ h, this.left ⟨⟨v,vsK⟩, ⟨h,rfl⟩⟩,
-  end
-
-lemma end_to_local_end₀_agree [decidable_eq V] (K : (finset V)ᵒᵖ) (s : G.end)
-  (L : finset $ subtype (s.val K).subgraph.verts) :
-  (s.val (opposite.op ((L.image subtype.val) ∪ K.unop))).supp.preimage subtype.val =
-  (end_to_local_end₀ G K s L).supp := sorry
-
-
-noncomputable def end_to_local_end [decidable_eq V] (K : (finset V)ᵒᵖ) (s : G.end) :
-  (s.val K).subgraph.coe.end :=
-⟨ λ L, end_to_local_end₀ G K s L.unop,
-  by
-  { rintro L L' LL',
-    simp,
-    dsimp [comp_out_functor],
-    rw comp_out.hom_eq_iff_le,
-    simp only [coe, lift_t, has_lift_t.lift, coe_t, has_coe_t.coe, set_like.coe],
-    rw ←end_to_local_end₀_agree,
-    rw ←end_to_local_end₀_agree,
-    apply set.preimage_mono,
-    suffices: ↑(s.val (opposite.op (finset.image subtype.val (opposite.unop L) ∪ opposite.unop K))) ⊆
-           ↑(s.val (opposite.op (finset.image subtype.val (opposite.unop L') ∪ opposite.unop K))),
-    { sorry, },
-    rw ←comp_out.hom_eq_iff_le,
-    apply s.prop, apply category_theory.op_hom_of_le,
-    simp, sorry,
-    } ⟩
-
-
-noncomputable def end_of_local_end [decidable_eq V] {K : (finset V)ᵒᵖ} {C : G.comp_out K.unop}
-  (s : C.subgraph.coe.end) : G.end :=
-⟨ λ L,
-    let
-      L' := L.unop.preimage (subtype.val : C.subgraph.verts → V) (subtype.val_injective.inj_on _),
-      CL':= s.val (opposite.op L'),
-      vCL' := CL'.nonempty
-    in
-      @comp_out_mk _ _ G vCL'.some.val $ by
-      begin
-        convert comp_out.not_mem_of_mem vCL'.some_spec,
-        simp only [set.mem_compl_iff, finset.mem_coe, opposite.unop_op, finset.mem_preimage,
-                   subtype.val_eq_coe], refl
-      end,
-  λ L M LM, by
-    begin
-      /-simp only [subtype.val_eq_coe],
-      apply comp_out.eq_of_not_disjoint,
-      rw set.not_disjoint_iff,
-      let L' := L.unop.preimage (subtype.val : C.subgraph.verts → V) (subtype.val_injective.inj_on _),
-      let CL':= s.val (opposite.op L'),
-      let vCL' := CL'.nonempty,
-      let M' := M.unop.preimage (subtype.val : C.subgraph.verts → V) (subtype.val_injective.inj_on _),
-      let CM':= s.val (opposite.op M'),
-      let vCM' := CM'.nonempty,
-      have LM' : M' ≤ L', by {
-        apply finset.monotone_preimage,
-        exact category_theory.le_of_op_hom LM,},
-      rw ←opposite.unop_op M' at LM',
-      rw ←opposite.unop_op L' at LM',
-      have := s.prop (category_theory.op_hom_of_le LM'),
-      dsimp only [comp_out_functor] at this,
-      rw comp_out.hom_eq_iff_le at this,
-      use vCL'.some.val,
-      --rw comp_out.mem_supp_iff.mp vCM'.some_spec at this,-/
-      sorry,
-    end ⟩
-
-lemma  end_of_local_end_agree [decidable_eq V] {K : (finset V)ᵒᵖ} {C : G.comp_out K.unop}
-  (s : C.subgraph.coe.end) : (end_of_local_end G s).val K = C := sorry
+  local_comp_out_to_comp_out G K C L' (D.hom $ set.preimage_mono h) :=
+begin
+  revert D,
+  refine quot.ind _,
+  rintro ⟨⟨v,vC⟩,hv⟩,
+  refl,
+end
 
 noncomputable def end_comp_out_equiv [decidable_eq V] (K : (finset V)ᵒᵖ) (C : G.comp_out K.unop) :
   {s : G.end // s.val K = C} ≃ C.subgraph.coe.end :=
-{ to_fun := λ s, by { rw ←s.prop, exact (end_to_local_end G K s.val), },
-  inv_fun := λ s, ⟨end_of_local_end G s, end_of_local_end_agree G s⟩,
-  left_inv := λ s, by
-  begin
-    ext L,
-    obtain ⟨⟨s, sec⟩,h⟩ := s,
-    simp only [eq_mpr_eq_cast, subtype.coe_mk],
-    apply comp_out.eq_of_not_disjoint,
-    rw set.not_disjoint_iff,
-    let L' := L.unop.preimage (subtype.val : C.subgraph.verts → V) (subtype.val_injective.inj_on _),
-    cases h,
-    simp only [cast_eq],
-    simp only [set.mem_compl_iff, finset.mem_coe, cast_eq, set_like.mem_coe],
-    let CL':= s L,
-    let vCL' := CL'.nonempty,
-    use vCL'.some,
-    refine ⟨_, vCL'.some_spec⟩,
-    dsimp [end_of_local_end, end_to_local_end],
-  end
+{ to_fun := λ ⟨⟨s,sec⟩,h⟩, by
+  { rw ←h, fsplit,
+    { rintro L,
+      fapply comp_out_to_local_comp_out,
+      convert s (opposite.op (subtype.val '' (↑L.unop : set _) ∪ (↑(K.unop) : set _))), } },
+  inv_fun := λ s, sorry,
+  left_inv := λ s, sorry,
+  right_inv := λ s, sorry
  }
--/
 
--/
 end simple_graph
