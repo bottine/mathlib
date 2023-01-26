@@ -4,17 +4,17 @@ import data.enat.basic
 import tactic.basic
 
 -- TODO Implement these and put them in a correct file
-constant simple_graph.edist {V : Type*} (G : simple_graph V) (u v : V) : enat
+constant simple_graph.edist {V : Type*} (G : simple_graph V) (u v : V) : ℕ∞
 constant simple_graph.dist_triangle {V : Type*} (G : simple_graph V) (u v w : V) :
   G.edist u v ≤ G.edist u w + G.edist w v
 
 variables {V V' : Type*} (G : simple_graph V) (G' : simple_graph V')
 
 @[reducible]
-def coarse_lipschitz_with (K : enat) (C : nat) (f : V → V') :=
+def coarse_lipschitz_with (K : ℕ∞) (C : ℕ) (f : V → V') :=
   ∀ x y : V, G'.edist (f x) (f y) < K * G.edist x y + C
 
-def coarse_equal_with (f g : V → V') (K : enat) :=
+def coarse_equal_with (K : ℕ∞) (f g : V → V'):=
   ∀ x : V, G'.edist (f x) (g x) < K
 
 section lipschitz
@@ -34,7 +34,7 @@ theorem lipschitz_hom (φ : G →g G') : coarse_lipschitz_with G G' 2 1 φ := by
   sorry, -- another easy goal
 }
 
-theorem lipschitz_up (f : V → V') {K K' : enat} {C C' : nat} (hK : K ≤ K') (hC : C ≤ C')
+theorem lipschitz_up (f : V → V') {K K' : ℕ∞} {C C' : ℕ} (hK : K ≤ K') (hC : C ≤ C')
   (hf : coarse_lipschitz_with G G' K C f)
   : coarse_lipschitz_with G G' K' C' f := by {
     rw [coarse_lipschitz_with],
@@ -44,13 +44,29 @@ theorem lipschitz_up (f : V → V') {K K' : enat} {C C' : nat} (hK : K ≤ K') (
     sorry -- needs work with `enat`
   }
 
+theorem lipschitz_infty_wlog {P : (V → V') → Sort*} (C : ℕ) :
+  ∀ (f : V → V') (K : ℕ∞) (hf : coarse_lipschitz_with G G' K C f), P f ↔
+  ∀ (f : V → V') (hf : coarse_lipschitz_with G G' ⊤ C f), P f := sorry
+
+theorem lipschitz_infty_iff (f : V → V') (C : ℕ) (hf : coarse_lipschitz_with G G' ⊤ C f) :
+  ∀ x y : V, G.reachable x y → G'.reachable (f x) (f y) := sorry
+
+def lipschitz_comp_map (f : V → V') (K : ℕ∞) (C : ℕ) (hf : coarse_lipschitz_with G G' K C f) :
+  G.connected_component → G'.connected_component := sorry
+
 end lipschitz
 
 /-- The kind of map between graphs which induces a map on the ends. -/
 structure coarse_map (G : simple_graph V) (G' : simple_graph V') (φ : V → V') :=
-  (κ : enat) (C : nat)
+  (κ : ℕ∞) (C : ℕ)
   (finset_mapping : finset V' → finset V)
   (finset_inv_sub : ∀ L : finset V', (↑φ : V → V')⁻¹' ↑L ⊆ ↑(finset_mapping L))
   (induced_coarse_lipschitz : ∀ L : finset V',
     coarse_lipschitz_with (G.out $ finset_mapping L) (G'.out L)
       κ C (induce_out ↑φ (finset_inv_sub L)))
+
+
+def coarse_map.end_map {f : V → V'} (fcoarse : coarse_map G G' f) : G.end → G'.end := sorry
+
+def coarse_equal.end_equal (f g : V → V') (K : ℕ∞) (fcoarse : coarse_map G G' f) (gcoarse : coarse_map G G' g)
+  (close : coarse_equal_with G' K f g) : coarse_map.end_map fcoarse = coarse_map.end_map gcoarse := sorry
