@@ -156,13 +156,14 @@ noncomputable def end_comp_out_equiv [decidable_eq V] (K : (finset V)ᵒᵖ) (C 
       { simp_rw ←h,
         have := @sec (opposite.op ((finset.image subtype.val L.unop) ∪ K.unop : finset _)) K _,
         swap,
-        { have : K = opposite.op K.unop, by simp only [opposite.op_unop],
-          nth_rewrite_rhs 0 this,
+        { nth_rewrite_rhs 0 ←(opposite.op_unop K),
           apply category_theory.op_hom_of_le,
           apply finset.subset_union_right, },
         rw ←this,
         apply comp_out.subset_hom, }, },
-    { sorry, }, },
+    { rintro L L' LL',
+      -- rw sec …
+      apply comp_out_to_local_comp_out_hom, }, },
   inv_fun := λ s, sorry,
   left_inv := λ s, sorry,
   right_inv := λ s, sorry
