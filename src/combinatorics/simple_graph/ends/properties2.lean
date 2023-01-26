@@ -26,7 +26,7 @@ quot.lift f (λ v w (h' : G.reachable v w), h'.elim $ λ vw, by
 
 noncomputable def comp_out_to_option_local_comp_out [decidable_eq V] (K : finset V)
   (C : G.comp_out K) (L : finset $ subtype C.subgraph.verts) :
-  ∀ (D : G.comp_out ((L.image subtype.val) ∪ K)), option (C.subgraph.coe.comp_out L) :=
+  ∀ (D : G.comp_out ((finset.has_union.union (L.image subtype.val) K) : set V)), option (C.subgraph.coe.comp_out L) :=
 begin
   fapply connected_component.lift_adj,
   { rintro vv,
@@ -36,7 +36,7 @@ begin
       obtain ⟨v,h⟩ := vv,
       simp only [subgraph.induce_verts, subtype.exists, exists_and_distrib_right, exists_eq_right,
                  not_exists, finset.coe_image, set.compl_union, set.mem_inter_iff,
-                 set.mem_compl_iff, set.mem_image, finset.mem_coe] at h,
+                 set.mem_compl_iff, set.mem_image, finset.mem_coe, finset.coe_union] at h,
       exact λ vL, h.1 vC vL, },
     { exact none, } },
   { rintro ⟨v,hv⟩ ⟨w,hw⟩,
@@ -51,6 +51,8 @@ begin
     { exact (hvC (comp_out.mem_of_adj w v hwC (λ vK, hv (or.inr vK)) a.symm)).elim, },
     { refl, }, },
 end
+
+#print comp_out_to_option_local_comp_out
 
 lemma comp_out_to_option_local_comp_out_hom [decidable_eq V] (K : finset V) (C : G.comp_out K)
   (L L' : finset $ subtype C.subgraph.verts) (LL' : L' ⊆ L)
