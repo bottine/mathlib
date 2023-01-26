@@ -149,15 +149,20 @@ end
 noncomputable def end_comp_out_equiv [decidable_eq V] (K : (finset V)ᵒᵖ) (C : G.comp_out K.unop) :
   {s : G.end // s.val K = C} ≃ C.subgraph.coe.end :=
 { to_fun := λ ⟨⟨s,sec⟩,h⟩, by
-  { rw ←h, fsplit,
+  { fsplit,
     { rintro L,
       fapply comp_out_to_local_comp_out,
-      { dsimp [comp_out_functor] at s,
-        exact s (opposite.op $ (finset.image subtype.val L.unop) ∪ (K.unop)), },
-      { dsimp,
-        let := comp_out.subset_hom,
-        sorry, },
-       }, },
+      { exact s (opposite.op $ (finset.image subtype.val L.unop) ∪ (K.unop)), },
+      { simp_rw ←h,
+        have := @sec (opposite.op ((finset.image subtype.val L.unop) ∪ K.unop : finset _)) K _,
+        swap,
+        { have : K = opposite.op K.unop, by simp only [opposite.op_unop],
+          nth_rewrite_rhs 0 this,
+          apply category_theory.op_hom_of_le,
+          apply finset.subset_union_right, },
+        rw ←this,
+        apply comp_out.subset_hom, }, },
+    { sorry, }, },
   inv_fun := λ s, sorry,
   left_inv := λ s, sorry,
   right_inv := λ s, sorry
