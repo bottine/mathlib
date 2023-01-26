@@ -24,8 +24,8 @@ protected def connected_component.lift_adj {β : Sort*} (f : V → β)
 quot.lift f (λ v w (h' : G.reachable v w), h'.elim $ λ vw, by
   { induction vw, refl, rw ←vw_ih ⟨vw_p⟩, exact h _ _ vw_h, } )
 
-noncomputable def comp_out_to_option_local_comp_out [decidable_eq V] (K : set V) (C : G.comp_out K)
-  (L : set $ subtype C.subgraph.verts) :
+noncomputable def comp_out_to_option_local_comp_out [decidable_eq V] (K : finset V)
+  (C : G.comp_out K) (L : finset $ subtype C.subgraph.verts) :
   ∀ (D : G.comp_out ((L.image subtype.val) ∪ K)), option (C.subgraph.coe.comp_out L) :=
 begin
   fapply connected_component.lift_adj,
@@ -34,9 +34,9 @@ begin
     { apply some,
       apply @comp_out_mk _ _ C.subgraph.coe ⟨vv.val, vC⟩ _,
       obtain ⟨v,h⟩ := vv,
-      simp only [subgraph.induce_verts, set.compl_union, set.mem_inter_iff, set.mem_compl_iff,
-                 set.mem_image, subtype.exists, exists_and_distrib_right, exists_eq_right,
-                 not_exists] at h,
+      simp only [subgraph.induce_verts, subtype.exists, exists_and_distrib_right, exists_eq_right,
+                 not_exists, finset.coe_image, set.compl_union, set.mem_inter_iff,
+                 set.mem_compl_iff, set.mem_image, finset.mem_coe] at h,
       exact λ vL, h.1 vC vL, },
     { exact none, } },
   { rintro ⟨v,hv⟩ ⟨w,hw⟩,
@@ -52,9 +52,9 @@ begin
     { refl, }, },
 end
 
-lemma comp_out_to_option_local_comp_out_hom [decidable_eq V] (K : set V) (C : G.comp_out K)
-  (L L' : set $ subtype C.subgraph.verts) (LL' : L' ⊆ L)
-  (KLL' : (L'.image subtype.val) ∪ K ⊆ (L.image subtype.val) ∪ K) -- this follows from `LL'`
+lemma comp_out_to_option_local_comp_out_hom [decidable_eq V] (K : finset V) (C : G.comp_out K)
+  (L L' : finset $ subtype C.subgraph.verts) (LL' : L' ⊆ L)
+  (KLL' : (↑(L'.image subtype.val) : set V) ∪ ↑K ⊆ ↑(L.image subtype.val) ∪ ↑K) -- this follows from `LL'`
   (D : G.comp_out ((L.image subtype.val) ∪ K)) :
   (G.comp_out_to_option_local_comp_out K C L D).map (comp_out.hom LL') =
    G.comp_out_to_option_local_comp_out K C L' (D.hom $ KLL') :=
@@ -75,8 +75,8 @@ begin
   { simp only [rel_hom.coe_fn_mk, subtype.coe_mk, dif_neg vC, option.map_none'], },
 end
 
-lemma comp_out_to_option_local_comp_out_some [decidable_eq V] (K : set V) (C : G.comp_out K)
-  (L : set $ subtype C.subgraph.verts) :
+lemma comp_out_to_option_local_comp_out_some [decidable_eq V] (K : finset V) (C : G.comp_out K)
+  (L : finset $ subtype C.subgraph.verts) :
   ∀ (D : G.comp_out ((L.image subtype.val) ∪ K)) (DC : D.supp ⊆ C),
   ∃ (E : C.subgraph.coe.comp_out L), G.comp_out_to_option_local_comp_out K C L D = some E :=
 begin
@@ -91,19 +91,19 @@ begin
   refine ⟨_, rfl⟩,
 end
 
-noncomputable def comp_out_to_local_comp_out  [decidable_eq V] (K : set V) (C : G.comp_out K)
-  (L : set $ subtype C.subgraph.verts) (D : G.comp_out ((L.image subtype.val) ∪ K))
+noncomputable def comp_out_to_local_comp_out  [decidable_eq V] (K : finset V) (C : G.comp_out K)
+  (L : finset $ subtype C.subgraph.verts) (D : G.comp_out ((L.image subtype.val) ∪ K))
   (DC : D.supp ⊆ C) : C.subgraph.coe.comp_out L :=
 (G.comp_out_to_option_local_comp_out_some K C L D DC).some
 
-lemma comp_out_to_local_comp_out_hom [decidable_eq V] (K : set V) (C : G.comp_out K)
-  (L L' : set $ subtype C.subgraph.verts) (LL' : L' ⊆ L)
+lemma comp_out_to_local_comp_out_hom [decidable_eq V] (K : finset V) (C : G.comp_out K)
+  (L L' : finset $ subtype C.subgraph.verts) (LL' : L' ⊆ L)
   (D : G.comp_out ((L.image subtype.val) ∪ K))
-  (KLL' : (L'.image subtype.val) ∪ K ⊆ (L.image subtype.val) ∪ K) -- this follows from `LL'`
+  (KLL' : (↑(L'.image subtype.val) : set V) ∪ ↑K ⊆ ↑(L.image subtype.val) ∪ ↑K) -- this follows from `LL'`
   (CD : D.supp ⊆ C)  -- this follows from `CD'`
   (CD' : (D.hom KLL').supp ⊆ C) :
   (G.comp_out_to_local_comp_out K C L D CD).hom LL' =
-   G.comp_out_to_local_comp_out K C L' (D.hom $ KLL') CD' :=
+   G.comp_out_to_local_comp_out K C L' (D.hom KLL') CD' :=
 begin
   dsimp only [comp_out_to_option_local_comp_out_some, comp_out_to_local_comp_out],
   let := G.comp_out_to_option_local_comp_out_hom K C L L' LL' KLL' D,
@@ -113,8 +113,9 @@ begin
   simpa using this,
 end
 
-def local_comp_out_to_comp_out [decidable_eq V] (K : set V) (C : G.comp_out K) (L : set V) :
-  C.subgraph.coe.comp_out (L.preimage subtype.val) → G.comp_out L :=
+def local_comp_out_to_comp_out [decidable_eq V] (K : finset V) (C : G.comp_out K) (L : finset V) :
+  C.subgraph.coe.comp_out
+    (L.preimage subtype.val (subtype.val_injective.inj_on _) : finset ↥(C.subgraph.verts)) → G.comp_out L :=
 begin
   fapply connected_component.lift_adj,
   { rintro vv,
@@ -131,10 +132,11 @@ begin
     exact a.2.2, },
 end
 
-lemma local_comp_out_to_comp_out_hom [decidable_eq V] (K : set V) (C : G.comp_out K)
-  (L L' : set V) (h : L' ⊆ L) (D : C.subgraph.coe.comp_out (subtype.val ⁻¹' L)) :
+lemma local_comp_out_to_comp_out_hom [decidable_eq V] (K : finset V) (C : G.comp_out K)
+  (L L' : finset V) (h : L' ⊆ L)
+  (D : C.subgraph.coe.comp_out (L.preimage subtype.val (subtype.val_injective.inj_on _) : finset ↥(C.subgraph.verts))) :
   (local_comp_out_to_comp_out G K C L D).hom h =
-  local_comp_out_to_comp_out G K C L' (D.hom $ set.preimage_mono h) :=
+  local_comp_out_to_comp_out G K C L' (D.hom $ by {simp, apply set.preimage_mono, norm_cast, exact h}) :=
 begin
   revert D,
   refine quot.ind _,
@@ -148,7 +150,11 @@ noncomputable def end_comp_out_equiv [decidable_eq V] (K : (finset V)ᵒᵖ) (C 
   { rw ←h, fsplit,
     { rintro L,
       fapply comp_out_to_local_comp_out,
-      convert s (opposite.op (subtype.val '' (↑L.unop : set _) ∪ (↑(K.unop) : set _))), } },
+      { dsimp [comp_out_functor] at s,
+        convert s (opposite.op $ (finset.image subtype.val L.unop) ∪ (K.unop)),
+        simp only [subtype.val_eq_coe, opposite.unop_op, finset.coe_union], },
+      { dsimp,
+        let := comp_out.subset_hom, }, }, },
   inv_fun := λ s, sorry,
   left_inv := λ s, sorry,
   right_inv := λ s, sorry
