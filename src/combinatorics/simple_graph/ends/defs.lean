@@ -99,7 +99,7 @@ end out
 variables {G} {K L M}
 
 /-- The set of vertices of `G` making up the connected component `C` -/
-@[reducible, simp] def comp_out.supp (C : G.comp_out K) : set V :=
+@[reducible] def comp_out.supp (C : G.comp_out K) : set V :=
 {v : V | ∃ h : v ∈ Kᶜ, connected_component_mk (G.out K) ⟨v, h⟩ = C}
 
 @[ext] lemma comp_out.eq_iff_supp_eq (C D : G.comp_out K) : C = D ↔ C.supp = D.supp :=
@@ -117,7 +117,7 @@ instance : set_like (G.comp_out K) V :=
   coe_injective' := λ C D, (comp_out.eq_iff_supp_eq _ _).mpr, }
 
 
-@[simp] lemma comp_out.mem_supp_iff {v : V} {C : comp_out G K} :
+lemma comp_out.mem_supp_iff {v : V} {C : comp_out G K} :
   v ∈ C ↔ ∃ (vK : v ∈ Kᶜ), connected_component_mk (G.out K) ⟨v, vK⟩ = C := iff.rfl
 
 /-- The connected component of `v`. -/
@@ -133,9 +133,9 @@ by { rw [connected_component.eq], rintro a, apply adj.reachable, exact a }
 
 namespace comp_out
 
-/-- The induced subgraph of `V` given by the vertices of `C`. -/
+/-- The induced graph on the vertices of `C`. -/
 @[reducible, protected]
-def subgraph (C : comp_out G K) : G.subgraph := (⊤ : G.subgraph).induce (C : set V)
+def coe (C : comp_out G K) : simple_graph (C.supp) := G.induce (C : set V)
 
 lemma coe_inj {C D : G.comp_out K} : (C : set V) = (D : set V) ↔ C = D := set_like.coe_set_eq
 
