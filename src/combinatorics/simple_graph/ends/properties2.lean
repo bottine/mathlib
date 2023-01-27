@@ -93,11 +93,9 @@ begin
   refine quot.induction_on D _,
   rintro ⟨v,hv⟩,
   by_cases vC : v ∈ C,
-  { simp only [set.mem_compl_iff, subtype.val_eq_coe, option.map_some', dif_pos vC,
-               rel_hom.coe_fn_mk, subtype.coe_mk],
-    dsimp only [comp_out.hom, connected_component.map, comp_out_mk, connected_component_mk,
-                connected_component.lift, out_hom],
-    simp only [subtype.coe_mk, rel_hom.coe_fn_mk, set.mem_compl_iff],
+  { simp only [option.map_some', dif_pos vC, comp_out.hom, connected_component.map, comp_out_mk,
+               connected_component_mk, connected_component.lift, out_hom, subtype.coe_mk,
+               rel_hom.coe_fn_mk],
     congr, },
   { simp only [rel_hom.coe_fn_mk, subtype.coe_mk, dif_neg vC, option.map_none'], },
 end
@@ -162,9 +160,8 @@ noncomputable def end_comp_out_equiv [decidable_eq V] (K : (finset V)ᵒᵖ) (C 
     fsplit,
     { rintro L,
       fapply comp_out_to_local_comp_out G K.unop C _ (s (op $ (L.unop.image subtype.val) ∪ (K.unop))),
-      { simp_rw ←h,
-        rw  ←@sec (op ((L.unop.image subtype.val) ∪ K.unop : finset _)) K
-         (op_hom_of_le (finset.subset_union_right (L.unop.image subtype.val) K.unop)),
+      { simp_rw [←h, ←@sec (op ((L.unop.image subtype.val) ∪ K.unop : finset _)) K
+                     (op_hom_of_le (finset.subset_union_right (L.unop.image subtype.val) K.unop))],
         apply comp_out.subset_hom, }, },
     { rintro L L' LL',
       simp_rw ←@sec (op ((finset.image subtype.val L.unop) ∪  K.unop : finset _))
