@@ -93,35 +93,6 @@ noncomputable def comp_out_to_local_comp_out  [decidable_eq V] (K : finset V) (C
   (DC : D.supp ⊆ C) : C.coe.comp_out L :=
 (G.comp_out_to_option_local_comp_out_some K C L D DC).some
 
-/-
-lemma comp_out_to_local_comp_out_eq_of_mk
-  [decidable_eq V] (K : finset V) (C : G.comp_out K)
-  (L : finset $ subtype C.supp)
-  (v) (vC : v ∈ C)
-  (vnL : (⟨v, vC⟩ : C.supp) ∈ (↑L : set C.supp)ᶜ) -- follows from the others
-  (vC' : (comp_out_mk G ).supp ⊆ C)
-  :
-  G.comp_out_to_local_comp_out K C L (comp_out_mk G _) (vC') =
-  @comp_out_mk C.supp L C.coe ⟨v, vC⟩ vnL :=
-begin
-
-end
-
-
-noncomputable def comp_out_to_local_comp_out_eq_of_mem
-  [decidable_eq V] (K : finset V) (C : G.comp_out K)
-  (L : finset $ subtype C.supp) (D : G.comp_out ((L.image subtype.val) ∪ K : finset _))
-  (DC : D.supp ⊆ C)
-  (v) (vD : v ∈ D)
-  (vnL : (⟨v, DC vD⟩ : C.supp) ∈ (↑L : set C.supp)ᶜ) -- follows from the others
-  :
-  G.comp_out_to_local_comp_out K C L D DC =
-  @comp_out_mk C.supp L C.coe ⟨v,DC vD⟩ vnL :=
-begin
-
-end
--/
-
 lemma comp_out_to_local_comp_out_hom [decidable_eq V] (K : finset V) (C : G.comp_out K)
   (L L' : finset $ subtype C.supp) (LL' : L' ⊆ L)
   (D : G.comp_out ((L.image subtype.val) ∪ K : finset _))
