@@ -53,8 +53,6 @@ begin
     { refl, }, },
 end
 
-#print comp_out_to_option_local_comp_out
-
 lemma comp_out_to_option_local_comp_out_hom [decidable_eq V] (K : finset V) (C : G.comp_out K)
   (L L' : finset $ subtype C.supp) (LL' : L' ⊆ L)
   (KLL' : (L'.image subtype.val) ∪ K ⊆ (L.image subtype.val) ∪ K) -- this follows from `LL'`
@@ -65,8 +63,7 @@ begin
   classical,
   dsimp only [comp_out_to_option_local_comp_out, connected_component.lift_adj, comp_out.hom,
               connected_component.map, connected_component.lift, connected_component_mk],
-  revert D,
-  refine quot.ind _,
+  refine quot.induction_on D _,
   rintro ⟨v,hv⟩,
   by_cases vC : v ∈ C,
   { simp only [set.mem_compl_iff, subtype.val_eq_coe, option.map_some', dif_pos vC,
@@ -84,13 +81,10 @@ lemma comp_out_to_option_local_comp_out_some [decidable_eq V] (K : finset V) (C 
   ∃ (E : C.coe.comp_out L), G.comp_out_to_option_local_comp_out K C L D = some E :=
 begin
   classical,
-  dsimp only [comp_out_to_option_local_comp_out, connected_component.lift_adj],
   refine quot.ind _,
   rintro ⟨v,hv⟩ DC,
-  have : v ∈ C, by
-  { apply set.mem_of_mem_of_subset _ DC,
-    apply comp_out_mk_mem, },
-  simp only [set.mem_compl_iff, dif_pos this],
+  have : v ∈ C := DC (comp_out_mk_mem G hv),
+  simp only [comp_out_to_option_local_comp_out, connected_component.lift_adj, dif_pos this],
   refine ⟨_, rfl⟩,
 end
 
@@ -142,36 +136,26 @@ begin
   rw [(G.comp_out_to_option_local_comp_out_some K C L D CD).some_spec,
       (G.comp_out_to_option_local_comp_out_some K C L' (D.hom $ KLL') CD').some_spec,
       option.map_some'] at this,
-  simpa using this,
+  simpa only using this,
 end
 
 def local_comp_out_to_comp_out [decidable_eq V] (K : finset V) (C : G.comp_out K) (L : finset V) :
   C.coe.comp_out
     (L.preimage subtype.val (subtype.val_injective.inj_on _) : finset ↥(C.supp)) → G.comp_out L :=
-begin
-  fapply connected_component.lift_adj,
-  { rintro vv,
-    fapply comp_out_mk,
-    { exact vv.val.val, },
-    { simpa using vv.prop, }, },
-  { rintro ⟨⟨v,vC⟩,hv⟩ ⟨⟨w,wC⟩,hw⟩ a,
-    simp only [connected_component.eq],
-    apply adj.reachable,
-    simp only [comap_adj, function.embedding.coe_subtype, subtype.coe_mk],
-    exact a, },
-end
+connected_component.lift_adj _
+  (λ vv, @comp_out_mk _ _ _ vv.val.val
+          (by { simpa only [finset.coe_preimage] using subtype.prop vv, }))
+  (λ ⟨⟨v,vC⟩,hv⟩ ⟨⟨w,wC⟩,hw⟩ a, by
+    { simp only [connected_component.eq],
+      apply adj.reachable,
+      simpa only [comap_adj, function.embedding.coe_subtype, subtype.coe_mk] using a, })
 
 lemma local_comp_out_to_comp_out_hom [decidable_eq V] (K : finset V) (C : G.comp_out K)
   (L L' : finset V) (h : L' ⊆ L)
   (D : C.coe.comp_out (L.preimage subtype.val (subtype.val_injective.inj_on _) : finset ↥(C.supp))) :
   (local_comp_out_to_comp_out G K C L D).hom h =
-  local_comp_out_to_comp_out G K C L' (D.hom $ by {simp, apply set.preimage_mono, norm_cast, exact h}) :=
-begin
-  revert D,
-  refine quot.ind _,
-  rintro ⟨⟨v,vC⟩,hv⟩,
-  refl,
-end
+  local_comp_out_to_comp_out G K C L' (D.hom $ finset.monotone_preimage subtype.val_injective h ) :=
+quot.induction_on D (λ _, rfl)
 
 noncomputable def end_comp_out_equiv [decidable_eq V] (K : (finset V)ᵒᵖ) (C : G.comp_out K.unop) :
   {s : G.end // s.val K = C} ≃ C.coe.end :=
@@ -223,7 +207,8 @@ noncomputable def end_comp_out_equiv [decidable_eq V] (K : (finset V)ᵒᵖ) (C 
     generalize h : s L = D,
     apply quot.induction_on D,
     rintro ⟨v,h⟩,
-    dsimp [local_comp_out_to_comp_out, comp_out_to_local_comp_out, comp_out_to_option_local_comp_out_some, comp_out_to_option_local_comp_out],
+    dsimp [local_comp_out_to_comp_out, comp_out_to_local_comp_out,
+           comp_out_to_option_local_comp_out_some, comp_out_to_option_local_comp_out],
     simp,
     sorry
   end,
@@ -234,8 +219,9 @@ noncomputable def end_comp_out_equiv [decidable_eq V] (K : (finset V)ᵒᵖ) (C 
     generalize h : s L = D,
     apply quot.induction_on D,
     rintro ⟨v,h⟩,
-    dsimp [local_comp_out_to_comp_out, comp_out_to_local_comp_out, comp_out_to_option_local_comp_out_some, comp_out_to_option_local_comp_out],
-
+    dsimp [local_comp_out_to_comp_out, comp_out_to_local_comp_out,
+           comp_out_to_option_local_comp_out_some, comp_out_to_option_local_comp_out],
+    sorry,
   end
  }
 
