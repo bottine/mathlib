@@ -266,6 +266,9 @@ lemma hom_trans (C : G.comp_out L) (h : K ⊆ L) (h' : M ⊆ K) :
   C.hom (h'.trans h) = (C.hom h).hom h' :=
 by { change C.map _ = (C.map _).map _, rw [G.out_hom_trans, C.map_comp], }
 
+lemma hom_mk {v : V} (vnL : v ∉ L) (h : K ⊆ L) :
+  (G.comp_out_mk vnL).hom h = (G.comp_out_mk (set.not_mem_subset h vnL)) := rfl
+
 lemma hom_inf (C : G.comp_out L) (h : K ⊆ L) (Cinf : (C : set V).infinite) :
   (C.hom h : set V).infinite := set.infinite.mono (C.subset_hom h) Cinf
 
@@ -306,6 +309,20 @@ def comp_out_functor : (finset V)ᵒᵖ ⥤ Type u :=
 /-- The end of a graph, defined as the sections of the functor `comp_out_functor` . -/
 @[protected]
 def «end» := (comp_out_functor G).sections
+
+lemma end_hom_mk_of_mk {s : G.end} {K L : (finset V)ᵒᵖ} (h : L ⟶ K) {v : V} {vnL : v ∉ L.unop}
+  (hs : s.val L = G.comp_out_mk vnL) :
+  s.val K = G.comp_out_mk (set.not_mem_subset (le_of_op_hom h) vnL) :=
+begin
+  obtain ⟨s,sec⟩ := s,
+  simp only at ⊢ hs,
+  rw ←(sec h),
+  dsimp [comp_out_functor],
+  rw hs,
+  apply comp_out.hom_mk,
+end
+
+
 
 end ends
 
