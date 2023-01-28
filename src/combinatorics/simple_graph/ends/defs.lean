@@ -316,13 +316,9 @@ lemma end_hom_mk_of_mk {s : G.end} {K L : (finset V)ᵒᵖ} (h : L ⟶ K) {v : V
 begin
   obtain ⟨s,sec⟩ := s,
   simp only at ⊢ hs,
-  rw ←(sec h),
-  dsimp [comp_out_functor],
-  rw hs,
+  rw [←(sec h), hs],
   apply comp_out.hom_mk,
 end
-
-
 
 end ends
 
