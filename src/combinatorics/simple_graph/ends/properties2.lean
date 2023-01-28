@@ -227,7 +227,6 @@ noncomputable def end_comp_out_equiv [decidable_eq V] (K : (finset V)ᵒᵖ) (C 
     apply comp_out.eq_of_not_disjoint,
     rw set.not_disjoint_iff,
     use ⟨v,vC⟩,
-    dsimp [end_comp_out_equiv._match_2, end_comp_out_equiv._match_1],
     --dsimp [local_comp_out_to_comp_out, comp_out_to_local_comp_out,
     --       comp_out_to_option_local_comp_out_some, comp_out_to_option_local_comp_out],
     split, swap,
