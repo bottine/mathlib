@@ -116,16 +116,15 @@ instance : set_like (G.comp_out K) V :=
 { coe := comp_out.supp,
   coe_injective' := λ C D, (comp_out.eq_iff_supp_eq _ _).mpr, }
 
-
-lemma comp_out.mem_supp_iff {v : V} {C : comp_out G K} :
-  v ∈ C ↔ ∃ (vK : v ∈ Kᶜ), connected_component_mk (G.out K) ⟨v, vK⟩ = C := iff.rfl
-
 /-- The connected component of `v`. -/
 @[reducible] def comp_out_mk (G : simple_graph V) {v : V} (vK : v ∈ Kᶜ) : G.comp_out K :=
   connected_component_mk (G.out K) ⟨v, vK⟩
 
 lemma comp_out_mk_mem (G : simple_graph V) {v : V} (vK : v ∈ Kᶜ) :
   v ∈ G.comp_out_mk vK := ⟨vK, rfl⟩
+
+lemma comp_out.mem_supp_iff {v : V} {C : comp_out G K} :
+  v ∈ C ↔ ∃ (vK : v ∈ Kᶜ), G.comp_out_mk vK = C := iff.rfl
 
 lemma comp_out_mk_eq_of_adj (G : simple_graph V) {v w : V} (vK : v ∈ Kᶜ) (wK : w ∈ Kᶜ) :
   G.adj v w → G.comp_out_mk vK = G.comp_out_mk wK :=
@@ -310,12 +309,11 @@ def comp_out_functor : (finset V)ᵒᵖ ⥤ Type u :=
 @[protected]
 def «end» := (comp_out_functor G).sections
 
-lemma end_hom_mk_of_mk {s : G.end} {K L : (finset V)ᵒᵖ} (h : L ⟶ K) {v : V} {vnL : v ∉ L.unop}
-  (hs : s.val L = G.comp_out_mk vnL) :
-  s.val K = G.comp_out_mk (set.not_mem_subset (le_of_op_hom h) vnL) :=
+lemma end_hom_mk_of_mk {s} (sec : s ∈ G.end) {K L : (finset V)ᵒᵖ} (h : L ⟶ K)
+  {v : V} (vnL : v ∉ L.unop)
+  (hs : s L = G.comp_out_mk vnL) :
+  s K = G.comp_out_mk (set.not_mem_subset (le_of_op_hom h) vnL) :=
 begin
-  obtain ⟨s,sec⟩ := s,
-  simp only at ⊢ hs,
   rw [←(sec h), hs],
   apply comp_out.hom_mk,
 end

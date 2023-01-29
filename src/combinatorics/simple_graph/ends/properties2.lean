@@ -26,7 +26,7 @@ protected def connected_component.lift_adj {β : Sort*} (f : V → β)
 quot.lift f (λ v w (h' : G.reachable v w), h'.elim $ λ vw, by
   { induction vw, refl, rw ←vw_ih ⟨vw_p⟩, exact h _ _ vw_h, } )
 
-private abbreviation from_comp {G : simple_graph V} [decidable_eq V] {K : finset V}
+abbreviation from_comp {G : simple_graph V} [decidable_eq V] {K : finset V}
   (C : G.comp_out K) (L : finset $ subtype C.supp) : finset V := (L.image subtype.val ∪ K)
 
 private lemma from_comp_mono {G : simple_graph V} [decidable_eq V] {K : finset V}
@@ -96,26 +96,25 @@ noncomputable def comp_out_to_local_comp_out  [decidable_eq V] (K : finset V) (C
   (DC : D.supp ⊆ C) : C.coe.comp_out L :=
 (G.comp_out_to_option_local_comp_out_some K C L D DC).some
 
-lemma comp_out_to_local_comp_out_eq_of_mem [decidable_eq V] (K : finset V)
+lemma comp_out_to_local_comp_out_mk [decidable_eq V] (K : finset V)
   (C : G.comp_out K)
   (L : finset $ subtype C.supp)
-  (D : G.comp_out (from_comp C L))
-  (DC : D.supp ⊆ C)
-  (v : V)
-  (vD : v ∈ D)
-  (vnL : (⟨v, DC vD⟩ : C.supp) ∉ L) /- follows from vD -/ :
-  G.comp_out_to_local_comp_out K C L D DC = @comp_out_mk C.supp L C.coe ⟨v,DC vD⟩ (vnL) :=
+  (v : C.supp)
+  (vnL : v ∈ (↑L : set (C.supp))ᶜ)
+  (vnL' : v.val ∈ (↑(from_comp C L) : set V)ᶜ) /- follows from vnL and that `v : C.supp` -/
+  (vmkC : (comp_out_mk G vnL').supp ⊆ C)
+  :
+  G.comp_out_to_local_comp_out K C L (comp_out_mk G vnL') vmkC = C.coe.comp_out_mk vnL :=
 begin
   classical,
-  rw comp_out.mem_supp_iff at vD,
-  obtain ⟨vnLK, rfl⟩ := vD,
-  let hE := comp_out_to_option_local_comp_out_some G K C L _ DC,
+  obtain ⟨v,vC⟩ := v,
+  let hE := comp_out_to_option_local_comp_out_some G K C L (comp_out_mk G vnL') vmkC,
   dsimp only [comp_out_to_local_comp_out, comp_out_to_option_local_comp_out, subtype.val_eq_coe,
               subtype.coe_mk, connected_component_mk, comp_out_mk,
               connected_component.lift_adj] at hE ⊢,
   split_ifs at hE ⊢,
   { exact hE.some_spec.symm, },
-  { exfalso, exact h (DC vD), },
+  { exfalso, exact h vC, },
 end
 
 lemma comp_out_to_local_comp_out_hom [decidable_eq V] (K : finset V) (C : G.comp_out K)
@@ -135,7 +134,7 @@ begin
   simpa only using this,
 end
 
-private noncomputable abbreviation to_comp {G : simple_graph V} [decidable_eq V]
+noncomputable abbreviation to_comp {G : simple_graph V} [decidable_eq V]
   {K : finset V} (C : G.comp_out K)
   (L : finset V) : finset C.supp := L.preimage subtype.val (subtype.val_injective.inj_on _)
 
@@ -153,6 +152,13 @@ connected_component.lift_adj _
     { simp only [connected_component.eq],
       apply adj.reachable,
       simpa only [comap_adj, function.embedding.coe_subtype, subtype.coe_mk] using a, })
+
+lemma local_comp_out_to_comp_out_mk [decidable_eq V] (K : finset V)
+  (C : G.comp_out K) (L : finset V)
+  (v : C.supp)
+  (vnL : v.val ∈ (↑L : set V)ᶜ)
+  (vnL' : v ∈ (↑(to_comp C L) : set C.supp)ᶜ) :
+  G.local_comp_out_to_comp_out K C L (C.coe.comp_out_mk vnL') = G.comp_out_mk vnL := rfl
 
 lemma local_comp_out_to_comp_out_hom [decidable_eq V] (K : finset V) (C : G.comp_out K)
   (L L' : finset V) (h : L' ⊆ L) (D : C.coe.comp_out (to_comp C L)) :
@@ -189,15 +195,15 @@ noncomputable abbreviation local_end_to_end [decidable_eq V] (K : (finset V)ᵒ�
         apply local_comp_out_to_comp_out_hom, }⟩,
     by
     { obtain ⟨s,sec⟩ := ss,
+      obtain ⟨v,h⟩ := (s (op (to_comp C K.unop))).nonempty,
+      obtain ⟨vK,h'⟩ := comp_out.mem_supp_iff.mp h,
+      dsimp at h' ⊢,
+      rw [←h', local_comp_out_to_comp_out_mk], swap,
+      { simp only [subtype.val_eq_coe, set.mem_compl_iff, finset.mem_coe],
+        apply comp_out.not_mem_of_mem v.prop, },
       apply comp_out.eq_of_not_disjoint,
       rw set.not_disjoint_iff,
-      dsimp [local_comp_out_to_comp_out],
-      generalize h : s (op (to_comp C K.unop)) = D,
-      apply quot.induction_on D,
-      rintro ⟨v,h⟩,
-      use v,
-      simp only [subtype.coe_mk, set_like.coe_mem, and_true, comp_out_mk],
-      apply comp_out_mk_mem, }⟩
+      refine ⟨v.val, comp_out_mk_mem _ _, v.prop⟩, }⟩
 
 noncomputable def equiv_local_end [decidable_eq V] (K : (finset V)ᵒᵖ) (C : G.comp_out K.unop) :
   {s : G.end // s.val K = C} ≃ C.coe.end :=
@@ -209,41 +215,40 @@ noncomputable def equiv_local_end [decidable_eq V] (K : (finset V)ᵒᵖ) (C : G
     simp only [subtype.mk_eq_mk],
     ext L,
     let LK := op (L.unop ∪ K.unop),
-    generalize h : s LK = D,
-    revert D,
-    refine quot.ind _,
-    rintro ⟨v,vnLK⟩ vsLK,
-    /-
-    -- Probably we need to take `L ∪ K` at some point, which I haven't done
-    ext L,
-    generalize h : s L = D,
-    revert D,
-    refine quot.ind _,
-    rintro ⟨v,vnL⟩ hv,
-    apply comp_out.eq_of_not_disjoint,
-    rw set.not_disjoint_iff,
-    dsimp [local_comp_out_to_comp_out,
-           comp_out_to_option_local_comp_out_some, comp_out_to_option_local_comp_out,
-           connected_component.lift_adj, comp_out_mk, connected_component_mk],
-    use v,
-    split, swap, apply comp_out_mk_mem,
-    rw comp_out.mem_supp_iff,
-    use vnL,
-    rw G.comp_out_to_local_comp_out_eq_of_mem (unop K) C ((unop L).preimage subtype.val _)
-       (s (op (finset.image subtype.val ((unop L).preimage subtype.val _) ∪ unop K))) _ v,
-    rotate,
-    { simp only [finset.mem_preimage], exact vnL, },
-    { have : op (finset.image subtype.val ((unop L).preimage subtype.val (subtype.val_injective.inj_on _)) ∪ unop K) ⟶ L, by
-        sorry,
+    obtain ⟨v,h⟩ := (s LK).nonempty,
+    obtain ⟨vnLK,vsLK⟩ := comp_out.mem_supp_iff.mp h,
+    have vnK : v ∈ (↑K.unop : set _)ᶜ, by
+    { simp only [unop_op, finset.coe_union, set.compl_union, set.mem_inter_iff, set.mem_compl_iff,
+                 finset.mem_coe] at vnLK ⊢, rw set.mem_compl_iff, apply vnLK.right, },
+    dsimp at vsLK ⊢,
+    have one : LK ⟶ (op $ from_comp (s K) (to_comp (s K) L.unop)), by
+    { apply op_hom_of_le,
+      rintro x,
+      simp only [finset.mem_image, set.mem_compl_iff, finset.mem_coe, unop_op, finset.mem_union,
+                 finset.mem_preimage, exists_prop, subtype.exists, exists_eq_right_right],
+      rintro (⟨_, xL⟩|xK),
+      { left, exact xL, },
+      { right, exact xK, }, },
+    have two : LK ⟶ L, by { apply op_hom_of_le, exact le_sup_left, },
+    have thr : LK ⟶ K, by { apply op_hom_of_le, exact le_sup_right, },
+    have one' := end_hom_mk_of_mk G ((λ _ _ f, sec f) : s ∈ G.end) one vnLK vsLK.symm, dsimp at one',
+    have two' := end_hom_mk_of_mk G ((λ _ _ f, sec f) : s ∈ G.end) two vnLK vsLK.symm, dsimp at two',
+    have thr' := end_hom_mk_of_mk G ((λ _ _ f, sec f) : s ∈ G.end) thr vnLK vsLK.symm, dsimp at thr',
+    simp_rw [one', two'],
+    rw G.comp_out_to_local_comp_out_mk K.unop (s K) (to_comp (s K) L.unop) ⟨v,_⟩ _ _ _,
+    rw G.local_comp_out_to_comp_out_mk,
+    { simp only [thr', set.mem_compl_iff, finset.mem_coe, set.mem_set_of_eq,
+                 connected_component.eq, unop_op, finset.coe_union, set.compl_union,
+                 set.mem_inter_iff] at vnLK ⊢,
+      exact ⟨vnLK.right, reachable.refl _⟩, },
+    { simp only [finset.coe_preimage, set.mem_compl_iff, set.mem_preimage, finset.mem_coe,
+                 unop_op, finset.coe_union, set.compl_union, set.mem_inter_iff] at vnLK ⊢,
+      exact vnLK.left, },
 
-
-    },
-    sorry,
-    -/
   end,
   right_inv := λ ⟨s,sec⟩, by
   begin
-
+    sorry,
     /-
     ext L,
     generalize h : s L = D,
@@ -270,5 +275,5 @@ noncomputable def equiv_local_end [decidable_eq V] (K : (finset V)ᵒᵖ) (C : G
     -/
   end }
 
-
+-/
 end simple_graph
