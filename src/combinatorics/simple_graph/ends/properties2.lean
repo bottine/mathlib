@@ -217,11 +217,8 @@ noncomputable def equiv_local_end [decidable_eq V] (K : (finset V)ᵒᵖ) (C : G
     let LK := op (L.unop ∪ K.unop),
     obtain ⟨v,h⟩ := (s LK).nonempty,
     obtain ⟨vnLK,vsLK⟩ := comp_out.mem_supp_iff.mp h,
-    have vnK : v ∈ (↑K.unop : set _)ᶜ, by
-    { simp only [unop_op, finset.coe_union, set.compl_union, set.mem_inter_iff, set.mem_compl_iff,
-                 finset.mem_coe] at vnLK ⊢, rw set.mem_compl_iff, apply vnLK.right, },
-    dsimp at vsLK ⊢,
-    have one : LK ⟶ (op $ from_comp (s K) (to_comp (s K) L.unop)), by
+    dsimp,
+    have h₁ : LK ⟶ (op $ from_comp (s K) (to_comp (s K) L.unop)), by
     { apply op_hom_of_le,
       rintro x,
       simp only [finset.mem_image, set.mem_compl_iff, finset.mem_coe, unop_op, finset.mem_union,
@@ -229,22 +226,21 @@ noncomputable def equiv_local_end [decidable_eq V] (K : (finset V)ᵒᵖ) (C : G
       rintro (⟨_, xL⟩|xK),
       { left, exact xL, },
       { right, exact xK, }, },
-    have two : LK ⟶ L, by { apply op_hom_of_le, exact le_sup_left, },
-    have thr : LK ⟶ K, by { apply op_hom_of_le, exact le_sup_right, },
-    have one' := end_hom_mk_of_mk G ((λ _ _ f, sec f) : s ∈ G.end) one vnLK vsLK.symm, dsimp at one',
-    have two' := end_hom_mk_of_mk G ((λ _ _ f, sec f) : s ∈ G.end) two vnLK vsLK.symm, dsimp at two',
-    have thr' := end_hom_mk_of_mk G ((λ _ _ f, sec f) : s ∈ G.end) thr vnLK vsLK.symm, dsimp at thr',
-    simp_rw [one', two'],
+    have h₂ : LK ⟶ L, by { apply op_hom_of_le, exact le_sup_left, },
+    have h₃ : LK ⟶ K, by { apply op_hom_of_le, exact le_sup_right, },
+    have k₁ := end_hom_mk_of_mk G ((λ _ _ f, sec f) : s ∈ G.end) h₁ vnLK vsLK.symm, dsimp at k₁,
+    have k₂ := end_hom_mk_of_mk G ((λ _ _ f, sec f) : s ∈ G.end) h₂ vnLK vsLK.symm, dsimp at k₂,
+    have k₃ := end_hom_mk_of_mk G ((λ _ _ f, sec f) : s ∈ G.end) h₃ vnLK vsLK.symm, dsimp at k₃,
+    simp_rw [k₁, k₂],
     rw G.comp_out_to_local_comp_out_mk K.unop (s K) (to_comp (s K) L.unop) ⟨v,_⟩ _ _ _,
     rw G.local_comp_out_to_comp_out_mk,
-    { simp only [thr', set.mem_compl_iff, finset.mem_coe, set.mem_set_of_eq,
+    { simp only [k₃, set.mem_compl_iff, finset.mem_coe, set.mem_set_of_eq,
                  connected_component.eq, unop_op, finset.coe_union, set.compl_union,
                  set.mem_inter_iff] at vnLK ⊢,
       exact ⟨vnLK.right, reachable.refl _⟩, },
     { simp only [finset.coe_preimage, set.mem_compl_iff, set.mem_preimage, finset.mem_coe,
                  unop_op, finset.coe_union, set.compl_union, set.mem_inter_iff] at vnLK ⊢,
       exact vnLK.left, },
-
   end,
   right_inv := λ ⟨s,sec⟩, by
   begin
@@ -274,6 +270,4 @@ noncomputable def equiv_local_end [decidable_eq V] (K : (finset V)ᵒᵖ) (C : G
     sorry,
     -/
   end }
-
--/
 end simple_graph
