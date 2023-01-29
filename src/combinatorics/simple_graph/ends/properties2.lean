@@ -13,6 +13,8 @@ This file is meant to contain results about the ends of
 (usually locally finite and connected) graphs.
 -/
 
+set_option profiler true
+
 variables {V : Type} (G : simple_graph V)
 
 namespace simple_graph
@@ -136,6 +138,32 @@ noncomputable abbreviation to_comp {G : simple_graph V} [decidable_eq V]
   {K : finset V} (C : G.comp_out K)
   (L : finset V) : finset C.supp := L.preimage subtype.val (subtype.val_injective.inj_on _)
 
+lemma from_comp_to_comp_le_union {G : simple_graph V} [decidable_eq V]
+  {K : finset V} (C : G.comp_out K) (L : finset V) :
+  from_comp C (to_comp C L) ≤ L ∪ K :=
+begin
+  rintro x,
+  simp only [finset.mem_image, set.mem_compl_iff, finset.mem_coe, finset.mem_union,
+             finset.mem_preimage, exists_prop, subtype.exists, exists_eq_right_right],
+  rintro (⟨_, xL⟩|xK),
+  { left, exact xL, },
+  { right, exact xK, },
+end
+
+lemma to_comp_from_comp_eq_self {G : simple_graph V} [decidable_eq V]
+  {K : finset V} (C : G.comp_out K) (L : finset $ C.supp) : to_comp C (from_comp C L) = L :=
+begin
+  ext ⟨x,xC⟩,
+  simp only [finset.mem_image, set.mem_compl_iff, finset.mem_coe, finset.mem_preimage,
+             finset.mem_union, exists_prop, subtype.exists, exists_and_distrib_right,
+             exists_eq_right],
+  split,
+  {  rintro (h|xK),
+    { exact h.some_spec, },
+    { exfalso, apply comp_out.not_mem_of_mem xC xK, }, },
+  { rintro h, left, split, exact h, exact xC, },
+end
+
 private lemma to_comp_mono {G : simple_graph V} [decidable_eq V]
   {K : finset V} (C : G.comp_out K)
   {L L' : finset V} (LL' : L ⊆ L') : to_comp C L ⊆ to_comp C L' :=
@@ -217,13 +245,7 @@ noncomputable def equiv_local_end [decidable_eq V] (K : (finset V)ᵒᵖ) (C : G
     obtain ⟨vnLK,vsLK⟩ := comp_out.mem_supp_iff.mp h,
     dsimp,
     have h₁ : LK ⟶ (op $ from_comp (s K) (to_comp (s K) L.unop)), by
-    { apply op_hom_of_le,
-      rintro x,
-      simp only [finset.mem_image, set.mem_compl_iff, finset.mem_coe, unop_op, finset.mem_union,
-                 finset.mem_preimage, exists_prop, subtype.exists, exists_eq_right_right],
-      rintro (⟨_, xL⟩|xK),
-      { left, exact xL, },
-      { right, exact xK, }, },
+    { apply op_hom_of_le, apply from_comp_to_comp_le_union, },
     have h₂ : LK ⟶ L, by { apply op_hom_of_le, exact le_sup_left, },
     have h₃ : LK ⟶ K, by { apply op_hom_of_le, exact le_sup_right, },
     have k₁ := end_hom_mk_of_mk G ((λ _ _ f, sec f) : s ∈ G.end) h₁ vnLK vsLK.symm, dsimp at k₁,
@@ -248,30 +270,20 @@ noncomputable def equiv_local_end [decidable_eq V] (K : (finset V)ᵒᵖ) (C : G
     dsimp,
     have : op (to_comp C (from_comp C (unop L))) = L, by
     { rw op_eq_iff_eq_unop,
-      ext ⟨x,xC⟩,
-      simp only [finset.mem_image, set.mem_compl_iff, finset.mem_coe, finset.mem_preimage,
-                 finset.mem_union, exists_prop, subtype.exists, exists_and_distrib_right,
-                 exists_eq_right],
-      split,
-      {  rintro (h|xK),
-        { exact h.some_spec, },
-        { exfalso, apply comp_out.not_mem_of_mem xC xK, }, },
-      { rintro h, left, split, exact h, exact xC, }, },
+      apply to_comp_from_comp_eq_self, },
     obtain ⟨v,h⟩ := (s (op $ to_comp C (from_comp C (unop L)))).nonempty,
     obtain ⟨vnL,vsL⟩ := comp_out.mem_supp_iff.mp h,
     simp_rw ←vsL,
-    have h₁ := G.local_comp_out_to_comp_out_mk K.unop C (from_comp C L.unop) v _ _, swap,
+    have h₁ := G.local_comp_out_to_comp_out_mk K.unop C (from_comp C L.unop) v _ vnL, swap,
     { simp only [set.mem_compl_iff, finset.mem_coe, subtype.val_eq_coe, finset.coe_union,
                  finset.coe_image, set.compl_union, set.mem_inter_iff, set.mem_image,
                  subtype.exists, subtype.coe_mk, exists_and_distrib_right, exists_eq_right,
                  subtype.coe_eta, exists_prop, not_and, unop_op, finset.coe_preimage,
                  set.preimage_union, set.mem_preimage] at vnL ⊢,
-      exact vnL, }, swap,
-    { exact vnL, },
+      exact vnL, },
     simp_rw h₁,
-    rw G.comp_out_to_local_comp_out_mk K.unop C,
-    swap,
-    { rw ←this, exact vnL, },
+    rw G.comp_out_to_local_comp_out_mk K.unop C _ _ _,
+    swap, { rw ←this, exact vnL, },
     convert vsL; exact this.symm,
   end }
 end simple_graph
