@@ -13,8 +13,6 @@ This file is meant to contain results about the ends of
 (usually locally finite and connected) graphs.
 -/
 
-set_option profiler true
-
 variables {V : Type} (G : simple_graph V)
 
 namespace simple_graph
@@ -250,8 +248,8 @@ noncomputable def equiv_local_end [decidable_eq V] (K : (finset V)ᵒᵖ) (C : G
     have k₃ := end_hom_mk_of_mk G ((λ _ _ f, sec f) : s ∈ G.end) h₃ vnLK vsLK.symm, dsimp at k₃,
     -- I can't group the two `rw` together, and even less with the `simp_rw`…
     simp_rw [k₁, k₂],
-    rw G.comp_out_to_local_comp_out_mk K.unop (s K) (to_comp (s K) L.unop) ⟨v,_⟩ _ _ _,
-    rw G.local_comp_out_to_comp_out_mk,
+    rw [G.comp_out_to_local_comp_out_mk K.unop (s K) (to_comp (s K) L.unop) ⟨v,_⟩ _ _ _,
+        G.local_comp_out_to_comp_out_mk],
     { simp only [k₃, set.mem_compl_iff, finset.mem_coe, set.mem_set_of_eq,
                  connected_component.eq, unop_op, finset.coe_union, set.compl_union,
                  set.mem_inter_iff] at vnLK ⊢,
@@ -271,12 +269,10 @@ noncomputable def equiv_local_end [decidable_eq V] (K : (finset V)ᵒᵖ) (C : G
       apply to_comp_from_comp_eq_self, },
     obtain ⟨v,h⟩ := (s (op $ to_comp C (from_comp C (unop L)))).nonempty,
     obtain ⟨vnL,vsL⟩ := comp_out.mem_supp_iff.mp h,
-    simp_rw ←vsL,
-    have h₁ := G.local_comp_out_to_comp_out_mk K.unop C (from_comp C L.unop) v _ vnL, swap,
-    { simpa using vnL, },
-    simp_rw h₁,
-    rw G.comp_out_to_local_comp_out_mk K.unop C _ _ _,
-    swap, { rw ←this, exact vnL, },
+    simp_rw [←vsL,
+             G.local_comp_out_to_comp_out_mk _ _ (from_comp C L.unop) v (by simpa using vnL) vnL,
+             G.comp_out_to_local_comp_out_mk K.unop C L.unop v (this ▸ vnL)],
+    -- kind of ugly but don't know how to do it better
     convert vsL; exact this.symm,
   end }
 end simple_graph
