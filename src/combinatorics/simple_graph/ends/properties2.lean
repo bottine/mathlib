@@ -34,6 +34,7 @@ private lemma from_comp_mono {G : simple_graph V} [decidable_eq V] {K : finset V
   (LL' : L ⊆ L') : from_comp C L ⊆ from_comp C L' :=
 sup_le_sup_right (finset.image_mono subtype.val LL') K
 
+-- Can't turn this into term mode without getting errors in the proofs/defs after
 noncomputable def comp_out_to_option_local_comp_out [decidable_eq V] (K : finset V)
   (C : G.comp_out K) (L : finset $ subtype C.supp) :
   ∀ (D : G.comp_out (from_comp C L)), option (C.coe.comp_out L) :=
@@ -112,9 +113,9 @@ begin
   dsimp only [comp_out_to_local_comp_out, comp_out_to_option_local_comp_out, subtype.val_eq_coe,
               subtype.coe_mk, connected_component_mk, comp_out_mk,
               connected_component.lift_adj] at hE ⊢,
+  -- Why can't I do `simp [dif_pos vC] at hE ⊢`?
   split_ifs at hE ⊢,
-  { exact hE.some_spec.symm, },
-  { exfalso, exact h vC, },
+  exacts [hE.some_spec.symm, (h vC).elim],
 end
 
 lemma comp_out_to_local_comp_out_hom [decidable_eq V] (K : finset V) (C : G.comp_out K)
@@ -146,8 +147,7 @@ begin
   simp only [finset.mem_image, set.mem_compl_iff, finset.mem_coe, finset.mem_union,
              finset.mem_preimage, exists_prop, subtype.exists, exists_eq_right_right],
   rintro (⟨_, xL⟩|xK),
-  { left, exact xL, },
-  { right, exact xK, },
+  exacts [or.inl xL, or.inr xK],
 end
 
 lemma to_comp_from_comp_eq_self {G : simple_graph V} [decidable_eq V]
@@ -158,10 +158,9 @@ begin
              finset.mem_union, exists_prop, subtype.exists, exists_and_distrib_right,
              exists_eq_right],
   split,
-  {  rintro (h|xK),
-    { exact h.some_spec, },
-    { exfalso, apply comp_out.not_mem_of_mem xC xK, }, },
-  { rintro h, left, split, exact h, exact xC, },
+  { rintro (h|xK),
+    exacts [h.some_spec, (comp_out.not_mem_of_mem xC xK).elim], },
+  { rintro h, left, split, exacts [h, xC], },
 end
 
 private lemma to_comp_mono {G : simple_graph V} [decidable_eq V]
@@ -198,8 +197,8 @@ noncomputable abbreviation end_to_local_end [decidable_eq V] (K : (finset V)ᵒ�
 λ sss,
   ⟨ λ L, comp_out_to_local_comp_out G K.unop C _ (sss.val.val (op $ from_comp C L.unop)) $ by
       { obtain ⟨⟨s,sec⟩,rfl⟩ := sss,
-        simp_rw [←@sec (op (from_comp _ L.unop)) K
-                      (op_hom_of_le (finset.subset_union_right (L.unop.image subtype.val) K.unop))],
+        simp_rw ←@sec (op (from_comp _ L.unop)) K
+                      (op_hom_of_le (finset.subset_union_right (L.unop.image subtype.val) K.unop)),
         apply comp_out.subset_hom, },
     by
     { obtain ⟨⟨s,sec⟩,rfl⟩ := sss,
@@ -224,12 +223,10 @@ noncomputable abbreviation local_end_to_end [decidable_eq V] (K : (finset V)ᵒ�
       obtain ⟨v,h⟩ := (s (op (to_comp C K.unop))).nonempty,
       obtain ⟨vK,h'⟩ := comp_out.mem_supp_iff.mp h,
       dsimp at h' ⊢,
-      rw [←h', local_comp_out_to_comp_out_mk], swap,
-      { simp only [subtype.val_eq_coe, set.mem_compl_iff, finset.mem_coe],
-        apply comp_out.not_mem_of_mem v.prop, },
       apply comp_out.eq_of_not_disjoint,
-      rw set.not_disjoint_iff,
-      refine ⟨v.val, comp_out_mk_mem _ _, v.prop⟩, }⟩
+      rw [set.not_disjoint_iff, ←h', local_comp_out_to_comp_out_mk], swap,
+      { simpa using comp_out.not_mem_of_mem v.prop, },
+      exact ⟨v.val, comp_out_mk_mem _ _, v.prop⟩, }⟩
 
 noncomputable def equiv_local_end [decidable_eq V] (K : (finset V)ᵒᵖ) (C : G.comp_out K.unop) :
   {s : G.end // s.val K = C} ≃ C.coe.end :=
@@ -251,6 +248,7 @@ noncomputable def equiv_local_end [decidable_eq V] (K : (finset V)ᵒᵖ) (C : G
     have k₁ := end_hom_mk_of_mk G ((λ _ _ f, sec f) : s ∈ G.end) h₁ vnLK vsLK.symm, dsimp at k₁,
     have k₂ := end_hom_mk_of_mk G ((λ _ _ f, sec f) : s ∈ G.end) h₂ vnLK vsLK.symm, dsimp at k₂,
     have k₃ := end_hom_mk_of_mk G ((λ _ _ f, sec f) : s ∈ G.end) h₃ vnLK vsLK.symm, dsimp at k₃,
+    -- I can't group the two `rw` together, and even less with the `simp_rw`…
     simp_rw [k₁, k₂],
     rw G.comp_out_to_local_comp_out_mk K.unop (s K) (to_comp (s K) L.unop) ⟨v,_⟩ _ _ _,
     rw G.local_comp_out_to_comp_out_mk,
