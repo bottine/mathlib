@@ -98,11 +98,11 @@ def coarse_map.end_map {f : V → V'} (fcoarse : coarse_map G G' f) : G.end → 
     exact Gcomp,
     {
       intros L L' hLL',
-
-
+      dsimp,
+      apply simple_graph.connected_component.ind₂,
       sorry,
     },
   }
 
 def coarse_equal.end_equal (f g : V → V') (K : ℕ∞) (fcoarse : coarse_map G G' f) (gcoarse : coarse_map G G' g)
-  (close : coarse_equal_with G' K f g) : coarse_map.end_map G G' fcoarse = coarse_map.end_map G G' gcoarse := sorry
+  (close : coarse_equal_with G' K f g) : coarse_map.end_map fcoarse = coarse_map.end_map gcoarse := sorry
