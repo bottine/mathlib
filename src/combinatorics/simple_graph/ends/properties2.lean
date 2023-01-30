@@ -262,12 +262,7 @@ noncomputable def equiv_local_end {K : (finset V)ᵒᵖ} (C : G.comp_out K.unop)
 
 noncomputable def equiv (K : (finset V)ᵒᵖ) (C : G.comp_out K.unop) :
   G.end ≃ Σ (C : G.comp_out K.unop), C.coe.end :=
-begin
-  transitivity,
-  { symmetry,
-    apply equiv.sigma_fiber_equiv (λ s : G.end, s.val K), },
-  { apply equiv.sigma_congr_right,
-    apply equiv_local_end, },
-end
+(equiv.sigma_fiber_equiv (λ s : G.end, s.val K)).symm.trans
+  (equiv.sigma_congr_right (equiv_local_end _))
 
 end simple_graph
