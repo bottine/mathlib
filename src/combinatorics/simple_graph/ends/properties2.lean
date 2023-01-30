@@ -226,6 +226,25 @@ noncomputable abbreviation local_end_to_end [decidable_eq V] (K : (finset V)ᵒ�
       { simpa using comp_out.not_mem_of_mem v.prop, },
       exact ⟨v.val, comp_out_mk_mem _ _, v.prop⟩, }⟩
 
+lemma single_use {V : Type}
+  {G : simple_graph V}
+  [decidable_eq V]
+  {K : (finset V)ᵒᵖ}
+  {C : G.comp_out ↑(unop K)}
+  {s : Π (j : (finset ↥(C.supp))ᵒᵖ), C.coe.comp_out_functor.obj j}
+  {sec : s ∈ C.coe.end}
+  {L : (finset ↥(C.supp))ᵒᵖ}
+  {M : (finset ↥(C.supp))ᵒᵖ}
+  (this : L = M)
+  {v : ↥(C.supp)}
+  (h : v ∈ (s L).supp)
+  (vnL : v ∈ (↑L.unop : set C.supp)ᶜ) :
+  C.coe.comp_out_mk vnL = s L ↔ C.coe.comp_out_mk (this.rec_on vnL) = s M :=
+begin
+  cases this,
+  refl,
+end
+
 noncomputable def equiv_local_end [decidable_eq V] (K : (finset V)ᵒᵖ) (C : G.comp_out K.unop) :
   {s : G.end // s.val K = C} ≃ C.coe.end :=
 { to_fun := end_to_local_end G K C,
@@ -246,7 +265,7 @@ noncomputable def equiv_local_end [decidable_eq V] (K : (finset V)ᵒᵖ) (C : G
     have k₁ := end_hom_mk_of_mk G ((λ _ _ f, sec f) : s ∈ G.end) h₁ vnLK vsLK.symm, dsimp at k₁,
     have k₂ := end_hom_mk_of_mk G ((λ _ _ f, sec f) : s ∈ G.end) h₂ vnLK vsLK.symm, dsimp at k₂,
     have k₃ := end_hom_mk_of_mk G ((λ _ _ f, sec f) : s ∈ G.end) h₃ vnLK vsLK.symm, dsimp at k₃,
-    -- I can't group the two `rw` together, and even less with the `simp_rw`…
+    -- I can't group the `rw` and `simp_rw`…
     simp_rw [k₁, k₂],
     rw [G.comp_out_to_local_comp_out_mk K.unop (s K) (to_comp (s K) L.unop) ⟨v,_⟩ _ _ _,
         G.local_comp_out_to_comp_out_mk],
@@ -272,7 +291,8 @@ noncomputable def equiv_local_end [decidable_eq V] (K : (finset V)ᵒᵖ) (C : G
     simp_rw [←vsL,
              G.local_comp_out_to_comp_out_mk _ _ (from_comp C L.unop) v (by simpa using vnL) vnL,
              G.comp_out_to_local_comp_out_mk K.unop C L.unop v (this ▸ vnL)],
-    -- kind of ugly but don't know how to do it better
-    convert vsL; exact this.symm,
+    rw ←single_use this h vnL, exact vsL, exact (λ _ _ f, sec f),
+    -- kind of ugly but don't know how to do it better :
+    -- convert vsL; exact this.symm,
   end }
 end simple_graph
