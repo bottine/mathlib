@@ -5,18 +5,19 @@ import tactic.basic
 
 universes u v w
 
+variables {V V' V'' : Type u} (G : simple_graph V) (G' : simple_graph V') (G'' : simple_graph V'')
+
 -- TODO Implement these and put them in a correct file
 constant simple_graph.edist {V : Type*} (G : simple_graph V) (u v : V) : ℕ∞
 constant simple_graph.dist_triangle {V : Type*} (G : simple_graph V) (u v w : V) :
   G.edist u v ≤ G.edist u w + G.edist w v
+constant simple_graph.edist_hom (φ : G →g G') :  ∀ x y : V, G'.edist (φ x) (φ y) = G.edist x y
 constant simple_graph.reachable_iff_edist_lt_top {V : Type*} (G : simple_graph V) (u v : V) :
   G.reachable u v ↔ G.edist u v < ⊤
 
-variables {V V' : Type u} (G : simple_graph V) (G' : simple_graph V')
-
 @[reducible]
 def coarse_lipschitz_with (K : ℕ∞) (C : ℕ) (f : V → V') :=
-  ∀ x y : V, G'.edist (f x) (f y) < K * G.edist x y + C
+  ∀ x y : V, ∀ a : ℕ∞, G.edist x y < a → G'.edist (f x) (f y) < K * a + C
 
 def coarse_equal_with (K : ℕ∞) (f g : V → V'):=
   ∀ x : V, G'.edist (f x) (g x) < K
@@ -26,29 +27,27 @@ section lipschitz
 variables {G} {G'}
 
 -- can be derived from `lipschitz_hom`
-theorem lipschitz_id : coarse_lipschitz_with G G 2 1 id := by {
-  show ∀ x y, G.edist x y < 2 * G.edist x y + 1,
-  sorry, -- this should be easy enough
+theorem lipschitz_id : coarse_lipschitz_with G G 1 0 id := by {
+  simp [coarse_lipschitz_with],
 }
 
-theorem lipschitz_hom (φ : G →g G') : coarse_lipschitz_with G G' 2 1 φ := by {
-  rw [coarse_lipschitz_with],
-  intros x y,
-  -- TODO Make this a property of `edist`
-  have : ∀ x y : V, G'.edist (φ x) (φ y) = G.edist x y := sorry,
-  rw [this],
-  sorry, -- another easy goal
+theorem lipschitz_hom (φ : G →g G') : coarse_lipschitz_with G G' 1 0 φ := by {
+  simp [coarse_lipschitz_with, simple_graph.edist_hom],
 }
 
 theorem lipschitz_up {f : V → V'} {K K' : ℕ∞} {C C' : ℕ} (hK : K ≤ K') (hC : C ≤ C')
   (hf : coarse_lipschitz_with G G' K C f)
   : coarse_lipschitz_with G G' K' C' f := by {
     rw [coarse_lipschitz_with],
-    intros x y,
-    apply lt_trans,
-    { apply hf, },
-    sorry -- needs work with `enat`
+    intros x y a hdist,
+    sorry -- should follow from transitivity
   }
+
+theorem lipschitz_comp (f : V → V') (g : V' → V'')
+  {K K' : ℕ∞} {C C' : ℕ}
+  (hf : coarse_lipschitz_with G G' K C f) (hg : coarse_lipschitz_with G' G'' K' C' g)
+  : coarse_lipschitz_with G G'' (K * K') (C + C') (g ∘ f) := sorry
+  -- TODO work out the exact additive constant; it may have to be `ℕ∞` instead of `ℕ`
 
 theorem lipschitz_infty_wlog {P : (V → V') → Sort*} (C : ℕ) :
   ∀ (f : V → V') (K : ℕ∞) (hf : coarse_lipschitz_with G G' K C f), P f ↔
@@ -56,29 +55,13 @@ theorem lipschitz_infty_wlog {P : (V → V') → Sort*} (C : ℕ) :
 
 theorem lipschitz_infty_iff (f : V → V') {C : ℕ} :
   (coarse_lipschitz_with G G' ⊤ C f) ↔ (∀ x y : V, G.reachable x y → G'.reachable (f x) (f y)) := by {
-    split,
-    {
-      intros hf x y hreach,
-      rw [simple_graph.reachable_iff_edist_lt_top],
-      have edist_bound := hf x y,
-      have : ∀ (K : ℕ∞) (n : ℕ), ⊤ * K + n = ⊤ := by {
-        intros K n,
-        sorry -- needs missing `enat` lemmas
-        },
-      rw [this] at edist_bound,
-      exact edist_bound,
-    },
-    {
-      intros hreach x y,
-      simp_rw [simple_graph.reachable_iff_edist_lt_top] at hreach,
-      by_cases h:G.edist x y < ⊤,
-      { sorry, },
-      { have : G.edist x y = ⊤ := sorry,
-        rw this,
-
-      }
-
-    }
+    have : ∀ (K : ℕ∞) (n : ℕ), ⊤ * K + n = ⊤ := by {
+      intros K n,
+      sorry -- needs missing `enat` lemmas
+      },
+    simp_rw [simple_graph.reachable_iff_edist_lt_top,
+      coarse_lipschitz_with, this],
+    sorry -- should be easy enough from here
   }
 
 def lipschitz_comp_map {f : V → V'} {K : ℕ∞} {C : ℕ} (hf : coarse_lipschitz_with G G' K C f) :
@@ -115,7 +98,8 @@ def coarse_map.end_map {f : V → V'} (fcoarse : coarse_map G G' f) : G.end → 
     exact Gcomp,
     {
       intros L L' hLL',
-      simp,
+
+
       sorry,
     },
   }
