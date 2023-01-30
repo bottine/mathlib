@@ -3,12 +3,14 @@ import combinatorics.simple_graph.ends.cofinite
 import data.enat.basic
 import tactic.basic
 
+universes u v w
+
 -- TODO Implement these and put them in a correct file
 constant simple_graph.edist {V : Type*} (G : simple_graph V) (u v : V) : ℕ∞
 constant simple_graph.dist_triangle {V : Type*} (G : simple_graph V) (u v w : V) :
   G.edist u v ≤ G.edist u w + G.edist w v
 
-variables {V V' : Type*} (G : simple_graph V) (G' : simple_graph V')
+variables {V V' : Type u} (G : simple_graph V) (G' : simple_graph V')
 
 @[reducible]
 def coarse_lipschitz_with (K : ℕ∞) (C : ℕ) (f : V → V') :=
@@ -56,17 +58,18 @@ def lipschitz_comp_map (f : V → V') (K : ℕ∞) (C : ℕ) (hf : coarse_lipsch
 
 end lipschitz
 
+-- set_option trace.class_instances true
+
 /-- The kind of map between graphs which induces a map on the ends. -/
-structure coarse_map (G : simple_graph V) (G' : simple_graph V') (φ : V → V') :=
+structure coarse_map {V V' : Type u} (G : simple_graph V) (G' : simple_graph V') (φ : V → V') :=
   (κ : ℕ∞) (C : ℕ)
   (finset_mapping : finset V' → finset V)
-  (finset_inv_sub : ∀ L : finset V', (↑φ : V → V')⁻¹' ↑L ⊆ ↑(finset_mapping L))
+  (finset_inv_sub : ∀ L : finset V', φ ⁻¹' (L : set V') ⊆ (finset_mapping L : set V))
   (induced_coarse_lipschitz : ∀ L : finset V',
     coarse_lipschitz_with (G.out $ finset_mapping L) (G'.out L)
-      κ C (induce_out ↑φ (finset_inv_sub L)))
-
+      κ C (induce_out φ (finset_inv_sub L)))
 
 def coarse_map.end_map {f : V → V'} (fcoarse : coarse_map G G' f) : G.end → G'.end := sorry
 
 def coarse_equal.end_equal (f g : V → V') (K : ℕ∞) (fcoarse : coarse_map G G' f) (gcoarse : coarse_map G G' g)
-  (close : coarse_equal_with G' K f g) : coarse_map.end_map fcoarse = coarse_map.end_map gcoarse := sorry
+  (close : coarse_equal_with G' K f g) : coarse_map.end_map G G' fcoarse = coarse_map.end_map G G' gcoarse := sorry
