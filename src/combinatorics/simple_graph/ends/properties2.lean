@@ -154,13 +154,13 @@ finset.monotone_preimage (subtype.val_injective) LL'
 
 def local_comp_out_to_comp_out {K : finset V} (C : G.comp_out K) {L : finset V} :
   C.coe.comp_out (to_comp C L) → G.comp_out L :=
-connected_component.lift_adj
-  (λ vv, @comp_out_mk _ _ _ vv.val.val
-          (by { simpa only [finset.coe_preimage] using subtype.prop vv, }))
-  (λ ⟨⟨v, vC⟩, hv⟩ ⟨⟨w, wC⟩, hw⟩ a, by
+comp_out.lift
+  (λ v hv, @comp_out_mk _ _ _ v.val
+          (by { simpa only [finset.coe_preimage] using hv, }))
+  (λ v w hv hw a, by
     { simp only [connected_component.eq],
       apply adj.reachable,
-      simpa only [comap_adj, function.embedding.coe_subtype, subtype.coe_mk] using a, })
+      exact a, })
 
 lemma local_comp_out_to_comp_out_mk {K : finset V}
   (C : G.comp_out K) {L : finset V}
@@ -172,8 +172,7 @@ lemma local_comp_out_to_comp_out_mk {K : finset V}
 lemma local_comp_out_to_comp_out_hom {K : finset V} (C : G.comp_out K)
   {L L' : finset V} (h : L' ⊆ L) (D : C.coe.comp_out (to_comp C L)) :
   (local_comp_out_to_comp_out G C D).hom h =
-  local_comp_out_to_comp_out G C (D.hom $ to_comp_mono C h ) :=
-quot.induction_on D (λ _, rfl)
+  local_comp_out_to_comp_out G C (D.hom $ to_comp_mono C h ) := D.ind (λ _ _, rfl)
 
 noncomputable def equiv_local_end {K : (finset V)ᵒᵖ} (C : G.comp_out K.unop) :
   {s : G.end // s.val K = C} ≃ C.coe.end :=
