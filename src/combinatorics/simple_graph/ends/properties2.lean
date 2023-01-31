@@ -22,11 +22,6 @@ namespace simple_graph
 open opposite category_theory classical
 local attribute [instance] prop_decidable
 
-protected def connected_component.lift_adj {β : Sort*} (f : V → β)
-  (h : ∀ (v w : V), G.adj v w → f v = f w) : G.connected_component → β :=
-quot.lift f (λ v w (h' : G.reachable v w), h'.elim $ λ vw, by
-  { induction vw, refl, rw ←vw_ih ⟨vw_p⟩, exact h _ _ vw_h, } )
-
 noncomputable abbreviation from_comp {G : simple_graph V} {K : finset V}
   (C : G.comp_out K) (L : finset $ subtype C.supp) : finset V := (L.image subtype.val ∪ K)
 

@@ -25,6 +25,12 @@ open classical
 noncomputable theory
 local attribute [instance] prop_decidable
 
+
+protected def simple_graph.connected_component.lift_adj {G : simple_graph V} {β : Sort*} (f : V → β)
+  (h : ∀ (v w : V), G.adj v w → f v = f w) : G.connected_component → β :=
+quot.lift f (λ v w (h' : G.reachable v w), h'.elim $ λ vw, by
+  { induction vw, refl, rw ←vw_ih ⟨vw_p⟩, exact h _ _ vw_h, } )
+
 def induce_out (f : V → V')
   {K : set V} {L : set V'} (h : f⁻¹' L ⊆ K) :
   Kᶜ → Lᶜ :=
@@ -128,6 +134,10 @@ lemma comp_out_mk_eq_of_adj (G : simple_graph V) {v w : V} (vK : v ∈ Kᶜ) (wK
 by { rw [connected_component.eq], rintro a, apply adj.reachable, exact a }
 
 namespace comp_out
+
+def lift {β : Type*} (f : ∀ {v} (hv : v ∈ Kᶜ), β)
+  (h : ∀ {v w} (hv : v ∈ Kᶜ) (hw : w ∈ Kᶜ) (a : G.adj v w), f hv = f hw) : G.comp_out K → β :=
+connected_component.lift_adj (λ (vv : Kᶜ), f vv.prop) (λ (vv ww : Kᶜ) (a), h vv.prop ww.prop a)
 
 /-- The induced graph on the vertices of `C`. -/
 @[reducible, protected]
