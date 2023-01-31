@@ -33,21 +33,19 @@ sup_le_sup_right (finset.image_mono subtype.val LL') K
 noncomputable def comp_out_to_option_local_comp_out {K : finset V}
   (C : G.comp_out K) {L : finset $ subtype C.supp} :
   ∀ (D : G.comp_out ((L.image subtype.val ∪ K) : finset V)), option (C.coe.comp_out L) :=
-connected_component.lift_adj
-  (λ vv,
-    if vC : vv.val ∈ C.supp then
-      some $ @comp_out_mk _ _ C.coe ⟨vv.val, vC⟩ $
+comp_out.lift
+  (λ v hv,
+    if vC : v ∈ C.supp then
+      some $ @comp_out_mk _ _ C.coe ⟨v, vC⟩ $
       by
-      { obtain ⟨v, h⟩ := vv,
-        simp only [subgraph.induce_verts, subtype.exists, exists_and_distrib_right, exists_eq_right,
-                   not_exists, finset.coe_image, set.compl_union, set.mem_inter_iff,
-                   set.mem_compl_iff, set.mem_image, finset.mem_coe, finset.coe_union] at h,
-        exact λ vL, h.1 vC vL, }
+      { simp only [subtype.exists, exists_and_distrib_right, exists_eq_right, not_exists,
+                   finset.coe_image, set.compl_union, set.mem_inter_iff, set.mem_compl_iff,
+                   set.mem_image, finset.mem_coe, finset.coe_union] at hv,
+        exact λ vL, hv.1 vC vL, }
     else
       none )
-  (λ ⟨v, hv⟩ ⟨w, hw⟩ a, by
-    { simp only [comap_adj, function.embedding.coe_subtype, subtype.coe_mk],
-      split_ifs with hvC hwC hwC,
+  (λ v w hv hw a, by
+    { split_ifs with hvC hwC hwC,
       { rw [connected_component.eq],
         apply adj.reachable,
         simpa only [comap_adj, function.embedding.coe_subtype, subtype.coe_mk] using a, },
@@ -61,13 +59,11 @@ lemma comp_out_to_option_local_comp_out_hom {K : finset V} (C : G.comp_out K)
   (G.comp_out_to_option_local_comp_out C D).map (comp_out.hom LL') =
    G.comp_out_to_option_local_comp_out C (D.hom $ (from_comp_mono C LL')) :=
 begin
-  refine quot.induction_on D _,
-  rintro ⟨v, hv⟩,
-  dsimp [comp_out_to_option_local_comp_out, connected_component.lift_adj, comp_out.hom,
+  refine D.ind (λ v hv, _),
+  dsimp [comp_out_to_option_local_comp_out, comp_out.lift, comp_out.hom, comp_out_mk,
          connected_component.map, connected_component.lift, connected_component_mk],
-  split_ifs,
-  { refl, },
-  { refl, },
+  split_ifs;
+  refl,
 end
 
 lemma comp_out_to_option_local_comp_out_some {K : finset V} (C : G.comp_out K)
@@ -75,10 +71,9 @@ lemma comp_out_to_option_local_comp_out_some {K : finset V} (C : G.comp_out K)
   ∀ (D : G.comp_out (from_comp C L)) (DC : D.supp ⊆ C),
   ∃ (E : C.coe.comp_out L), G.comp_out_to_option_local_comp_out C D = some E :=
 begin
-  refine quot.ind _,
-  rintro ⟨v, hv⟩ DC,
+  refine comp_out.ind (λ v hv DC, _),
   have : v ∈ C.supp := DC (comp_out_mk_mem G hv),
-  dsimp [comp_out_to_option_local_comp_out, connected_component.lift_adj],
+  dsimp [comp_out_to_option_local_comp_out, comp_out.lift, comp_out_mk],
   split_ifs,
   exacts [⟨_, rfl⟩, (h this).elim],
 end
@@ -100,8 +95,8 @@ begin
   obtain ⟨v, vC⟩ := v,
   let hE := comp_out_to_option_local_comp_out_some G C _ vmkC,
   dsimp only [comp_out_to_local_comp_out, comp_out_to_option_local_comp_out, subtype.val_eq_coe,
-              subtype.coe_mk, connected_component_mk, comp_out_mk,
-              connected_component.lift_adj] at hE ⊢,
+              subtype.coe_mk, connected_component_mk, comp_out_mk, comp_out.lift,
+              connected_component.lift] at hE ⊢,
   -- Why can't I do `simp [dif_pos vC] at hE ⊢`?
   split_ifs at hE ⊢,
   exact hE.some_spec.symm,
