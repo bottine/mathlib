@@ -92,7 +92,7 @@ by { ext ⟨_, _⟩, refl, }
 
 lemma out_hom_injective {K} {L} (h : K ⊆ L) : function.injective (G.out_hom h) :=
 by { rintros ⟨v, _⟩ ⟨w, _⟩ e,
-    simpa only [out_hom, subtype.mk_eq_mk, rel_hom.coe_fn_mk] using e, }
+     simpa only [out_hom, subtype.mk_eq_mk, rel_hom.coe_fn_mk] using e, }
 
 end out
 
@@ -137,7 +137,10 @@ namespace comp_out
 
 def lift {β : Sort*} (f : ∀ ⦃v⦄ (hv : v ∈ Kᶜ), β)
   (h : ∀ ⦃v w⦄ (hv : v ∈ Kᶜ) (hw : w ∈ Kᶜ) (a : G.adj v w), f hv = f hw) : G.comp_out K → β :=
-connected_component.lift_adj (λ (vv : Kᶜ), f vv.prop) (λ (vv ww : Kᶜ) (a), h vv.prop ww.prop a)
+connected_component.lift (λ vv, f vv.prop) $ (λ v w p, by
+  { induction p with a u v w a q ih,
+    { rintro _, refl, },
+    { rintro h', exact (h u.prop v.prop a).trans (ih h'.of_cons), } })
 
 lemma ind {β : G.comp_out K → Prop} (f : ∀ ⦃v⦄ (hv : v ∈ Kᶜ), β (G.comp_out_mk hv)) :
   ∀ (C : G.comp_out K), β C :=

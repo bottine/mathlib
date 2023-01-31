@@ -33,7 +33,7 @@ sup_le_sup_right (finset.image_mono subtype.val LL') K
 noncomputable def comp_out_to_option_local_comp_out {K : finset V}
   (C : G.comp_out K) {L : finset $ subtype C.supp} :
   ∀ (D : G.comp_out ((L.image subtype.val ∪ K) : finset V)), option (C.coe.comp_out L) :=
-connected_component.lift_adj _
+connected_component.lift_adj
   (λ vv,
     if vC : vv.val ∈ C.supp then
       some $ @comp_out_mk _ _ C.coe ⟨vv.val, vC⟩ $
@@ -159,7 +159,7 @@ finset.monotone_preimage (subtype.val_injective) LL'
 
 def local_comp_out_to_comp_out {K : finset V} (C : G.comp_out K) {L : finset V} :
   C.coe.comp_out (to_comp C L) → G.comp_out L :=
-connected_component.lift_adj _
+connected_component.lift_adj
   (λ vv, @comp_out_mk _ _ _ vv.val.val
           (by { simpa only [finset.coe_preimage] using subtype.prop vv, }))
   (λ ⟨⟨v, vC⟩, hv⟩ ⟨⟨w, wC⟩, hw⟩ a, by

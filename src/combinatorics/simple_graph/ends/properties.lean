@@ -80,7 +80,7 @@ In an infinite graph, the set of components out of a finite set is nonempty.
 lemma comp_out_nonempty_of_infinite [infinite V] (K : finset V) : nonempty (G.comp_out K) :=
 begin
   obtain ⟨k,kK⟩ := set.infinite.nonempty (set.finite.infinite_compl $ K.finite_to_set),
-  exact ⟨connected_component_mk _ ⟨k,kK⟩⟩,
+  exact ⟨comp_out_mk _ kK⟩,
 end
 
 /--
