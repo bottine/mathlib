@@ -208,11 +208,10 @@ noncomputable def equiv_local_end {K : (finset V)ᵒᵖ} (C : G.comp_out K.unop)
         apply local_comp_out_to_comp_out_hom, }⟩,
     by
     { obtain ⟨s, sec⟩ := ss,
-      obtain ⟨v, h⟩ := (s (op (to_comp C K.unop))).nonempty,
-      obtain ⟨vK, h'⟩ := comp_out.mem_supp_iff.mp h,
-      dsimp at h' ⊢,
+      obtain ⟨v, vK, h⟩ := (s (op (to_comp C K.unop))).exists_eq_mk,
+      dsimp at h ⊢,
       apply comp_out.eq_of_not_disjoint,
-      rw [set.not_disjoint_iff, ←h', local_comp_out_to_comp_out_mk], swap,
+      rw [set.not_disjoint_iff, ←h, local_comp_out_to_comp_out_mk], swap,
       { simpa using comp_out.not_mem_of_mem v.prop, },
       exact ⟨v.val, comp_out_mk_mem _ _, v.prop⟩, } ⟩,
   left_inv := by
@@ -221,8 +220,7 @@ noncomputable def equiv_local_end {K : (finset V)ᵒᵖ} (C : G.comp_out K.unop)
     simp only [subtype.mk_eq_mk],
     ext L,
     let LK := op (L.unop ∪ K.unop),
-    obtain ⟨v, h⟩ := (s LK).nonempty,
-    obtain ⟨vnLK, vsLK⟩ := comp_out.mem_supp_iff.mp h,
+    obtain ⟨v, vnLK, vsLK⟩ := (s LK).exists_eq_mk,
     have h₁ : LK ⟶ (op $ from_comp (s K) (to_comp (s K) L.unop)) :=
       op_hom_of_le (from_comp_to_comp_le_union _ _),
     have h₂ : LK ⟶ L := op_hom_of_le (@le_sup_left _ _ L.unop K.unop), -- just `le_sup_left` also works
@@ -250,8 +248,7 @@ noncomputable def equiv_local_end {K : (finset V)ᵒᵖ} (C : G.comp_out K.unop)
     ext L,
     have : op (to_comp C (from_comp C (unop L))) = L :=
       op_eq_iff_eq_unop.mpr (to_comp_from_comp_eq_self _ _),
-    obtain ⟨v, h⟩ := (s (op $ to_comp C (from_comp C (unop L)))).nonempty,
-    obtain ⟨vnL, vsL⟩ := comp_out.mem_supp_iff.mp h,
+    obtain ⟨v, vnL, vsL⟩ := (s (op $ to_comp C (from_comp C (unop L)))).exists_eq_mk,
     dsimp,
     simp_rw [←vsL,
              G.local_comp_out_to_comp_out_mk _ v (by simpa using vnL) vnL,

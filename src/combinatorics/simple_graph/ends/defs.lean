@@ -144,6 +144,12 @@ begin
   exact ⟨v.prop, reachable.refl _⟩,
 end
 
+protected lemma exists_eq_mk (C : G.comp_out K) : ∃ (v) (h : v ∈ Kᶜ), G.comp_out_mk h = C :=
+begin
+  obtain ⟨v,h⟩ := C.nonempty,
+  exact ⟨v,comp_out.mem_supp_iff.mp h⟩,
+end
+
 protected lemma disjoint_right (C : G.comp_out K) : disjoint K C :=
 begin
   rw set.disjoint_iff,
