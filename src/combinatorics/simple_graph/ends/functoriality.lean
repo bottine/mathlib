@@ -101,6 +101,11 @@ def coarse_map.end_map {f : V → V'} (fcoarse : coarse_map G G' f) : G.end → 
       dsimp,
       apply simple_graph.connected_component.ind₂,
       sorry,
+
+      -- erw [simple_graph.comp_out.hom_eq_iff_le],
+      -- intro v',
+      -- simp [lipschitz_comp_map, has_mem.mem],
+
     },
   }
 
