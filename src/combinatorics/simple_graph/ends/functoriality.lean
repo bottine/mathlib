@@ -42,6 +42,7 @@ theorem mono {f : V → V'} {K K' : ℕ∞} {C C' : ℕ} (hK : K ≤ K') (hC : C
   : coarse_lipschitz_with G G' K' C' f := by {
     rw [coarse_lipschitz_with],
     intros x y a hdist,
+    have := hf a hdist,
     sorry -- should follow from transitivity
   }
 
@@ -167,6 +168,27 @@ def coarse_map.end_map [decidable_eq V] {f : V → V'} (fcoarse : coarse_map G G
     },
   }
 
-def coarse_equal.end_equal [decidable_eq V] {f g : V → V'} {K : ℕ∞}
-  (fcoarse : coarse_map G G' f) (gcoarse : coarse_map G G' g) (close : coarse_equal_with G' K f g) :
-  coarse_map.end_map fcoarse = coarse_map.end_map gcoarse := sorry
+def coarse_equal.end_equal [decidable_eq V] {f g : V → V'} {k : ℕ∞}
+  (fcoarse : coarse_map G G' f) (gcoarse : coarse_map G G' g)
+  (close : coarse_equal_with G' k f g) :
+  coarse_map.end_map fcoarse = coarse_map.end_map gcoarse := by {
+    dsimp [coarse_map.end_map],
+    ext e L,
+    dsimp,
+    let K : (finset V)ᵒᵖ := opposite.op (
+        (fcoarse.finset_mapping L.unop) ∪ (gcoarse.finset_mapping L.unop)),
+    have hfL : (opposite.op $ fcoarse.finset_mapping L.unop).unop ⊆ K.unop := sorry,
+    have hgL : (opposite.op $ gcoarse.finset_mapping L.unop).unop ⊆ K.unop := sorry,
+    rw [← subtype.val_eq_coe,
+    end_back hfL e, end_back hgL e,
+    coarse_lipschitz.up_comp, coarse_lipschitz.up_comp],
+
+    generalize : e.val K = C,
+    refine C.ind _,
+    intros v hv,
+    dsimp [coarse_lipschitz.comp_map],
+    rw [simple_graph.connected_component.eq, simple_graph.reachable_iff_edist_lt_top],
+    dsimp [induce_out],
+    have := close v,
+    sorry, -- need `coarse_close`, not just `coarse_equal`
+  }
