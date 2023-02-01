@@ -153,8 +153,10 @@ def coarse_map.end_map [decidable_eq V] {f : V → V'} (fcoarse : coarse_map G G
     { intros L L' hLL',
       let K : (finset V)ᵒᵖ := opposite.op (
         (fcoarse.finset_mapping L.unop) ∪ (fcoarse.finset_mapping L'.unop)),
-      have hL : (opposite.op $ fcoarse.finset_mapping L.unop).unop ⊆ K.unop := sorry,
-      have hL' : (opposite.op $ fcoarse.finset_mapping L'.unop).unop ⊆ K.unop := sorry,
+      have hL : (opposite.op $ fcoarse.finset_mapping L.unop).unop ⊆ K.unop := by {
+        simp only [opposite.unop_op], apply finset.subset_union_left, },
+      have hL' : (opposite.op $ fcoarse.finset_mapping L'.unop).unop ⊆ K.unop := by {
+        simp only [opposite.unop_op], apply finset.subset_union_right, },
       dsimp,
       rw [← subtype.val_eq_coe,
       end_back hL e, end_back hL' e,
