@@ -14,29 +14,11 @@ finite set is finite.
 -/
 def cofinite (f : V → V') := ∀ x : V', (set.preimage f {x}).finite
 
-lemma cofinite.list_preimage (f : V → V') (cof : cofinite f) : ∀ l : list V', (set.preimage f l.to_finset).finite :=
-begin
-  intro l,
-  induction l,
-  { simp only [list.to_finset_nil, coe_empty, set.preimage_empty, finite_empty], },
-  { simp only [list.to_finset_cons, coe_insert],
-    rw [set.insert_eq, set.preimage_union],
-    apply set.finite.union,
-    {apply cof,},
-    {assumption,} }
-end
-
 /--
 The preimage of a finite set under a *cofinite* map is finite.
 -/
 lemma cofinite.finite_preimage (f : V → V') (cof : cofinite f) : ∀ S : set V', S.finite → (set.preimage f S).finite :=
-begin
-  intros S Sfin,
-  rcases set.finite.exists_finset_coe Sfin with ⟨fS, hcoefin⟩,
-  rcases (list.to_finset_surjective fS) with ⟨l, hcoelst⟩,
-  rw [← hcoefin, ← hcoelst],
-  apply cofinite.list_preimage _ cof,
-end
+λ S Sfin, (bUnion_preimage_singleton _ _).rec_on (set.finite.bUnion Sfin (λ i iS, cof i))
 
 /--
 A function is *cofinite* if and only if the pre-image of any finite set is finite.
