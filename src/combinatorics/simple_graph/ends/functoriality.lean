@@ -203,7 +203,8 @@ def coarse_equal.end_equal [decidable_eq V] {f g : V → V'} {k : ℕ∞}
     dsimp [coarse_lipschitz.comp_map],
     rw [simple_graph.connected_component.eq, simple_graph.reachable_iff_edist_lt_top],
     dsimp [induce_out],
-    have hyp := (coarse_equal.of_coarse_close fcoarse gcoarse close).induced_coarse_equal L.unop,
+    have hyp := (coarse_equal.of_coarse_close fcoarse gcoarse close).induced_coarse_equal L.unop
+      ⟨v, sorry⟩,
     dsimp [induce_out, coarse_equal_with] at hyp,
     sorry, -- need `coarse_close`, not just `coarse_equal`
   }
