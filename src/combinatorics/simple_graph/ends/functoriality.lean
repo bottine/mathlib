@@ -135,6 +135,16 @@ structure coarse_map {V V' : Type u} (G : simple_graph V) (G' : simple_graph V')
     coarse_lipschitz_with (G.out $ finset_mapping L) (G'.out L)
       κ C (induce_out φ (finset_inv_sub L)))
 
+-- TODO maybe there can be a parametrized structure "lifting" any property of homomorphisms
+-- to its coarse version
+structure coarse_close {V V' : Type u} (G : simple_graph V) (G' : simple_graph V') (f g : V → V') :=
+  (κ : ℕ∞)
+  (finset_mapping : finset V' → finset V)
+  (finset_inv_subl : ∀ L : finset V', f ⁻¹' (L : set V') ⊆ (finset_mapping L : set V))
+  (finset_inv_subr : ∀ L : finset V', g ⁻¹' (L : set V') ⊆ (finset_mapping L : set V))
+  (induced_coarse_equal : ∀ L : finset V', coarse_equal_with (G'.out L) κ
+    (induce_out f (finset_inv_subl L)) (induce_out g (finset_inv_subr L)))
+
 variables {G} {G'}
 
 -- TODO Move this to `defs`
@@ -168,6 +178,10 @@ def coarse_map.end_map [decidable_eq V] {f : V → V'} (fcoarse : coarse_map G G
     },
   }
 
+def coarse_equal.of_coarse_close [decidable_eq V] {f g : V → V'} {k : ℕ∞}
+  (fcoarse : coarse_map G G' f) (gcoarse : coarse_map G G' g)
+  (close : coarse_equal_with G' k f g)  : coarse_close G G' f g := sorry
+
 def coarse_equal.end_equal [decidable_eq V] {f g : V → V'} {k : ℕ∞}
   (fcoarse : coarse_map G G' f) (gcoarse : coarse_map G G' g)
   (close : coarse_equal_with G' k f g) :
@@ -189,6 +203,7 @@ def coarse_equal.end_equal [decidable_eq V] {f g : V → V'} {k : ℕ∞}
     dsimp [coarse_lipschitz.comp_map],
     rw [simple_graph.connected_component.eq, simple_graph.reachable_iff_edist_lt_top],
     dsimp [induce_out],
-    have := close v,
+    have hyp := (coarse_equal.of_coarse_close fcoarse gcoarse close).induced_coarse_equal L.unop,
+    dsimp [induce_out, coarse_equal_with] at hyp,
     sorry, -- need `coarse_close`, not just `coarse_equal`
   }
