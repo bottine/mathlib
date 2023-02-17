@@ -15,7 +15,7 @@ This file is meant to contain results about the ends of
 
 variables {V : Type} (G : simple_graph V)
 
-set_option profiler true
+-- set_option profiler true
 
 namespace simple_graph
 

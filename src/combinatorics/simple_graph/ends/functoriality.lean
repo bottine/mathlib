@@ -178,9 +178,49 @@ def coarse_map.end_map [decidable_eq V] {f : V → V'} (fcoarse : coarse_map G G
     },
   }
 
+private lemma well_separated (G : simple_graph V) (Gpc : G.preconnected) (K : finset V) (m : ℕ)
+  (C : G.comp_out K)
+  (c : V) (cC : c ∈ C) (c' : V) :
+  c ∉ (thicken G K m) → G.dist c c' ≤ m → c' ∈ C :=
+begin
+  rintro cnK,
+  obtain ⟨w,wm⟩ := reachable.exists_walk_of_dist (Gpc c c'), rw ←wm,
+  rintro hwm,
+  have wdisK : disjoint (w.support.to_finset : set V) K, by {
+    rw finset.disjoint_coe,
+    by_contradiction h, rw finset.not_disjoint_iff at h,
+    obtain ⟨x,xw,xK⟩ := h,
+    rw [list.mem_to_finset,walk.mem_support_iff_exists_append] at xw,
+    obtain ⟨cx,_,rfl⟩ := xw,
+    apply cnK,
+    dsimp only [thicken_],
+    simp only [finite.mem_to_finset, mem_set_of_eq, exists_prop],
+    use [x,xK],
+    apply (dist_le cx).trans,
+    refine le_trans _ hwm,
+    simp only [length_append, le_add_iff_nonneg_right, zero_le'],},
+
+  let Cw := comp_out.of_connected_disjoint (w.support.to_finset : set V) (connected.walk_support w) wdisK.symm,
+  have : C = Cw, by
+  { apply comp_out.eq_of_not_disjoint,
+    rw set.not_disjoint_iff,
+    use [c,cC],
+    apply comp_out.of_connected_disjoint_sub,
+    simp only [mem_coe, list.mem_to_finset, start_mem_support],},
+  rw this,
+  apply comp_out.of_connected_disjoint_sub,
+  simp only [mem_coe, list.mem_to_finset, end_mem_support],
+end
+
+
 def coarse_equal.of_coarse_close [decidable_eq V] {f g : V → V'} {k : ℕ∞}
   (fcoarse : coarse_map G G' f) (gcoarse : coarse_map G G' g)
-  (close : coarse_equal_with G' k f g)  : coarse_close G G' f g := sorry
+  (close : coarse_equal_with G' k f g)  : coarse_close G G' f g :=
+{ κ := _,
+  finset_mapping := _,
+  finset_inv_subl := _,
+  finset_inv_subr := _,
+  induced_coarse_equal := _ }
 
 def coarse_equal.end_equal [decidable_eq V] {f g : V → V'} {k : ℕ∞}
   (fcoarse : coarse_map G G' f) (gcoarse : coarse_map G G' g)
