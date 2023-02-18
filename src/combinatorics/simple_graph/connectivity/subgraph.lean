@@ -218,6 +218,11 @@ begin
   simp only [induce_eq_coe_induce_top] at *,
   refine (@subgraph.sUnion_connected_of_pairwise_not_disjoint V G (S.image (⊤ : G.subgraph).induce)
           _ _ _).mono _ _,
+  /-
+  Should have the following lemmas : (second should be a simp lemma clearly, or even defeq)
+  lemma : (⨆ (s : ↥(⊤.induce '' S)), s.val) ≤ ⊤.induce (⋃₀ S)
+  lemma : (⨆ (s : ↥(⊤.induce '' S)), s.val).verts = (⊤.induce (⋃₀ S)).verts
+  -/
   split,
   { rintro w ⟨_, ⟨⟨_,⟨t,⟨tS,rfl⟩⟩⟩,rfl⟩, wt⟩, exact ⟨t,tS,wt⟩,  },
   { rintro v w ⟨h,⟨⟨_,⟨y,yS,rfl⟩⟩,rfl⟩, a⟩, exact ⟨⟨y,yS,a.1⟩, ⟨y,yS,a.2.1⟩, a.2.2⟩, },
