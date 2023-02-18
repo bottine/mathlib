@@ -138,9 +138,9 @@ end
 lemma subgraph.connected_of_patches {H : G.subgraph} (u : H.verts)
   (patches : ∀ v : H.verts,
                ∃ (H' : G.subgraph) (sub : H' ≤ H) (u' : ↑u ∈ H'.verts) (v' : ↑v ∈ H'.verts),
-                  H'.coe.reachable ⟨u,u'⟩ ⟨v,v'⟩ ) : H.coe.connected :=
+                  H'.coe.reachable ⟨u,u'⟩ ⟨v,v'⟩ ) : H.connected :=
 begin
-  rw connected_iff_exists_forall_reachable,
+  rw [subgraph.connected, connected_iff_exists_forall_reachable],
   refine ⟨u, λ v, _⟩,
   obtain ⟨Hv, HvH, u', v',⟨rv⟩⟩ := patches v,
   convert nonempty.intro (rv.map (subgraph.inclusion HvH));
@@ -152,11 +152,10 @@ lemma induce_connected_of_patches {s : set V} {u} (hu : u ∈ s)
   (patches : ∀ {v} (hv : v ∈ s), ∃ (s' : set V) (sub : s' ⊆ s) (hu' : u ∈ s') (hv' : v ∈ s'),
              (G.induce s').reachable ⟨u, hu'⟩ ⟨v, hv'⟩ ) : (G.induce s).connected :=
 begin
-  rw connected_iff_exists_forall_reachable,
-  refine ⟨⟨u, hu⟩, _⟩,
-  rintro ⟨v, hv⟩,
-  obtain ⟨sv, svs, hu', hv', ⟨uv⟩⟩ := patches hv,
-  exact ⟨uv.map (induce_hom_of_le svs)⟩,
+  simp only [induce_eq_coe_induce_top] at patches ⊢,
+  refine subgraph.connected_of_patches ⟨u,hu⟩ (λ v, _),
+  obtain ⟨s',ss',hu',hv',hr⟩ := patches v.prop,
+  exact ⟨_, subgraph.induce_mono_right ss', hu', hv', hr⟩,
 end
 
 lemma walk.to_subgraph_connected {u v : V} (p : G.walk u v) :
@@ -170,6 +169,25 @@ begin
                walk.start_mem_support], },
 end
 
+lemma connected_iff_forall_exists_walk_subgraph (H : G.subgraph) :
+  H.connected ↔ H.verts.nonempty ∧ ∀ {u} (hu : u ∈ H.verts) {v} (hv : v ∈ H.verts),
+                  ∃ p : G.walk u v, p.to_subgraph ≤ H :=
+begin
+  split,
+  { rw [subgraph.connected_iff],
+    rintro ⟨Hp, Hn⟩,
+    refine ⟨Hn, λ u hu v hv, ⟨(Hp ⟨u, hu⟩ ⟨v, hv⟩).some.map (subgraph.hom _), _⟩⟩,
+    simp only [walk.to_subgraph_map],
+    apply walk.to_subgraph_map_hom_le, },
+  { rintro ⟨Hn,Hw⟩,
+    rw [subgraph.connected, connected_iff_exists_forall_reachable],
+    refine ⟨⟨Hn.some, Hn.some_spec⟩, λ w, _⟩,
+    obtain ⟨w, hw⟩ := w,
+    obtain ⟨p, h⟩ := Hw Hn.some_spec hw,
+    exact reachable.map (subgraph.inclusion h) (p.to_subgraph_connected
+            ⟨_, p.first_mem_verts_to_subgraph⟩ ⟨_, p.last_mem_verts_to_subgraph⟩), },
+end
+
 lemma induce_walk_support_connected {u v : V} (p : G.walk u v) :
   (G.induce $ {v | v ∈ p.support}).connected :=
 begin
@@ -177,19 +195,42 @@ begin
   exact (p.to_subgraph_connected).mono p.to_subgraph_le_induce_support p.verts_to_subgraph,
 end
 
+lemma subgraph.sUnion_connected_of_pairwise_not_disjoint {S : set G.subgraph} (Sn : S.nonempty)
+  (Snd : ∀ {s : G.subgraph}, s ∈ S → ∀ {t : G.subgraph}, t ∈ S → (s ⊓ t).verts.nonempty)
+  (Sc : ∀ {s : G.subgraph}, s ∈ S → s.connected) :
+  (⨆ (s : S), s.val).connected :=
+begin
+  obtain ⟨s, sS⟩ := Sn,
+  obtain ⟨v, vs⟩ := (Sc sS).nonempty.some,
+  fapply subgraph.connected_of_patches, { exact ⟨v, ⟨_, ⟨⟨s,sS⟩,rfl⟩, vs⟩⟩, },
+  rintro ⟨w, ⟨_, ⟨⟨t,tS⟩,rfl⟩, wt⟩⟩,
+  refine ⟨s ⊔ t, _,  or.inl vs, or.inr wt, subgraph.connected.sup (Sc sS) (Sc tS) (Snd sS tS) _ _⟩,
+  simp only [subtype.val_eq_coe, sup_le_iff],
+  change ↑(⟨s,sS⟩ : subtype S) ≤ supr coe ∧ ↑(⟨t,tS⟩ : subtype S) ≤ supr coe,
+  refine ⟨le_supr _ _, le_supr _ _⟩,
+end
+
 lemma induce_sUnion_connected_of_pairwise_not_disjoint {S : set (set V)} (Sn : S.nonempty)
   (Snd : ∀ {s}, s ∈ S → ∀ {t}, t ∈ S → set.nonempty (s ∩ t))
   (Sc : ∀ {s}, s ∈ S → (G.induce s).connected) :
   (G.induce $ ⋃₀ S).connected :=
 begin
-  obtain ⟨s, sS⟩ := Sn,
-  obtain ⟨v, vs⟩ := (Sc sS).nonempty.some,
-  fapply induce_connected_of_patches (set.subset_sUnion_of_mem sS vs),
-  rintro w hw,
-  simp only [set.mem_sUnion, exists_prop] at hw,
-  obtain ⟨t, tS, wt⟩ := hw,
-  refine ⟨s ∪ t, set.union_subset (set.subset_sUnion_of_mem sS) (set.subset_sUnion_of_mem tS),
-          or.inl vs, or.inr wt, induce_union_connected (Sc sS) (Sc tS) (Snd sS tS) _ _⟩,
+  simp only [induce_eq_coe_induce_top] at *,
+  refine (@subgraph.sUnion_connected_of_pairwise_not_disjoint V G (S.image (⊤ : G.subgraph).induce)
+          _ _ _).mono _ _,
+  split,
+  { rintro w ⟨_, ⟨⟨_,⟨t,⟨tS,rfl⟩⟩⟩,rfl⟩, wt⟩, exact ⟨t,tS,wt⟩,  },
+  { rintro v w ⟨h,⟨⟨_,⟨y,yS,rfl⟩⟩,rfl⟩, a⟩, exact ⟨⟨y,yS,a.1⟩, ⟨y,yS,a.2.1⟩, a.2.2⟩, },
+  ext w, split,
+  { rintro ⟨_, ⟨⟨_,⟨t,⟨tS,rfl⟩⟩⟩,rfl⟩, wt⟩, exact ⟨t,tS,wt⟩,  },
+  { simp only [subgraph.induce_verts, set.mem_sUnion, exists_prop, subtype.val_eq_coe,
+               forall_exists_index, and_imp],
+    refine λ s sS ws, ⟨(⊤ : G.subgraph).induce s, _, ws⟩,
+    simp only [subtype.range_coe_subtype, set.mem_image, set.mem_set_of_eq],
+    exact ⟨s, sS, rfl⟩, },
+  { exact set.nonempty.image _ Sn, },
+  { rintro _ ⟨s, sS, rfl⟩ _ ⟨t, tS, rfl⟩, exact Snd sS tS, },
+  { rintro _ ⟨s,sS,rfl⟩, exact Sc sS, },
 end
 
 lemma extend_finset_to_connected (Gpc : G.preconnected) {t : finset V} (tn : t.nonempty) :
