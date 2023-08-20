@@ -9,6 +9,9 @@ import tactic.field_simp
 /-!
 # Slopes of convex functions
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 This file relates convexity/concavity of functions in a linearly ordered field and the monotonicity
 of their slopes.
 

@@ -9,6 +9,9 @@ import ring_theory.polynomial.content
 /-!
 # Eisenstein's criterion
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 A proof of a slight generalisation of Eisenstein's criterion for the irreducibility of
 a polynomial over an integral domain.
 -/

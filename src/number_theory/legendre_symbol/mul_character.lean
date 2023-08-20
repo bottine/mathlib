@@ -10,6 +10,9 @@ import algebra.group.conj_finite
 /-!
 # Multiplicative characters of finite rings and fields
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 Let `R` and `R'` be a commutative rings.
 A *multiplicative character* of `R` with values in `R'` is a morphism of
 monoids from the multiplicative monoid of `R` into that of `R'`

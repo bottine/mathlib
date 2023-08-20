@@ -11,6 +11,9 @@ import topology.local_homeomorph
 /-!
 # Inverse function theorem
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 In this file we prove the inverse function theorem. It says that if a map `f : E → F`
 has an invertible strict derivative `f'` at `a`, then it is locally invertible,
 and the inverse function has derivative `f' ⁻¹`.

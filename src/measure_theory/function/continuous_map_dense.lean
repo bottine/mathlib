@@ -11,6 +11,9 @@ import topology.urysohns_lemma
 /-!
 # Approximation in Lᵖ by continuous functions
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 This file proves that bounded continuous functions are dense in `Lp E p μ`, for `1 ≤ p < ∞`, if the
 domain `α` of the functions is a normal topological space and the measure `μ` is weakly regular.
 

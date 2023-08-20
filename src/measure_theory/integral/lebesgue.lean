@@ -12,6 +12,9 @@ import dynamics.ergodic.measure_preserving
 /-!
 # Lebesgue integral for `ℝ≥0∞`-valued functions
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 We define simple functions and show that each Borel measurable function on `ℝ≥0∞` can be
 approximated by a sequence of simple functions.
 

@@ -9,6 +9,9 @@ import number_theory.zsqrtd.gaussian_int
 /-!
 # Sums of two squares
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 Proof of Fermat's theorem on the sum of two squares. Every prime congruent to 1 mod 4 is the sum
 of two squares.
 

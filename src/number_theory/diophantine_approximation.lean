@@ -10,6 +10,9 @@ import combinatorics.pigeonhole
 /-!
 # Diophantine Approximation
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 This file gives proofs of various versions of **Dirichlet's approximation theorem**
 and its important consequence that when `ξ` is an irrational real number, then there are
 infinitely many rationals `x/y` (in lowest terms) such that `|ξ - x/y| < 1/y^2`.

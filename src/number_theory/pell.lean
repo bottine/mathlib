@@ -10,6 +10,9 @@ import number_theory.zsqrtd.basic
 /-!
 # Pell's equation and Matiyasevic's theorem
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 This file solves Pell's equation, i.e. integer solutions to `x ^ 2 - d * y ^ 2 = 1` in the special
 case that `d = a ^ 2 - 1`. This is then applied to prove Matiyasevic's theorem that the power
 function is Diophantine, which is the last key ingredient in the solution to Hilbert's tenth

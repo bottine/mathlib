@@ -11,6 +11,9 @@ import topology.instances.real
 /-!
 # convex bodies
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 This file contains the definition of the type `convex_body V`
 consisting of
 convex, compact, nonempty subsets of a real topological vector space `V`.

@@ -8,6 +8,9 @@ import number_theory.legendre_symbol.quadratic_char
 /-!
 # Legendre symbol and quadratic reciprocity.
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 This file contains results about quadratic residues modulo a prime number.
 
 We define the Legendre symbol $\Bigl(\frac{a}{p}\Bigr)$ as `legendre_sym p a`.

@@ -11,6 +11,9 @@ import ring_theory.ideal.local_ring
 /-!
 # Transfer algebraic structures across `equiv`s
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 In this file we prove theorems of the following form: if `β` has a
 group structure and `α ≃ β` then `α` has a group structure, and
 similarly for monoids, semigroups, rings, integral domains, fields and

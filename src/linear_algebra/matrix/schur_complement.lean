@@ -8,6 +8,9 @@ import linear_algebra.matrix.pos_def
 
 /-! # Schur complement
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 This file proves properties of the Schur complement `D - C A⁻¹ B` of a block matrix `[A B; C D]`.
 
 The determinant of a block matrix in terms of the Schur complement is expressed in the lemmas

@@ -9,6 +9,9 @@ import linear_algebra.finite_dimensional
 /-!
 # The finite-dimensional space of matrices
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 This file shows that `m` by `n` matrices form a finite-dimensional space,
 and proves the `finrank` of that space is equal to `card m * card n`.
 

@@ -10,6 +10,9 @@ import linear_algebra.prod
 /-!
 # Trivial Square-Zero Extension
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 Given a module `M` over a ring `R`, the trivial square-zero extension of `M` over `R` is defined
 to be the `R`-algebra `R ⊕ M` with multiplication given by
 `(r₁ + m₁) * (r₂ + m₂) = r₁ r₂ + r₁ m₂ + r₂ m₁`.

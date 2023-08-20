@@ -13,6 +13,9 @@ import topology.continuous_function.zero_at_infty
 /-!
 # The Riemann-Lebesgue Lemma
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 In this file we prove a weak form of the Riemann-Lebesgue lemma, stating that for any
 compactly-supported continuous function `f` on `ℝ` (valued in some complete normed space `E`), the
 integral

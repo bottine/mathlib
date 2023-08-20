@@ -11,6 +11,9 @@ import ring_theory.class_group
 /-!
 # The group of nonsingular rational points on a Weierstrass curve over a field
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 This file defines the type of nonsingular rational points on a Weierstrass curve over a field and
 (TODO) proves that it forms an abelian group under a geometric secant-and-tangent process.
 

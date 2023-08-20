@@ -12,6 +12,9 @@ import category_theory.limits.shapes.biproducts
 /-!
 # Injective objects and categories with enough injectives
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 An object `J` is injective iff every morphism into `J` can be obtained by extending a monomorphism.
 -/
 

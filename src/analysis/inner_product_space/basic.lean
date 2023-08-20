@@ -13,6 +13,9 @@ import linear_algebra.bilinear_form
 /-!
 # Inner product space
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 This file defines inner product spaces and proves the basic properties.  We do not formally
 define Hilbert spaces, but they can be obtained using the pair of assumptions
 `[inner_product_space 𝕜 E] [complete_space E]`.

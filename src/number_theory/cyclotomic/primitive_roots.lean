@@ -13,6 +13,9 @@ import ring_theory.norm
 
 /-!
 # Primitive roots in cyclotomic fields
+
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
 If `is_cyclotomic_extension {n} A B`, we define an element `zeta n A B : B` that is (under certain
 assumptions) a primitive `n`-root of unity in `B` and we study its properties. We also prove related
 theorems under the more general assumption of just being a primitive root, for reasons described

@@ -11,6 +11,9 @@ import tactic.field_simp
 /-!
 # Betweenness in affine spaces
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 This file defines notions of a point in an affine space being between two given points.
 
 ## Main definitions

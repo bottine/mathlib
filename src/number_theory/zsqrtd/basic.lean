@@ -9,6 +9,9 @@ import tactic.ring
 
 /-! # ℤ[√d]
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 The ring of integers adjoined with a square root of `d : ℤ`.
 
 After defining the norm, we show that it is a linearly ordered commutative ring,
