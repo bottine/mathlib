@@ -13,6 +13,9 @@ import algebra.star.unitary
 /-!
 # Normed star rings and algebras
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 A normed star group is a normed group with a compatible `star` which is isometric.
 
 A C⋆-ring is a normed star group that is also a ring and that verifies the stronger

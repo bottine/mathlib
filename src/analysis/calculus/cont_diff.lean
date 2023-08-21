@@ -13,6 +13,9 @@ import tactic.congrm
 /-!
 # Higher differentiability
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 A function is `C^1` on a domain if it is differentiable there, and its derivative is continuous.
 By induction, it is `C^n` if it is `C^{n-1}` and its (n-1)-th derivative is `C^1` there or,
 equivalently, if it is `C^1` and its derivative is `C^{n-1}`.

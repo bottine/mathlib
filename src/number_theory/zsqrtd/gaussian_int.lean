@@ -10,6 +10,9 @@ import number_theory.legendre_symbol.quadratic_reciprocity
 /-!
 # Gaussian integers
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 The Gaussian integers are complex integer, complex numbers whose real and imaginary parts are both
 integers.
 

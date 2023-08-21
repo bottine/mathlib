@@ -11,6 +11,9 @@ import number_theory.padics.padic_val
 /-!
 # Multiplicity in Number Theory
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 This file contains results in number theory relating to multiplicity.
 
 ## Main statements

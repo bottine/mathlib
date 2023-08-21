@@ -8,6 +8,9 @@ import geometry.manifold.cont_mdiff_map
 
 /-!
 # Diffeomorphisms
+
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
 This file implements diffeomorphisms.
 
 ## Definitions

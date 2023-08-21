@@ -9,6 +9,9 @@ import topology.algebra.group_with_zero
 /-!
 # Topology on `ℝ≥0`
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 The natural topology on `ℝ≥0` (the one induced from `ℝ`), and a basic API.
 
 ## Main definitions

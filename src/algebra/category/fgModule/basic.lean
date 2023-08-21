@@ -11,6 +11,9 @@ import algebra.category.Module.monoidal
 /-!
 # The category of finitely generated modules over a ring
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 This introduces `fgModule R`, the category of finitely generated modules over a ring `R`.
 It is implemented as a full subcategory on a subtype of `Module R`.
 

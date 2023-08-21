@@ -10,6 +10,9 @@ import analysis.convex.topology
 /-!
 # Symmetry of the second derivative
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 We show that, over the reals, the second derivative is symmetric.
 
 The most precise result is `convex.second_derivative_within_at_symmetric`. It asserts that,

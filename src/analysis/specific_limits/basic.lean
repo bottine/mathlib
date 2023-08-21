@@ -11,6 +11,9 @@ import topology.instances.ennreal
 /-!
 # A collection of specific limit computations
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 This file, by design, is independent of `normed_space` in the import hierarchy.  It contains
 important specific limit computations in metric spaces, in ordered rings/fields, and in specific
 instances of these such as `ℝ`, `ℝ≥0` and `ℝ≥0∞`.

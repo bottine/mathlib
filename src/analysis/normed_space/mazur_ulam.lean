@@ -10,6 +10,9 @@ import linear_algebra.affine_space.midpoint
 /-!
 # Mazur-Ulam Theorem
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 Mazur-Ulam theorem states that an isometric bijection between two normed affine spaces over `ℝ` is
 affine. We formalize it in three definitions:
 

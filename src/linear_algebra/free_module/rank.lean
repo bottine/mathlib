@@ -11,6 +11,9 @@ import linear_algebra.finsupp_vector_space
 
 # Rank of free modules
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 This is a basic API for the rank of free modules.
 
 -/

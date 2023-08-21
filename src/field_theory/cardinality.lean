@@ -15,6 +15,9 @@ import data.nat.factorization.prime_pow
 /-!
 # Cardinality of Fields
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 In this file we show all the possible cardinalities of fields. All infinite cardinals can harbour
 a field structure, and so can all types with prime power cardinalities, and this is sharp.
 

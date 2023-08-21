@@ -11,6 +11,9 @@ import category_theory.additive.basic
 
 # Biproducts in the idempotent completion of a preadditive category
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 In this file, we define an instance expressing that if `C` is an additive category,
 then `karoubi C` is also an additive category.
 

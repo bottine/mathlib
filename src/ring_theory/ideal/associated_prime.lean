@@ -13,6 +13,9 @@ import ring_theory.ideal.minimal_prime
 
 # Associated primes of a module
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 We provide the definition and related lemmas about associated primes of modules.
 
 ## Main definition

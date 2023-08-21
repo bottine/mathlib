@@ -13,6 +13,9 @@ import algebra.category.Module.epi_mono
 /-!
 # Projective objects and categories with enough projectives
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 An object `P` is called projective if every morphism out of `P` factors through every epimorphism.
 
 A category `C` has enough projectives if every object admits an epimorphism from some

@@ -8,6 +8,9 @@ import algebraic_geometry.presheafed_space.gluing
 /-!
 # Gluing Schemes
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 Given a family of gluing data of schemes, we may glue them together.
 
 ## Main definitions

@@ -13,6 +13,9 @@ import tactic.positivity
 /-!
 # Schwartz space
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 This file defines the Schwartz space. Usually, the Schwartz space is defined as the set of smooth
 functions $f : ℝ^n → ℂ$ such that there exists $C_{αβ} > 0$ with $$|x^α ∂^β f(x)| < C_{αβ}$$ for
 all $x ∈ ℝ^n$ and for all multiindices $α, β$.

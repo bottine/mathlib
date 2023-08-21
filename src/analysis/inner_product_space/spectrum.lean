@@ -8,6 +8,9 @@ import analysis.inner_product_space.pi_L2
 
 /-! # Spectral theory of self-adjoint operators
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 This file covers the spectral theory of self-adjoint operators on an inner product space.
 
 The first part of the file covers general properties, true without any condition on boundedness or

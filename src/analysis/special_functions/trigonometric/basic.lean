@@ -9,6 +9,9 @@ import data.set.intervals.infinite
 /-!
 # Trigonometric functions
 
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
+
 ## Main definitions
 
 This file contains the definition of `π`.
